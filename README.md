@@ -30,8 +30,7 @@
 - Tech 3 - version 3.0
 
 
-## Features
-Features for this audio transcription is 
+## Features for this audio transcription
 - Upload a File
 - Able to play audio file
 - Able to view transcripition text
