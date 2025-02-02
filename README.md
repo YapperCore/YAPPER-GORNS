@@ -23,7 +23,14 @@
 - Why did you undertake it?
 <!-- You don't have to answer all the questions - just the ones relevant to your project. -->
 
-Language barriers hinder communication making it difficult for people to communicate with others across differing languages and dialects. Project YAPPER is a audio translation tool designed to translate audio recordings of spoken languages with the purpose of bridging the language barrier gap by providing an efficient and accurate translation solution for spoken audio. The project was iniitated to address the growing need for accurate and accessible language translation with the ever increasing day to day cross-cultural interactions.
+Language barriers hinder communication making it difficult for people to
+communicate with others across differing languages and dialects. Project YAPPER,
+developed by Ali Jalil, Joshua Egwaikhide, Abheek Pradhan, and Michael Elder is a 
+audio translation tool designed to translate audio recordings of spokenlanguages 
+with the purpose of bridging the language barrier gap by providing an efficient
+and accurate translation solution for spoken audio. The project was iniitated to 
+address the growing need for accurate and accessible language translation with the
+ever increasing day to day cross-cultural interactions.
 
 ## Technologies Used
 - Electron 34.0.2
