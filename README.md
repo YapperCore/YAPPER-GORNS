@@ -70,13 +70,31 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
 
 ## Features for this audio transcription
-- Upload a File
-- Able to play audio file
-- Able to view transcripition text
-### Future Features
-- Audio is spilt into each section of notes
-- Able to Share notes
-- Able to group notes 
+#### 1. Upload a File  
+- Description: Users can upload an audio file to be transcribed.  
+- Users:** Students, researchers, and professionals needing transcription.  
+- User Story: As a user, I want to upload an audio file so that I can generate a transcription.*  
+
+#### 2. Play Audio File  
+- Description: Users can play the uploaded audio file directly within the application.  
+- Users: Anyone reviewing the transcription alongside the audio.  
+- User Story: As a user, I want to play the audio file so that I can verify the transcription.*  
+
+#### 3. View Transcription Text  
+- Description: The transcribed text is displayed in a readable format.  
+- Users:** Users who need written notes from audio.  
+- User Story: As a user, I want to see the transcribed text so that I can read and edit it.*  
+
+### Future Features  
+
+#### 1. Split Audio into Sections  
+- Description: The audio will be divided into sections, making it easier to organize notes.  
+
+#### 2. Share Notes  
+- Description: Users will be able to share their transcribed notes with others.  
+
+#### 3. Group Notes  
+- Description: Users can categorize and group their notes for better organization.  
 
 
 ## Screenshots
