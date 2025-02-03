@@ -69,14 +69,66 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - AWS or Azure
 
 
-## Features for this audio transcription
-- Upload a File
-- Able to play audio file
-- Able to view transcripition text
-### Future Features
-- Audio is spilt into each section of notes
-- Able to Share notes
-- Able to group notes 
+#### 1. File Uploader
+- **Description:**  
+  Enables users to upload an audio file into the application. The selected file is then sent to the backend for transcription processing.
+- **Who Uses It:**  
+  End users who need to convert their recorded audio into text.
+- **User Stories:**
+  - **User Story 1:**  
+    *As a user, I want to upload an audio file so that it can be transcribed, allowing me to obtain a textual version of my recording.*
+  - **User Story 2:**  
+    *As a user, I want to receive confirmation that my audio file has been successfully uploaded so that I know the transcription process has started.*
+
+#### 2. Audio Playback
+- **Description:**  
+  Provides a built-in audio player that allows users to play, pause, and navigate through the uploaded audio file. This helps users review the audio content before or after transcription.
+- **Who Uses It:**  
+  End users who wish to verify the audio content and ensure the transcription accurately reflects the recording.
+- **User Stories:**
+  - **User Story 1:**  
+    *As a user, I want to play the audio file within the application so that I can verify its content before transcription.*
+  - **User Story 2:**  
+    *As a user, I want to pause and navigate through the audio so that I can easily review specific segments of the recording.*
+
+#### 3. Transcription Viewer
+- **Description:**  
+  Displays the transcribed text generated from the uploaded audio file in a clear and readable format. The text may update in real time as the transcription process continues.
+- **Who Uses It:**  
+  End users who need to read, reference, or edit the transcribed text.
+- **User Stories:**
+  - **User Story 1:**  
+    *As a user, I want to view the transcription of my audio file so that I can read and understand its contents.*
+  - **User Story 2:**  
+    *As a user, I want the transcription to update in real time as the audio is being processed so that I can track its progress.*
+
+---
+
+### Future Features (Planned for Subsequent Sprints)
+
+#### 1. Sectioned Notes
+- **Description:**  
+  Automatically splits the transcribed text into distinct sections or notes, making it easier to navigate and manage large volumes of text.
+- **Who Uses It:**  
+  Users who need to organize lengthy transcriptions into manageable segments.
+- **User Story:**  
+  *As a user, I want the transcription to be divided into distinct sections so that I can easily find and reference different parts of the content.*
+
+#### 2. Note Sharing
+- **Description:**  
+  Allows users to share individual notes or entire transcriptions with others via social media, email, or built-in sharing functionalities.
+- **Who Uses It:**  
+  Users who need to collaborate or distribute the transcription results with colleagues, friends, or other stakeholders.
+- **User Story:**  
+  *As a user, I want to share my transcribed notes with others so that I can collaborate effectively or disseminate important information.*
+
+#### 3. Note Grouping
+- **Description:**  
+  Enables users to group related notes together for better organization and quicker access, which is especially useful for managing multiple transcriptions.
+- **Who Uses It:**  
+  Users who handle a large amount of transcribed data and need a method to categorize and organize it logically.
+- **User Story:**  
+  *As a user, I want to group related notes together so that I can organize my transcriptions in a more meaningful and efficient way.*
 
 
 ## Screenshots
