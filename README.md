@@ -72,27 +72,27 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 ## Features for this audio transcription
 #### 1. Upload a File  
 - Description: Users can upload an audio file to be transcribed.  
-- Users:** Students, researchers, and professionals needing transcription.  
-- User Story: As a user, I want to upload an audio file so that I can generate a transcription.*  
-
+- Users: Students mainly or anyone  
+- User Story: As a user, I want to upload an audio file so that I can generate a transcription.  
 #### 2. Play Audio File  
 - Description: Users can play the uploaded audio file directly within the application.  
 - Users: Anyone reviewing the transcription alongside the audio.  
-- User Story: As a user, I want to play the audio file so that I can verify the transcription.*  
-
+- User Story: As a user, I want to play the audio file so that I can verify the transcription.  
 #### 3. View Transcription Text  
 - Description: The transcribed text is displayed in a readable format.  
 - Users: Users who need written notes from audio.  
-- User Story: As a user, I want to see the transcribed text so that I can read and edit it.*  
+- User Story: As a user, I want to see the text so that I can read. 
+#### 4. Edit Transcription Content  
+- Description: Users can edit the text to correct errors or improve clarity.  
+- Users: Anyone who wants to edit their transcription.  
+- User Story: As a user, I want to edit the text so that I can correct mistakes.  
 
 ### Future Features  
 
 #### 1. Split Audio into Sections  
-- Description: The audio will be divided into sections, making it easier to organize notes.  
-
+- Description: The audio will be divided into sections, allowing you to listen to only that part of the audio.  
 #### 2. Share Notes  
-- Description: Users will be able to share their transcribed notes with others.  
-
+- Description: Users will be able to share their notes with others.  
 #### 3. Group Notes  
 - Description: Users can categorize and group their notes for better organization.  
 
