@@ -82,7 +82,7 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
 #### 3. View Transcription Text  
 - Description: The transcribed text is displayed in a readable format.  
-- Users:** Users who need written notes from audio.  
+- Users: Users who need written notes from audio.  
 - User Story: As a user, I want to see the transcribed text so that I can read and edit it.*  
 
 ### Future Features  
