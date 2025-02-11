@@ -18,8 +18,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: center;  
   font-size: calc(10px + 2vmin);
   color: white;
 }
@@ -28,11 +27,23 @@
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.Doclist ul {
+  display: grid;
+    grid-auto-flow: column;  /* Places items in a row */
+    gap: 10px;  /* Spacing between items */
+    list-style: none;
+    padding: 0;
 }
+
+.Doclist li {
+  padding: 10px;
+  background-color: #090909;
+  border-radius: 5px;
+}
+
+.Doclist li:hover {
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+}
+
+
