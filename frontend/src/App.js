@@ -1,6 +1,14 @@
 import './App.css';
+import { useState } from "react";
 
 function App() {
+  const [documents,setDocuments] = useState([]);
+
+  const addDoc = () => {
+    setDocuments((prevDocuments) => [...prevDocuments, `doc${prevDocuments.length + 1}`]);
+  };
+
+
   return (
     <div className="App">
       <header className="App-header">
@@ -16,21 +24,28 @@ function App() {
         >
           Learn React
         </a>*/}
-        <div className='Input-Form'>
-          <label for="myfile">Select a file: </label>
-          <input type="file" id="myfile" name="myfile"/>
-          <input type="submit"/>
+        <div className="Input-Form">
+          <label htmlFor="myfile">Select a file: </label>
+          <input type="file" id="myfile" name="myfile" />
+          <input type="submit" />
         </div>
-        <div className='Doclist'>
+
+        <div className="addButton">
+          <button onClick={addDoc}>
+            Add Document
+          </button>
+        </div>
+
+        <div className="Doclist">
           <ul>
-            <li>Document-1</li>
-            <li>Document-2</li>
-            <li>Document-3</li>
+            {documents.map((doc, index) => (
+              <li key={index}>
+                {doc}{" "}
+              </li>
+            ))}
           </ul>
-          </div>
-
+        </div>
       </header>
-
 
     </div>
   );

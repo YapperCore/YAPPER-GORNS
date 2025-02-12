@@ -28,11 +28,18 @@
 }
 
 .Doclist ul {
+  padding: 0 20px;
+  width: 100%;
   display: grid;
-    grid-auto-flow: column;  /* Places items in a row */
-    gap: 10px;  /* Spacing between items */
-    list-style: none;
-    padding: 0;
+  grid-template-columns: repeat(5, 1fr);
+  grid-gap: 1em;
+  list-style-type: none;
+}
+
+@media (max-width: 576px) {
+  main {
+    grid-template-columns: auto;
+  }
 }
 
 .Doclist li {
