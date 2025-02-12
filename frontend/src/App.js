@@ -7,8 +7,7 @@ function App() {
   const addDoc = () => {
     setDocuments((prevDocuments) => [...prevDocuments, `doc${prevDocuments.length + 1}`]);
   };
-
-
+  
   return (
     <div className="App">
       <header className="App-header">
