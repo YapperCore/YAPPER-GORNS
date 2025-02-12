@@ -1,14 +1,15 @@
 import torch
-from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 import torchaudio
-import pyaudio
+from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
+import torchaudio.transforms as transforms
+import os
 
 def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"):
     """
-    Transcribe audio to text using the Speech2Text model.
+    Transcribe an audio file (MP3, WAV, or FLAC) into text using the Speech2Text model.
 
     Parameters:
-    - audio_path (str): Path to the audio file (.wav or .flac).
+    - audio_path (str): Path to the audio file.
     - model_name (str): Hugging Face model identifier.
 
     Returns:
@@ -18,17 +19,25 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
     processor = Speech2TextProcessor.from_pretrained(model_name)
     model = Speech2TextForConditionalGeneration.from_pretrained(model_name)
 
+    # Convert MP3 to WAV if needed
+    if audio_path.lower().endswith(".mp3"):
+        print("Converting MP3 to WAV...")
+        wav_path = audio_path.replace(".mp3", ".wav")
+        torchaudio.backend.sox_io_backend.info(audio_path)  # Check file info
+        torchaudio.backend.sox_io_backend.save(wav_path, *torchaudio.backend.sox_io_backend.load(audio_path))
+        audio_path = wav_path
+
     # Load the audio file
     speech, sample_rate = torchaudio.load(audio_path)
 
-    # Convert to mono by averaging channels if necessary
+    # Convert to mono if necessary
     if speech.shape[0] > 1:
         speech = torch.mean(speech, dim=0, keepdim=True)
 
     # Resample to 16000 Hz if needed
     target_sample_rate = 16000
     if sample_rate != target_sample_rate:
-        resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=target_sample_rate)
+        resampler = transforms.Resample(orig_freq=sample_rate, new_freq=target_sample_rate)
         speech = resampler(speech)
         sample_rate = target_sample_rate
 
@@ -40,20 +49,16 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
 
     # Generate transcription
     with torch.no_grad():
-        generated_ids = model.generate(inputs["input_features"], attention_mask=inputs["attention_mask"])
+        generated_ids = model.generate(inputs["input_features"])
 
     # Decode the generated tokens to text
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     return transcription
-
-def transcrible_audio_pyaudio(audio_path : str) -> str:
-    transcrition : str = 'UNABLE TO TRANSCRIBE'
-    return transcrition
-
 if __name__ == "__main__":
     # Path to your audio file
-    audio_file = "harvard.wav"  # Replace with your audio file path 
+    audio_file = "INPUT_AUDIO_TEST/08. Live & Learn.mp3"
+    # if the audio file is mp3, IT NEEDS TO BE CONVERTED TO .WAV
 
     # Perform transcription
     text = transcribe_audio(audio_file)
