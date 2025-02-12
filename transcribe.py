@@ -1,6 +1,7 @@
 import torch
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 import torchaudio
+import pyaudio
 
 def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"):
     """
@@ -45,6 +46,10 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     return transcription
+
+def transcrible_audio_pyaudio(audio_path : str) -> str:
+    transcrition : str = 'UNABLE TO TRANSCRIBE'
+    return transcrition
 
 if __name__ == "__main__":
     # Path to your audio file
