@@ -48,8 +48,3 @@ Thumbs.db
 *.mov
 *.wmv
 
-
-# for testing (SCRUM 25)
-INPUT_AUDIO_TEST/
-OUTPUT_TEST/
-notes.txt
