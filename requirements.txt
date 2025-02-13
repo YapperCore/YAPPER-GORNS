@@ -1,0 +1,7 @@
+torch
+torchaudio
+transformers
+sox  # Required for MP3 to WAV conversion
+numpy # torch tensors interact with numpy
+# speech2text relies on numpy for input processing
+sentencepiece

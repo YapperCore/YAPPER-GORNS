@@ -73,3 +73,6 @@ yarn-error.log*
 INPUT_AUDIO_TEST/
 notes.txt
 OUTPUT_TEST/
+
+.venv/
+venv
