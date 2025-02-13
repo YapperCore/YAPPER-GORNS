@@ -5,6 +5,16 @@ import torchaudio.transforms as transforms
 import os
 import sys
 
+
+def calc_word_error_rate(S : int,D : int, I : int, N: int)->float:
+    """
+    S = Number of substitutions (wrong words)
+	D = Number of deletions (missing words)
+	I = Number of insertions (extra words)
+	N = Total number of words in the expected transcription
+    """
+    return ((S+D+I) / N)*100
+
 def transcribe_audio(audio_path, output_dir, model_name="facebook/s2t-small-librispeech-asr"):
     """
     Transcribe an audio file (MP3, WAV, or FLAC) into text using the Speech2Text model.
