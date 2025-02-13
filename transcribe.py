@@ -55,9 +55,11 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     return transcription
+
 if __name__ == "__main__":
     # Path to your audio file
-    audio_file = "INPUT_AUDIO_TEST/08. Live & Learn.mp3"
+    
+    audio_file = "INPUT_AUDIO_TEST/test_file_1.wav"
     # if the audio file is mp3, IT NEEDS TO BE CONVERTED TO .WAV
 
     # Perform transcription
@@ -67,3 +69,5 @@ if __name__ == "__main__":
     print("Transcription:")
     print(text)
 
+    text2 = transcribe_audio("INPUT_AUDIO_TEST/test_file_2.wav")
+    print(text2)
