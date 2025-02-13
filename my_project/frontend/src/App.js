@@ -10,11 +10,14 @@ function App() {
 
   useEffect(() => {
     const socket = io();
-    socket.on('partial_transcript', (data) => {
-      setTranscripts((prev) => [
-        ...prev,
-        `Chunk ${data.chunk_index}/${data.total_chunks}: ${data.text}`
-      ]);
+
+    // Listen for batch events carrying an array of chunks
+    socket.on('partial_transcript_batch', (data) => {
+      // data is expected to be an object with a "chunks" array
+      const batchLines = data.chunks.map(chunk =>
+        `Chunk ${chunk.chunk_index}/${chunk.total_chunks}: ${chunk.text}`
+      );
+      setTranscripts((prev) => [...prev, ...batchLines]);
     });
 
     socket.on('final_transcript', (data) => {
@@ -45,10 +48,12 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('audio', file);
+
       const res = await fetch('/upload-audio', {
         method: 'POST',
         body: formData
       });
+
       if (res.ok) {
         const data = await res.json();
         setUploadMessage(data.message || 'Upload succeeded');
@@ -65,17 +70,20 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
+        {/* Input Form */}
         <div className="Input-Form">
           <label htmlFor="myfile">Select a file: </label>
           <input type="file" id="myfile" name="myfile" onChange={handleFileChange} />
           <button onClick={handleUpload}>Submit</button>
           {uploadMessage && <p>{uploadMessage}</p>}
         </div>
+
+        {/* Button to Add Document */}
         <div className="addButton">
-          <button onClick={addDoc}>
-            Add Document
-          </button>
+          <button onClick={addDoc}>Add Document</button>
         </div>
+
+        {/* Document List */}
         <div className="Doclist">
           <ul>
             {documents.map((doc, index) => (
@@ -83,6 +91,8 @@ function App() {
             ))}
           </ul>
         </div>
+
+        {/* Real-time transcription logs */}
         <div className="Transcripts" style={{ marginTop: '2rem' }}>
           <h3>Transcription Output:</h3>
           {transcripts.map((line, idx) => (
@@ -95,3 +105,4 @@ function App() {
 }
 
 export default App;
+
