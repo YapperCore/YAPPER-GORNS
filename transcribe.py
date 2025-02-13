@@ -3,13 +3,15 @@ import torchaudio
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 import torchaudio.transforms as transforms
 import os
+import sys
 
-def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"):
+def transcribe_audio(audio_path, output_dir, model_name="facebook/s2t-small-librispeech-asr"):
     """
     Transcribe an audio file (MP3, WAV, or FLAC) into text using the Speech2Text model.
 
     Parameters:
     - audio_path (str): Path to the audio file.
+    - output_dir (str): Directory where the transcription text file will be saved.
     - model_name (str): Hugging Face model identifier.
 
     Returns:
@@ -19,16 +21,12 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
     processor = Speech2TextProcessor.from_pretrained(model_name)
     model = Speech2TextForConditionalGeneration.from_pretrained(model_name)
 
-    # Convert MP3 to WAV if needed
-    if audio_path.lower().endswith(".mp3"):
-        print("Converting MP3 to WAV...")
-        wav_path = audio_path.replace(".mp3", ".wav")
-        torchaudio.backend.sox_io_backend.info(audio_path)  # Check file info
-        torchaudio.backend.sox_io_backend.save(wav_path, *torchaudio.backend.sox_io_backend.load(audio_path))
-        audio_path = wav_path
-
     # Load the audio file
-    speech, sample_rate = torchaudio.load(audio_path)
+    try:
+        speech, sample_rate = torchaudio.load(audio_path)
+    except Exception as e:
+        print(f"Error loading audio file {audio_path}: {e}")
+        return
 
     # Convert to mono if necessary
     if speech.shape[0] > 1:
@@ -54,20 +52,32 @@ def transcribe_audio(audio_path, model_name="facebook/s2t-small-librispeech-asr"
     # Decode the generated tokens to text
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Define output file path
+    output_file_path = os.path.join(output_dir, os.path.basename(audio_path) + ".txt")
+
+    # Save transcription to a text file
+    with open(output_file_path, "w") as f:
+        f.write(transcription)
+
+    print(f"Transcription saved to {output_file_path}")
+
     return transcription
 
 if __name__ == "__main__":
-    # Path to your audio file
-    
-    audio_file = "INPUT_AUDIO_TEST/test_file_1.wav"
-    # if the audio file is mp3, IT NEEDS TO BE CONVERTED TO .WAV
+    # Ensure the correct number of arguments are provided
+    if len(sys.argv) != 3:
+        print("Usage: python3 transcribe.py <audio_file_path> <output_directory>")
+        sys.exit(1)
+
+    # Get CLI arguments
+    audio_file_path = sys.argv[1]
+    output_directory = sys.argv[2]
 
     # Perform transcription
-    text = transcribe_audio(audio_file)
+    transcribe_audio(audio_file_path, output_directory)
 
-    # Output the transcription
-    print("Transcription:")
-    print(text)
-
-    text2 = transcribe_audio("INPUT_AUDIO_TEST/test_file_2.wav")
-    print(text2)
+# python3 transcribe.py <audio_file_path> <output_directory>
+# python3 transcribe.py "INPUT_AUDIO_TEST/test_file_1.wav" "OUTPUT_TEST"
