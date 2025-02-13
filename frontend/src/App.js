@@ -7,6 +7,7 @@ function App() {
   const addDoc = () => {
     setDocuments((prevDocuments) => [...prevDocuments, `doc${prevDocuments.length + 1}`]);
   };
+
   
   return (
     <div className="App">
@@ -40,6 +41,11 @@ function App() {
             {documents.map((doc, index) => (
               <li key={index}>
                 {doc}{" "}
+                <div className="DeleteButton">
+                  <button>
+                    Delete Document
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
