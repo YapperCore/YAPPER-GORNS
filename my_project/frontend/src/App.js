@@ -29,10 +29,10 @@ function App() {
     };
   }, []);
 
-  const addDoc = () => {
+  const addDoc = (docName) => {
     setDocuments((prevDocuments) => [
       ...prevDocuments,
-      `doc${prevDocuments.length + 1}`
+      docName
     ]);
   };
 
@@ -45,6 +45,11 @@ function App() {
       setUploadMessage("No file selected!");
       return;
     }
+
+    // Add a temporary document name
+    const tempDocName = `doc${documents.length + 1}`;
+    addDoc(tempDocName);
+
     try {
       const formData = new FormData();
       formData.append('audio', file);
@@ -80,14 +85,15 @@ function App() {
 
         {/* Button to Add Document */}
         <div className="addButton">
-          <button onClick={addDoc}>Add Document</button>
+          <button onClick={() => addDoc(`doc${documents.length + 1}`)}>Add Document</button>
         </div>
 
         {/* Document List */}
         <div className="Doclist">
           <ul>
             {documents.map((doc, index) => (
-              <li key={index}>{doc}</li>
+              <li key={index}>{doc}
+                <div className="DeleteButton"> <button> Delete Document </button> </div></li>
             ))}
           </ul>
         </div>
@@ -105,4 +111,3 @@ function App() {
 }
 
 export default App;
-

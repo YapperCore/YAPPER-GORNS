@@ -73,12 +73,12 @@ def background_transcription(file_path):
         socketio.emit('final_transcript', {'done': True})
     except Exception as e:
         app.logger.error(f"Error during transcription: {e}")
-    finally:
-        try:
-            os.remove(file_path)
-            app.logger.info(f"Deleted file: {file_path}")
-        except Exception as e:
-            app.logger.error(f"Error deleting file: {e}")
+    #finally:
+        #try:
+            #os.remove(file_path)
+           # app.logger.info(f"Deleted file: {file_path}")
+        #except Exception as e:
+           # app.logger.error(f"Error deleting file: {e}")
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
