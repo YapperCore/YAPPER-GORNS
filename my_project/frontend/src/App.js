@@ -42,35 +42,54 @@ function App() {
 
   const handleUpload = async () => {
     if (!file) {
-      setUploadMessage("No file selected!");
-      return;
+        setUploadMessage("No file selected!");
+        return;
     }
-
-    // Add a temporary document name
-    const tempDocName = `doc${documents.length + 1}`;
-    addDoc(tempDocName);
 
     try {
-      const formData = new FormData();
-      formData.append('audio', file);
+        const formData = new FormData();
+        formData.append('audio', file);
 
-      const res = await fetch('/upload-audio', {
-        method: 'POST',
-        body: formData
-      });
+        const res = await fetch('/upload-audio', {
+            method: 'POST',
+            body: formData
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        setUploadMessage(data.message || 'Upload succeeded');
-      } else {
-        const errorData = await res.json();
-        setUploadMessage(errorData.error || 'Upload failed');
-      }
+        if (res.ok) {
+            const data = await res.json();
+            setUploadMessage(data.message || 'Upload succeeded');
+
+            // Save the actual filename from backend
+            setDocuments((prevDocuments) => [...prevDocuments, data.filename]);
+        } else {
+            const errorData = await res.json();
+            setUploadMessage(errorData.error || 'Upload failed');
+        }
     } catch (err) {
-      console.error("Upload error:", err);
-      setUploadMessage('Upload failed');
+        console.error("Upload error:", err);
+        setUploadMessage('Upload failed');
     }
-  };
+};
+
+
+  const handleDelete = async (filename) => {
+    try {
+        const response = await fetch(`http://localhost:5000/delete_file/${filename}`, {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            setFiles(files.filter((doc) => doc !== filename));
+            alert('File deleted successfully');
+        } else {
+            const data = await response.json();
+            alert(`Error deleting file: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the file');
+    }
+};
 
   return (
     <div className="App">
@@ -93,7 +112,7 @@ function App() {
           <ul>
             {documents.map((doc, index) => (
               <li key={index}>{doc}
-                <div className="DeleteButton"> <button> Delete Document </button> </div></li>
+                <div className="DeleteButton"> <button onClick={() => handleDelete(doc)}> Delete Document </button> </div></li>
             ))}
           </ul>
         </div>
