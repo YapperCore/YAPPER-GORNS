@@ -2,29 +2,14 @@
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;  
+  align-items: center;
   font-size: calc(10px + 2vmin);
   color: white;
-}
-
-.App-link {
-  color: #61dafb;
 }
 
 .Doclist ul {
@@ -36,12 +21,6 @@
   list-style-type: none;
 }
 
-@media (max-width: 576px) {
-  main {
-    grid-template-columns: auto;
-  }
-}
-
 .Doclist li {
   padding: 10px;
   background-color: #090909;
@@ -50,7 +29,5 @@
 
 .Doclist li:hover {
   background-color: #ffffff;
-  color: rgb(0, 0, 0);
+  color: #000;
 }
-
-
