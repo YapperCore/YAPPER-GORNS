@@ -37,6 +37,8 @@ def upload_audio():
     try:
         audio_file.save(save_path)
         app.logger.info(f"Saved file to: {save_path}")
+        # Start background transcription
+        socketio.start_background_task(background_transcription, save_path)
     except Exception as e:
         app.logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
@@ -51,7 +53,7 @@ def upload_audio():
 
 @app.route('/delete_file/<filename>', methods=['DELETE'])
 def delete_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)  
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -62,7 +64,6 @@ def delete_file(filename):
     except Exception as e:
         app.logger.error(f"Error deleting file: {e}")
         return jsonify({'message': f'Error deleting file: {str(e)}'}), 500
-
 
 
 def background_transcription(file_path):

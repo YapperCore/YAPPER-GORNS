@@ -9,7 +9,7 @@ function App() {
   const [transcripts, setTranscripts] = useState([]);
 
   useEffect(() => {
-    const socket = io();
+    const socket = io('http://localhost:5000'); 
 
     // Listen for batch events carrying an array of chunks
     socket.on('partial_transcript_batch', (data) => {
@@ -74,12 +74,12 @@ function App() {
 
   const handleDelete = async (filename) => {
     try {
-        const response = await fetch(`http://localhost:5000/delete_file/${filename}`, {
+        const response = await fetch(`/delete_file/${filename}`, {
             method: 'DELETE',
         });
 
         if (response.ok) {
-            setFiles(files.filter((doc) => doc !== filename));
+            setDocuments((prevDocuments) => prevDocuments.filter((doc) => doc !== filename));
             alert('File deleted successfully');
         } else {
             const data = await response.json();
@@ -102,12 +102,10 @@ function App() {
           {uploadMessage && <p>{uploadMessage}</p>}
         </div>
 
-        {/* Button to Add Document */}
         <div className="addButton">
           <button onClick={() => addDoc(`doc${documents.length + 1}`)}>Add Document</button>
         </div>
 
-        {/* Document List */}
         <div className="Doclist">
           <ul>
             {documents.map((doc, index) => (
@@ -117,7 +115,6 @@ function App() {
           </ul>
         </div>
 
-        {/* Real-time transcription logs */}
         <div className="Transcripts" style={{ marginTop: '2rem' }}>
           <h3>Transcription Output:</h3>
           {transcripts.map((line, idx) => (
