@@ -1,6 +1,10 @@
 import './App.css';
 import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import Confirmable from './util/confirmable';
+import 'primereact/resources/themes/saga-blue/theme.css';  // theme
+import 'primereact/resources/primereact.min.css';          // core css
+import 'primeicons/primeicons.css';                        // icons 
 
 function App() {
   const [documents, setDocuments] = useState([]);
@@ -80,7 +84,6 @@ function App() {
 
         if (response.ok) {
             setDocuments((prevDocuments) => prevDocuments.filter((doc) => doc !== filename));
-            alert('File deleted successfully');
         } else {
             const data = await response.json();
             alert(`Error deleting file: ${data.message}`);
@@ -110,7 +113,10 @@ function App() {
           <ul>
             {documents.map((doc, index) => (
               <li key={index}>{doc}
-                <div className="DeleteButton"> <button onClick={() => handleDelete(doc)}> Delete Document </button> </div></li>
+                <div className="DeleteButton"> 
+                  <Confirmable onDelete={() => handleDelete(doc)} /> 
+                </div>
+              </li>
             ))}
           </ul>
         </div>

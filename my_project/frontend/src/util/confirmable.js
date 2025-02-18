@@ -3,7 +3,7 @@ import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 
-export default function DeleteButton({ onDelete }) {
+export default function Confirmable({ onDelete }) {
     const toast = useRef(null);
 
     const accept = () => {
@@ -18,7 +18,7 @@ export default function DeleteButton({ onDelete }) {
     const confirmDelete = (event) => {
         confirmPopup({
             target: event.currentTarget,
-            message: 'Do you want to delete this Doc?',
+            message: 'Do you want to delete this doc?',
             icon: 'pi pi-info-circle',
             defaultFocus: 'reject',
             acceptClassName: 'p-button-danger',
