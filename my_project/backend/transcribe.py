@@ -4,7 +4,8 @@ import math
 import os
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 
-torchaudio.set_audio_backend("sox_io")
+#change the audio backend to sox_io if on mac
+torchaudio.set_audio_backend("soundfile")
 
 LOCAL_MODEL_PATH = os.path.join(os.getcwd(), "s2t-small-librispeech-asr")
 

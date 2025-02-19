@@ -30,7 +30,6 @@ def upload_audio():
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    app.logger.info(f"Received file: {audio_file.filename}")
     file_ext = audio_file.filename.rsplit('.', 1)[-1].lower()
     unique_name = f"{uuid.uuid4()}.{file_ext}"
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
@@ -38,13 +37,34 @@ def upload_audio():
     try:
         audio_file.save(save_path)
         app.logger.info(f"Saved file to: {save_path}")
+        # Start background transcription
+        socketio.start_background_task(background_transcription, save_path)
     except Exception as e:
         app.logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
 
-    # Start transcription in the background
-    socketio.start_background_task(target=background_transcription, file_path=save_path)
-    return jsonify({"message": "File received", "file_path": save_path})
+    # Return the actual filename used
+    return jsonify({
+        "message": "File received",
+        "file_path": save_path,
+        "filename": unique_name
+    })
+
+
+@app.route('/delete_file/<filename>', methods=['DELETE'])
+def delete_file(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            app.logger.info(f"Deleted file: {file_path}")
+            return jsonify({'message': 'File deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'File not found'}), 404
+    except Exception as e:
+        app.logger.error(f"Error deleting file: {e}")
+        return jsonify({'message': f'Error deleting file: {str(e)}'}), 500
+
 
 def background_transcription(file_path):
     try:
@@ -73,12 +93,12 @@ def background_transcription(file_path):
         socketio.emit('final_transcript', {'done': True})
     except Exception as e:
         app.logger.error(f"Error during transcription: {e}")
-    finally:
-        try:
-            os.remove(file_path)
-            app.logger.info(f"Deleted file: {file_path}")
-        except Exception as e:
-            app.logger.error(f"Error deleting file: {e}")
+    #finally:
+        #try:
+            #os.remove(file_path)
+           # app.logger.info(f"Deleted file: {file_path}")
+        #except Exception as e:
+           # app.logger.error(f"Error deleting file: {e}")
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
