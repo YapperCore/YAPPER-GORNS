@@ -69,6 +69,7 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+<<<<<<< HEAD
 /yapper/backend/uploads
 
 INPUT_AUDIO_TEST/
@@ -77,3 +78,6 @@ OUTPUT_TEST/
 
 .venv/
 venv
+=======
+my_project/backend/uploads
+>>>>>>> origin/Confirmation-Delete-Window
