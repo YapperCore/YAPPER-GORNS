@@ -7,4 +7,4 @@ torch==2.0.1
 torchaudio==2.0.1
 transformers==4.29.0
 # Uncomment if needed:
-# Flask-Cors==3.0.10
+Flask-Cors==3.0.10
