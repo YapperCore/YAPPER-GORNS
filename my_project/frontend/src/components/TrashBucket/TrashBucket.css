@@ -1,0 +1,55 @@
+.TrashBucket {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.TrashBucket h3 {
+  margin-bottom: 1rem;
+  color: #343a40;
+}
+
+.trash-list {
+  padding: 0 20px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-gap: 1em;
+  list-style-type: none;
+}
+
+.trash-item {
+  padding: 10px;
+  background-color: #090909;
+  border-radius: 5px;
+}
+
+.trash-item:hover {
+  background-color: #ffffff;
+  color: #000;
+}
+
+.trash-filename {
+  color: #495057;
+  font-weight: 500;
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+}
+
+p {
+  color: #495057;
+  font-weight: 500;
+  margin-top: 1rem;
+}

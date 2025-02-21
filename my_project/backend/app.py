@@ -17,7 +17,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Ensure the uploads folder exists
 UPLOAD_FOLDER = 'uploads'
+TRASH_FOLDER = 'trash'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TRASH_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
@@ -54,9 +56,11 @@ def upload_audio():
 @app.route('/delete_file/<filename>', methods=['DELETE'])
 def delete_file(filename):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
+    trashsave_path = os.path.join(TRASH_FOLDER, filename)
+
     try:
         if os.path.exists(file_path):
-            os.remove(file_path)
+            os.rename(file_path, trashsave_path)
             app.logger.info(f"Deleted file: {file_path}")
             return jsonify({'message': 'File deleted successfully'}), 200
         else:
@@ -64,6 +68,15 @@ def delete_file(filename):
     except Exception as e:
         app.logger.error(f"Error deleting file: {e}")
         return jsonify({'message': f'Error deleting file: {str(e)}'}), 500
+
+@app.route('/trash-files', methods=['GET'])
+def get_trash_files():
+    try:
+        files = os.listdir(TRASH_FOLDER)
+        return jsonify({'files': files}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching trash files: {e}")
+        return jsonify({'error': 'Failed to fetch trash files'}), 500
 
 
 def background_transcription(file_path):
