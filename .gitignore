@@ -70,3 +70,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 my_project/backend/uploads
+notes.txt
+
+OUTPUT_TEST/
+
+INPUT_AUDIO_TEST/

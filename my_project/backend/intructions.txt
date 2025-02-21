@@ -2,3 +2,9 @@
 git lfs install
 
 git clone https://huggingface.co/facebook/s2t-small-librispeech-asr
+
+OTHER REQUIREMENTS (based on MacOS):
+- Rust Complier
+- Python 3.10 ir Python 3.9
+- torch 2.0
+- torchaudio 2.0
