@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './TrashBucket.css';
+import { Restore } from '../../util/confirmable';
+import 'primereact/resources/themes/saga-blue/theme.css';  
+import 'primereact/resources/primereact.min.css';          
+import 'primeicons/primeicons.css';   
 
 const TrashBucket = () => {
   const [trashFiles, setTrashFiles] = useState([]);
@@ -29,6 +33,7 @@ const TrashBucket = () => {
         {trashFiles.map((file, index) => (
           <li key={index} className="trash-item">
             <span className="trash-filename">{file}</span>
+            <Restore />
           </li>
         ))}
       </ul>

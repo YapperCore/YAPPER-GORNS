@@ -69,8 +69,11 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-my_project/backend/uploads
-my_project/backend/trash
+
+
+/backend/uploads
+/backend/trash
+
 notes.txt
 
 OUTPUT_TEST/
