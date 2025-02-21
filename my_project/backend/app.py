@@ -19,6 +19,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 UPLOAD_FOLDER = 'uploads'
 TRASH_FOLDER = 'trash'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TRASH_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
@@ -69,13 +70,13 @@ def delete_file(filename):
         return jsonify({'message': f'Error deleting file: {str(e)}'}), 500
 
 @app.route('/trash-files', methods=['GET'])
-def upload_trash(filename):
-    file_path = os.path.join(TRASH_FOLDER, filename)
-    return jsonify({
-        "message": "File received",
-        "file_path": file_path,
-        "filename": filename
-    })
+def get_trash_files():
+    try:
+        files = os.listdir(TRASH_FOLDER)
+        return jsonify({'files': files}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching trash files: {e}")
+        return jsonify({'error': 'Failed to fetch trash files'}), 500
 
 
 def background_transcription(file_path):
