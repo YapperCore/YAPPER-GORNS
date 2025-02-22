@@ -93,6 +93,15 @@ def restore_file(filename):
     except Exception as e:
         app.logger.error(f"Error restoring file: {e}")
         return jsonify({'message': f'Error restoring file: {str(e)}'}), 500
+
+@app.route('/upload-files', methods=['GET'])
+def get_upload_files():
+    try:
+        files = os.listdir(UPLOAD_FOLDER)
+        return jsonify({'files': files}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching upload files: {e}")
+        return jsonify({'error': 'Failed to fetch upload files'}), 500
     
 def background_transcription(file_path):
     try:
