@@ -28,6 +28,22 @@ function App() {
       setTranscripts((prev) => [...prev, "Transcription complete."]);
     });
 
+    const fetchUploadFiles = async () => {
+      try {
+        const response = await fetch('/upload-files');
+        if (response.ok) {
+          const data = await response.json();
+          setDocuments(data.files);
+        } else {
+          console.error('Failed to fetch upload files');
+        }
+      } catch (error) {
+        console.error('Error fetching upload files:', error);
+      }
+    };
+
+    fetchUploadFiles();
+
     return () => {
       socket.disconnect();
     };

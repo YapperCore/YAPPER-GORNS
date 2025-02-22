@@ -35,3 +35,36 @@ export default function Confirmable({ onDelete }) {
         </>
     );
 }
+
+export function Restore({ onRestore }) {
+    const toast = useRef(null);
+
+    const accept = () => {
+        toast.current?.show({ severity: 'info', summary: 'Confirmed Restore', detail: 'Doc has been restored', life: 3000 });
+        onRestore();
+    };
+
+    const reject = () => {
+        toast.current?.show({ severity: 'warn', summary: 'Rejected Restore', detail: 'Doc not restored', life: 3000 });
+    };
+
+    const confirmRestore = (event) => {
+        confirmPopup({
+            target: event.currentTarget,
+            message: 'Do you want to restore this doc?',
+            icon: 'pi pi-info-circle',
+            defaultFocus: 'accept',
+            acceptClassName: 'p-button-success',
+            accept,
+            reject
+        });
+    };
+
+    return (
+        <>
+            <Toast ref={toast} />
+            <ConfirmPopup />
+            <Button onClick={confirmRestore} icon="pi pi-check" label="Restore" className="p-button-success"></Button>
+        </>
+    );
+}
