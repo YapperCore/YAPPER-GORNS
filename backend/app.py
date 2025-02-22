@@ -78,7 +78,22 @@ def get_trash_files():
         app.logger.error(f"Error fetching trash files: {e}")
         return jsonify({'error': 'Failed to fetch trash files'}), 500
 
+@app.route('/restore_file/<filename>', methods=['GET'])
+def restore_file(filename):
+    file_path = os.path.join(TRASH_FOLDER, filename)
+    upload_path = os.path.join(UPLOAD_FOLDER, filename)
 
+    try:
+        if os.path.exists(file_path):
+            os.rename(file_path, upload_path)
+            app.logger.info(f"Deleted file: {file_path}")
+            return jsonify({'message': 'File restored successfully'}), 200
+        else:
+            return jsonify({'message': 'File not found'}), 404
+    except Exception as e:
+        app.logger.error(f"Error restoring file: {e}")
+        return jsonify({'message': f'Error restoring file: {str(e)}'}), 500
+    
 def background_transcription(file_path):
     try:
         chunk_buffer = []
