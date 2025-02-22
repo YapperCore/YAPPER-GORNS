@@ -70,9 +70,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-
 /backend/uploads
 /backend/trash
+/frontend/src/components/TrashBucket/TrashBucket.test.js
 
 notes.txt
 
