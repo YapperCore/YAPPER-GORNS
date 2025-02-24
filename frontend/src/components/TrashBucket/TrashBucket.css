@@ -40,19 +40,19 @@
   width: 100%;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-gap: 0.5em; /* Reduce gap between items */
+  grid-gap: 0.5em; 
   list-style-type: none;
 }
 
 .trash-item {
-  padding: 5px; /* Reduce padding */
+  padding: 5px; 
   background-color: #090909;
   border-radius: 5px;
   color: white;
 }
 
 .trash-item:hover {
-  background-color: #54525b; /* Change hover color */
+  background-color: #54525b; 
   color: #fff;
 }
 

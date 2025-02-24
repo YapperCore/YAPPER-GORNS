@@ -32,9 +32,13 @@ def upload_audio():
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    file_ext = audio_file.filename.rsplit('.', 1)[-1].lower()
-    unique_name = f"{uuid.uuid4()}.{file_ext}"
-    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    file_name_with_ext = audio_file.filename
+    display_name = os.path.splitext(file_name_with_ext)[0]  # Remove file extension
+    save_path = os.path.join(UPLOAD_FOLDER, file_name_with_ext)
+
+    if os.path.exists(save_path):
+        app.logger.error("File already exists.")
+        return jsonify({"error": "File already exists"}), 400
 
     try:
         audio_file.save(save_path)
@@ -49,9 +53,9 @@ def upload_audio():
     return jsonify({
         "message": "File received",
         "file_path": save_path,
-        "filename": unique_name
+        "filename": file_name_with_ext,
+        "displayname": display_name
     })
-
 
 @app.route('/delete_file/<filename>', methods=['DELETE'])
 def delete_file(filename):
@@ -86,7 +90,7 @@ def restore_file(filename):
     try:
         if os.path.exists(file_path):
             os.rename(file_path, upload_path)
-            app.logger.info(f"Deleted file: {file_path}")
+            app.logger.info(f"Restored file: {file_path}")
             return jsonify({'message': 'File restored successfully'}), 200
         else:
             return jsonify({'message': 'File not found'}), 404
@@ -98,7 +102,9 @@ def restore_file(filename):
 def get_upload_files():
     try:
         files = os.listdir(UPLOAD_FOLDER)
-        return jsonify({'files': files}), 200
+        # Return both displayname and filename
+        files_info = [{'displayname': os.path.splitext(file)[0], 'filename': file} for file in files]
+        return jsonify({'files': files_info}), 200
     except Exception as e:
         app.logger.error(f"Error fetching upload files: {e}")
         return jsonify({'error': 'Failed to fetch upload files'}), 500
@@ -117,25 +123,17 @@ def background_transcription(file_path):
             # When we have 5 chunks, emit them immediately
             if len(chunk_buffer) >= 5:
                 socketio.emit('partial_transcript_batch', {'chunks': chunk_buffer})
-                # Yield control to allow the event to be sent
                 socketio.sleep(0.1)
-                chunk_buffer = []  # Reset the buffer
+                chunk_buffer = []  
 
-        # Emit any remaining chunks (if fewer than 5)
+
         if chunk_buffer:
             socketio.emit('partial_transcript_batch', {'chunks': chunk_buffer})
             socketio.sleep(0.1)
 
-        # Finally, signal that transcription is complete
         socketio.emit('final_transcript', {'done': True})
     except Exception as e:
         app.logger.error(f"Error during transcription: {e}")
-    #finally:
-        #try:
-            #os.remove(file_path)
-           # app.logger.info(f"Deleted file: {file_path}")
-        #except Exception as e:
-           # app.logger.error(f"Error deleting file: {e}")
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

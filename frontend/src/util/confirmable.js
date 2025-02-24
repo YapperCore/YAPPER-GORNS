@@ -6,9 +6,13 @@ import { Button } from 'primereact/button';
 export default function Confirmable({ onDelete }) {
     const toast = useRef(null);
 
-    const accept = () => {
-        toast.current?.show({ severity: 'info', summary: 'Confirmed', detail: 'You have accepted', life: 3000 });
-        onDelete();
+    const accept = async () => {
+        try {
+            await onDelete();
+            toast.current?.show({ severity: 'info', summary: 'Confirmed', detail: 'Document deleted successfully', life: 3000 });
+        } catch (error) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete document', life: 3000 });
+        }
     };
 
     const reject = () => {
@@ -18,7 +22,7 @@ export default function Confirmable({ onDelete }) {
     const confirmDelete = (event) => {
         confirmPopup({
             target: event.currentTarget,
-            message: 'Do you want to delete this doc?',
+            message: 'Do you want to delete this document?',
             icon: 'pi pi-info-circle',
             defaultFocus: 'reject',
             acceptClassName: 'p-button-danger',
@@ -39,19 +43,23 @@ export default function Confirmable({ onDelete }) {
 export function Restore({ onRestore }) {
     const toast = useRef(null);
 
-    const accept = () => {
-        toast.current?.show({ severity: 'info', summary: 'Confirmed Restore', detail: 'Doc has been restored', life: 3000 });
-        onRestore();
+    const accept = async () => {
+        try {
+            await onRestore();
+            toast.current?.show({ severity: 'info', summary: 'Confirmed Restore', detail: 'Document restored successfully', life: 3000 });
+        } catch (error) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to restore document', life: 3000 });
+        }
     };
 
     const reject = () => {
-        toast.current?.show({ severity: 'warn', summary: 'Rejected Restore', detail: 'Doc not restored', life: 3000 });
+        toast.current?.show({ severity: 'warn', summary: 'Rejected Restore', detail: 'Document not restored', life: 3000 });
     };
 
     const confirmRestore = (event) => {
         confirmPopup({
             target: event.currentTarget,
-            message: 'Do you want to restore this doc?',
+            message: 'Do you want to restore this document?',
             icon: 'pi pi-info-circle',
             defaultFocus: 'accept',
             acceptClassName: 'p-button-success',

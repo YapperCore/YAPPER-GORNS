@@ -28,53 +28,53 @@
   width: 100%;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-gap: 0.5em; /* Reduce gap between items */
+  grid-gap: 0.5em; 
   list-style-type: none;
 }
 
 .Doclist li {
-  padding: 5px; /* Reduce padding */
+  padding: 5px; 
   background-color: #090909;
   border-radius: 5px;
   color: white;
 }
 
 .Doclist li:hover {
-  background-color: #54525b; /* Change hover color */
+  background-color: #54525b; 
   color: #fff;
 }
 
 .Input-Form .rounded-input {
   border-radius: 12px;
-  padding: 5px; /* Reduce padding */
+  padding: 5px; 
   border: 1px solid #ccc;
 }
 
 .Input-Form.rounded-box {
   border-radius: 12px;
-  padding: 10px; /* Reduce padding */
+  padding: 10px; 
   border: 2px solid #ccc;
   background-color: #f9f9f9;
   margin-bottom: 20px;
-  color: #333; /* Change to a darker color for readability */
+  color: #333; 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 20px; /* Add padding to separate from the navbar */
+  margin-top: 20px; 
 }
 
 .file-label {
-  margin-right: 0.5rem; /* Reduce margin */
+  margin-right: 0.5rem; 
 }
 
 .input-container {
   border: 2px dashed #ccc;
   border-radius: 12px;
-  padding: 10px; /* Reduce padding */
+  padding: 10px; 
   cursor: pointer;
   text-align: center;
   flex-grow: 1;
-  margin-right: 0.5rem; /* Reduce margin */
+  margin-right: 0.5rem; 
 }
 
 .input-container:hover {
@@ -82,18 +82,18 @@
 }
 
 .input-placeholder {
-  color: #333; /* Change to a darker color for readability */
+  color: #333; 
 }
 
 .modern-button {
-  background-color: #007BFF; /* Blue */
+  background-color: #007BFF; 
   border: none;
   color: white;
-  padding: 10px 20px; /* Reduce padding */
+  padding: 10px 20px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 14px; /* Reduce font size */
+  font-size: 14px;
   margin: 4px 2px;
   cursor: pointer;
   border-radius: 12px;
