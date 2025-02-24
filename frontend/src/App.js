@@ -11,6 +11,7 @@ function App() {
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [transcripts, setTranscripts] = useState([]);
+  const [fileName, setFileName] = useState("Click here to select a file");
 
   useEffect(() => {
     const socket = io('http://localhost:5000'); 
@@ -49,15 +50,10 @@ function App() {
     };
   }, []);
 
-  const addDoc = (docName) => {
-    setDocuments((prevDocuments) => [
-      ...prevDocuments,
-      docName
-    ]);
-  };
-
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    setFileName(selectedFile ? selectedFile.name : "Click here to select a file");
   };
 
   const handleUpload = async () => {
@@ -81,6 +77,10 @@ function App() {
 
             // Save the actual filename from backend
             setDocuments((prevDocuments) => [...prevDocuments, data.filename]);
+
+            // Clear the file input and reset the file name
+            setFile(null);
+            setFileName("Click here to select a file");
         } else {
             const errorData = await res.json();
             setUploadMessage(errorData.error || 'Upload failed');
@@ -101,7 +101,7 @@ function App() {
         if (response.ok) {
             setDocuments((prevDocuments) => prevDocuments.filter((doc) => doc !== filename));
         } else {
-            const data = await response.json();
+            const data = await res.json();
             alert(`Error deleting file: ${data.message}`);
         }
     } catch (error) {
@@ -114,27 +114,27 @@ function App() {
     <div className="App">
       <header className="App-header">
         {/* Input Form */}
-        <div className="Input-Form">
-          <label htmlFor="myfile">Select a file: </label>
-          <input type="file" id="myfile" name="myfile" onChange={handleFileChange} />
-          <button onClick={handleUpload}>Submit</button>
-          {uploadMessage && <p>{uploadMessage}</p>}
+        <div className="Input-Form rounded-box">
+          <label htmlFor="myfile" className="file-label">Select a file: </label>
+          <div onClick={() => document.getElementById('myfile').click()} className="input-container">
+            <input type="file" id="myfile" name="myfile" onChange={handleFileChange} className="rounded-input" style={{ display: 'none' }} />
+            <span className="input-placeholder">{fileName}</span>
+          </div>
+          <button onClick={handleUpload} className="modern-button">Submit</button>
         </div>
 
-        <div className="addButton">
-          <button onClick={() => addDoc(`doc${documents.length + 1}`)}>Add Document</button>
-        </div>
-
-        <div className="Doclist">
-          <ul>
-            {documents.map((doc, index) => (
-              <li key={index}>{doc}
-                <div className="DeleteButton"> 
-                  <Confirmable onDelete={() => handleDelete(doc)} /> 
-                </div>
-              </li>
-            ))}
-          </ul>
+        <div className="Doclist-container">
+          <div className="Doclist">
+            <ul>
+              {documents.map((doc, index) => (
+                <li key={index}>{doc}
+                  <div className="DeleteButton"> 
+                    <Confirmable onDelete={() => handleDelete(doc)} /> 
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="Transcripts" style={{ marginTop: '2rem' }}>
