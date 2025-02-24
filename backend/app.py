@@ -32,13 +32,9 @@ def upload_audio():
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    file_name_with_ext = audio_file.filename
-    display_name = os.path.splitext(file_name_with_ext)[0]  # Remove file extension
-    save_path = os.path.join(UPLOAD_FOLDER, file_name_with_ext)
-
-    if os.path.exists(save_path):
-        app.logger.error("File already exists.")
-        return jsonify({"error": "File already exists"}), 400
+    file_ext = audio_file.filename.rsplit('.', 1)[-1].lower()
+    unique_name = f"{uuid.uuid4()}.{file_ext}"
+    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
 
     try:
         audio_file.save(save_path)
@@ -53,8 +49,7 @@ def upload_audio():
     return jsonify({
         "message": "File received",
         "file_path": save_path,
-        "filename": file_name_with_ext,
-        "displayname": display_name
+        "filename": unique_name
     })
 
 @app.route('/delete_file/<filename>', methods=['DELETE'])
@@ -102,9 +97,7 @@ def restore_file(filename):
 def get_upload_files():
     try:
         files = os.listdir(UPLOAD_FOLDER)
-        # Return both displayname and filename
-        files_info = [{'displayname': os.path.splitext(file)[0], 'filename': file} for file in files]
-        return jsonify({'files': files_info}), 200
+        return jsonify({'files': files}), 200
     except Exception as e:
         app.logger.error(f"Error fetching upload files: {e}")
         return jsonify({'error': 'Failed to fetch upload files'}), 500

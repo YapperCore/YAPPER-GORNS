@@ -76,8 +76,7 @@ function App() {
             const data = await res.json();
             setUploadMessage(data.message || 'Upload succeeded');
 
-            // Save the actual filename and displayname from backend
-            setDocuments((prevDocuments) => [...prevDocuments, { filename: data.filename, displayname: data.displayname }]);
+            setDocuments((prevDocuments) => [...prevDocuments, data.filename]);
 
             // Clear the file input and reset the file name
             setFile(null);
@@ -103,9 +102,9 @@ function App() {
         });
 
         if (response.ok) {
-            setDocuments((prevDocuments) => prevDocuments.filter((doc) => doc.filename !== filename));
+          setDocuments((prevDocuments) => prevDocuments.filter((doc) => doc !== filename));
         } else {
-            const data = await response.json();
+            const data = await res.json();
             alert(`Error deleting file: ${data.message}`);
         }
     } catch (error) {
@@ -131,9 +130,9 @@ function App() {
           <div className="Doclist">
             <ul>
               {documents.map((doc, index) => (
-                <li key={index}>{doc.displayname}
+                <li key={index}>{doc}
                   <div className="DeleteButton"> 
-                    <Confirmable onDelete={() => handleDelete(doc.filename)} /> 
+                    <Confirmable onDelete={() => handleDelete(doc)} /> 
                   </div>
                 </li>
               ))}
