@@ -1,3 +1,28 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.TrashBucket-container {
+  margin-top: 20px;
+  padding: 20px;
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .TrashBucket {
   padding: 1rem;
   background-color: #f8f9fa;
@@ -10,28 +35,29 @@
   color: #343a40;
 }
 
-.trash-list {
-  padding: 0 20px;
+.TrashBucket ul {
+  padding: 0;
   width: 100%;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-gap: 1em;
+  grid-gap: 0.5em; /* Reduce gap between items */
   list-style-type: none;
 }
 
 .trash-item {
-  padding: 10px;
+  padding: 5px; /* Reduce padding */
   background-color: #090909;
   border-radius: 5px;
+  color: white;
 }
 
 .trash-item:hover {
-  background-color: #ffffff;
-  color: #000;
+  background-color: #54525b; /* Change hover color */
+  color: #fff;
 }
 
 .trash-filename {
-  color: #495057;
+  color: #fefeff;
   font-weight: 500;
 }
 

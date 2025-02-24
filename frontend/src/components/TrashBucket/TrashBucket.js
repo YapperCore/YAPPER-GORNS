@@ -45,16 +45,22 @@ const TrashBucket = () => {
   }, []);
 
   return (
-    <div className="TrashBucket">
-      <h3>Trash Bucket</h3>
-      <ul className="trash-list">
-        {trashFiles.map((file, index) => (
-          <li key={index} className="trash-item">
-            <span className="trash-filename">{file}</span>
-            <Restore onRestore={() => handleRestore(file)} />
-          </li>
-        ))}
-      </ul>
+    <div className="App">
+      <header className="App-header">
+        <h3>Trash Bucket</h3>
+        <div className="TrashBucket-container">
+          <div className="TrashBucket">
+            <ul className="trash-list">
+              {trashFiles.map((file, index) => (
+                <li key={index} className="trash-item">
+                  <span className="trash-filename">{file}</span>
+                  <Restore onRestore={() => handleRestore(file)} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </header>
     </div>
   );
 };
