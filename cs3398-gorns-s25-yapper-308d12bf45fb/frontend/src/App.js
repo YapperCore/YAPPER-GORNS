@@ -3,22 +3,20 @@ import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
 /**
- * This is used by the Home page to show partial transcripts and let user upload.
- * We also show "Docs in session" but we only do the doc listing + links here.
- * The "Delete" of doc is done via /api/docs/<docId> in the Docs page
- * or you could do it here if you want. 
+ * The Home page content for uploading audio => doc => partial transcripts
+ * plus listing docs (but we don't delete from here, we do that in /docs).
  */
 function App() {
   const [file, setFile] = useState(null);
-  const [msg, setMsg] = useState("");
-  const [transcripts, setTranscripts] = useState([]);
+  const [message, setMessage] = useState("");
   const [docs, setDocs] = useState([]);
+  const [transcripts, setTranscripts] = useState([]);
 
   useEffect(() => {
     const socket = io();
     socket.on('partial_transcript_batch', data => {
       if(!data || !data.chunks) return;
-      const lines = data.chunks.map(ch =>
+      const lines = data.chunks.map(ch => 
         \`[Doc \${data.doc_id}] chunk \${ch.chunk_index}/\${ch.total_chunks}: \${ch.text}\`
       );
       setTranscripts(prev => [...prev, ...lines]);
@@ -44,7 +42,7 @@ function App() {
         setDocs(data);
       }
     } catch(err) {
-      console.error("Docs fetch error:", err);
+      console.error("Doc fetch err:", err);
     }
   };
 
@@ -54,7 +52,7 @@ function App() {
 
   const handleUpload = async () => {
     if(!file) {
-      setMsg("No file selected!");
+      setMessage("No file selected!");
       return;
     }
     try {
@@ -66,39 +64,35 @@ function App() {
       });
       if(res.ok) {
         const data = await res.json();
-        setMsg(data.message || "File uploaded successfully");
+        setMessage(data.message || "Upload success");
         fetchDocs();
       } else {
         const eData = await res.json();
-        setMsg(eData.error || "Upload failed");
+        setMessage(eData.error || "Upload failed");
       }
     } catch(err) {
       console.error("Upload error:", err);
-      setMsg("Upload failed");
+      setMessage("Upload failed");
     }
   };
 
   return (
     <div className="App" style={{ padding:'1rem' }}>
-      <h2>Upload & Transcription (Home)</h2>
+      <h2>Home - Upload Audio => Doc => Partial Transcripts</h2>
       <div>
         <input type="file" onChange={handleFileChange} />
         <button onClick={handleUpload}>Upload</button>
       </div>
-      <p>{msg}</p>
+      <p>{message}</p>
 
       <hr/>
       <div>
-        <h3>Docs in Session:</h3>
+        <h3>Docs in Session</h3>
         <ul>
-          {docs.map(doc => (
-            <li key={doc.id}>
-              {doc.name}
-              {doc.audioFilename ? \` (Audio: \${doc.audioFilename}\${doc.audioTrashed?' [TRASHED]':''})\` : ''}
-              &nbsp;|&nbsp;
-              <a href={\`/transcription/\${doc.id}\`} target="_blank" rel="noreferrer">Transcription</a>
-              &nbsp;|&nbsp;
-              <a href={\`/docs/edit/\${doc.id}\`} target="_blank" rel="noreferrer">Edit</a>
+          {docs.map(d => (
+            <li key={d.id}>
+              {d.name}
+              {d.audioFilename ? \` (Audio: \${d.audioFilename}\${d.audioTrashed?' [TRASHED]':''})\` : ''}
             </li>
           ))}
         </ul>
@@ -106,8 +100,8 @@ function App() {
 
       <hr/>
       <div>
-        <h3>Partial Transcript Logs</h3>
-        {transcripts.map((line, i) => <div key={i}>{line}</div>)}
+        <h3>Partial Transcript Logs:</h3>
+        {transcripts.map((t,i) => <div key={i}>{t}</div>)}
       </div>
     </div>
   );

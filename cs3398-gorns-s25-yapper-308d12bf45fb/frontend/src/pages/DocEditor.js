@@ -10,10 +10,10 @@ export default function DocEditor() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDoc();
+    loadDoc();
   }, [docId]);
 
-  const fetchDoc = async () => {
+  const loadDoc = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/docs/${docId}`);
@@ -23,7 +23,7 @@ export default function DocEditor() {
         setContent(data.content || '');
       }
     } catch(err) {
-      console.error("Fetch doc error:", err);
+      console.error("Load doc error:", err);
     }
     setLoading(false);
   };
@@ -33,8 +33,11 @@ export default function DocEditor() {
     try {
       const res = await fetch(`/api/docs/${docId}`, {
         method:'PUT',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ name: doc.name, content })
+        headers:{ 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: doc.name,
+          content
+        })
       });
       if(!res.ok) {
         console.error("Error saving doc");
@@ -45,12 +48,12 @@ export default function DocEditor() {
   };
 
   if(loading) return <div style={{ padding:'1rem' }}>Loading doc...</div>;
-  if(!doc) return <div style={{ padding:'1rem' }}>Doc not found.</div>;
+  if(!doc) return <div style={{ padding:'1rem' }}>Doc not found</div>;
 
   return (
     <div style={{ padding:'1rem' }}>
-      <h2>Edit Doc: {doc.name}</h2>
-      <ReactQuill theme="snow" value={content} onChange={setContent} style={{ background:'#fff', minHeight:'300px' }}/>
+      <h2>Edit {doc.name}</h2>
+      <ReactQuill theme="snow" value={content} onChange={setContent} style={{ background:'#fff', minHeight:'200px' }}/>
       <br/>
       <button onClick={handleSave}>Save</button>
     </div>

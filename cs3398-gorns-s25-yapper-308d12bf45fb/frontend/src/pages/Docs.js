@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Confirmable from '../util/confirmable';
 
-/**
- * Lists doc store with ability to "Delete" => doc is removed + audio => trash
- */
 export default function Docs() {
   const [docs, setDocs] = useState([]);
 
@@ -20,7 +17,7 @@ export default function Docs() {
         setDocs(data);
       }
     } catch(err) {
-      console.error("Error fetching docs:", err);
+      console.error("Docs fetch error:", err);
     }
   };
 
@@ -31,7 +28,7 @@ export default function Docs() {
         fetchDocs();
       } else {
         const d = await res.json();
-        alert("Delete doc error: " + d.message);
+        alert("Delete doc error: " + (d.message || d.error));
       }
     } catch(err) {
       console.error("Delete doc error:", err);
@@ -43,9 +40,9 @@ export default function Docs() {
       <h2>Docs Page</h2>
       <ul>
         {docs.map(doc => (
-          <li key={doc.id} style={{ marginBottom:'6px' }}>
-            <b>{doc.name}</b> 
-            { doc.audioFilename ? \` (Audio: \${doc.audioFilename}\${doc.audioTrashed?' [TRASHED]':''})\` : '' }
+          <li key={doc.id} style={{ margin:'6px 0' }}>
+            <strong>{doc.name}</strong>
+            {doc.audioFilename ? \` (Audio: \${doc.audioFilename}\${doc.audioTrashed?' [TRASHED]':''})\` : ''}
             &nbsp;|&nbsp;
             <Link to={`/transcription/${doc.id}`} target="_blank" rel="noreferrer">Transcription</Link>
             &nbsp;|&nbsp;

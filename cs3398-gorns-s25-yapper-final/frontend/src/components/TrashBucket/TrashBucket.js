@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TrashBucket.css';
 import { Restore, PermDelete } from '../../util/confirmable';
 
@@ -7,40 +7,40 @@ export default function TrashBucket() {
 
   useEffect(() => {
     fetch('/trash-files')
-      .then(res => res.json())
+      .then(r => r.json())
       .then(data => {
-        if(data.files) {
+        if(data.files){
           setFiles(data.files);
         }
       })
-      .catch(err => console.error("Trash fetch error:", err));
+      .catch(err => console.error("Error fetching trash files:", err));
   }, []);
 
   const handleRestore = async (filename) => {
     try {
-      const res = await fetch(`/restore_file/${filename}`, { method:'GET' });
-      if(res.ok) {
+      const res = await fetch(`/restore_file/${filename}`, { method: 'GET' });
+      if (res.ok) {
         setFiles(prev => prev.filter(f => f !== filename));
       } else {
         const d = await res.json();
         alert("Restore error: " + d.message);
       }
-    } catch(err) {
-      console.error("Restore file err:", err);
+    } catch (err) {
+      console.error("Restore file error:", err);
     }
   };
 
   const handlePermDelete = async (filename) => {
     try {
-      const res = await fetch(`/permanent_delete/${filename}`, { method:'DELETE' });
-      if(res.ok) {
+      const res = await fetch(`/permanent_delete/${filename}`, { method: 'DELETE' });
+      if (res.ok) {
         setFiles(prev => prev.filter(f => f !== filename));
       } else {
         const d = await res.json();
-        alert("Perm delete error: " + d.message);
+        alert("Permanent delete error: " + d.message);
       }
-    } catch(err) {
-      console.error("Perm delete err:", err);
+    } catch (err) {
+      console.error("Permanent delete error:", err);
     }
   };
 

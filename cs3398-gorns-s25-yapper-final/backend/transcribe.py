@@ -29,12 +29,11 @@ def chunked_transcribe_audio(audio_path, chunk_sec=5, model_path=LOCAL_MODEL_PAT
     num_chunks = math.ceil(total_len_sec / chunk_sec)
 
     for i in range(num_chunks):
-        start = int(i*chunk_sec*sr)
-        end = int((i+1)*chunk_sec*sr)
+        start = int(i * chunk_sec * sr)
+        end = int((i+1) * chunk_sec * sr)
         chunk = signal[start:end]
         if chunk.shape[0] == 0:
             break
-
         inputs = processor(chunk.numpy(), sampling_rate=sr, return_tensors="pt")
         with torch.no_grad():
             gen_ids = model.generate(inputs["input_features"], attention_mask=inputs["attention_mask"])

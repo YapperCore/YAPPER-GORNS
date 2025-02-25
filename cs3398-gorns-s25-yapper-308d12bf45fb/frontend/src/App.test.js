@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders upload button', () => {
+test('renders partial transcripts heading', () => {
   render(<App />);
-  const uploadButton = screen.getByText(/Upload/i);
-  expect(uploadButton).toBeInTheDocument();
+  const heading = screen.getByText(/Partial Transcript Logs:/i);
+  expect(heading).toBeInTheDocument();
 });

@@ -15,19 +15,20 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 UPLOAD_FOLDER = 'uploads'
 TRASH_FOLDER = 'trash'
+DOC_STORE_FILE = 'doc_store.json'
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TRASH_FOLDER, exist_ok=True)
 
-DOC_STORE_FILE = 'doc_store.json'
-
-# We'll keep an in-memory doc store, but also load/save to doc_store.json
-# doc format:
+# In-memory doc store with persistence.
+# Each doc is stored as:
 # {
-#   "id": "...",
-#   "name": "...",
-#   "content": "...",
-#   "audioFilename": "...",
-#   "audioTrashed": false
+#   "id": <doc id>,
+#   "name": <doc name>,
+#   "content": <text content>,
+#   "audioFilename": <unique filename used for storage>,
+#   "originalFilename": <original file name from upload>,
+#   "audioTrashed": <boolean>
 # }
 doc_store = {}
 doc_counter = 0
@@ -59,10 +60,10 @@ load_doc_store()
 
 @app.route('/')
 def index():
-    return "Backend with doc store and integrated trash referencing system."
+    return "Backend with doc store, chunked transcription, and trash integration."
 
 ########################################
-#  UPLOAD AUDIO => CREATE DOC => START TRANSCRIBE
+# UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
 ########################################
 @app.route('/upload-audio', methods=['POST'])
 def upload_audio():
@@ -72,8 +73,10 @@ def upload_audio():
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    ext = audio_file.filename.rsplit('.', 1)[-1].lower()
-    unique_name = f"{uuid.uuid4()}.{ext}"
+    # Get the original file name for display purposes
+    original_filename = audio_file.filename
+    # Generate a unique name by prepending a UUID
+    unique_name = f"{uuid.uuid4()}_{original_filename}"
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
 
     if os.path.exists(save_path):
@@ -89,18 +92,19 @@ def upload_audio():
     doc_counter += 1
     doc_id = str(uuid.uuid4())
     doc_name = f"Doc{doc_counter}"
-    # Create doc referencing audio
+    # Create doc referencing the audio file:
     doc_obj = {
         "id": doc_id,
         "name": doc_name,
         "content": "",
-        "audioFilename": unique_name,
+        "audioFilename": unique_name,      # Unique name used in filesystem
+        "originalFilename": original_filename,  # For UI display if needed
         "audioTrashed": False
     }
     doc_store[doc_id] = doc_obj
     save_doc_store()
 
-    # Start chunked transcription
+    # Start background transcription (chunked)
     socketio.start_background_task(background_transcription, save_path, doc_id)
 
     return jsonify({
@@ -142,96 +146,37 @@ def background_transcription(file_path, doc_id):
         app.logger.error(f"Error during transcription: {e}")
 
 def append_to_doc(doc_id, chunk_list):
-    global doc_store
     doc = doc_store.get(doc_id)
-    if not doc: return
+    if not doc:
+        return
     combined_text = doc["content"]
     for chunk in chunk_list:
-        # single line with a space
         combined_text += " " + chunk["text"]
     doc["content"] = combined_text
     save_doc_store()
 
 ########################################
-#  DELETE FILE => MOVE TO TRASH
-########################################
-@app.route('/delete_file/<filename>', methods=['DELETE'])
-def delete_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    trash_path = os.path.join(TRASH_FOLDER, filename)
-
-    if os.path.exists(file_path):
-        os.rename(file_path, trash_path)
-        app.logger.info(f"Moved file to trash: {file_path}")
-
-        # Also mark any doc referencing this file as audioTrashed = True
-        mark_doc_audio_trashed(filename, True)
-
-        return jsonify({"message": "File moved to trash"}), 200
-    else:
-        return jsonify({"message": "File not found"}), 404
-
-def mark_doc_audio_trashed(filename, is_trashed):
-    global doc_store
-    changed = False
-    for doc_id, doc in doc_store.items():
-        if doc.get("audioFilename") == filename:
-            doc["audioTrashed"] = is_trashed
-            changed = True
-    if changed:
-        save_doc_store()
-
-########################################
-#  TRASH
-########################################
-@app.route('/trash-files', methods=['GET'])
-def get_trash_files():
-    try:
-        files = os.listdir(TRASH_FOLDER)
-        return jsonify({"files": files}), 200
-    except Exception as e:
-        app.logger.error(f"Error fetching trash files: {e}")
-        return jsonify({"error": "Failed"}), 500
-
-@app.route('/restore_file/<filename>', methods=['GET'])
-def restore_file(filename):
-    trash_path = os.path.join(TRASH_FOLDER, filename)
-    upload_path = os.path.join(UPLOAD_FOLDER, filename)
-    if os.path.exists(trash_path):
-        os.rename(trash_path, upload_path)
-        # mark doc audioTrashed = false
-        mark_doc_audio_trashed(filename, False)
-        app.logger.info(f"Restored file: {filename}")
-        return jsonify({"message": "File restored"}), 200
-    else:
-        return jsonify({"message": "File not found in trash"}), 404
-
-########################################
-#  LIST UPLOADS
-########################################
-@app.route('/upload-files', methods=['GET'])
-def get_upload_files():
-    try:
-        files = os.listdir(UPLOAD_FOLDER)
-        return jsonify({"files": files}), 200
-    except:
-        return jsonify({"error": "Error listing uploads"}), 500
-
-########################################
-#  DOC MGMT
+# DOC MANAGEMENT ROUTES
 ########################################
 @app.route('/api/docs', methods=['GET'])
 def list_docs():
     return jsonify(list(doc_store.values())), 200
+
+@app.route('/api/docs/<doc_id>', methods=['GET'])
+def get_doc(doc_id):
+    d = doc_store.get(doc_id)
+    if not d:
+        return jsonify({"error": "Doc not found"}), 404
+    return jsonify(d), 200
 
 @app.route('/api/docs', methods=['POST'])
 def create_doc():
     global doc_counter
     data = request.json or {}
     doc_counter += 1
+    doc_id = str(uuid.uuid4())
     name = data.get('name', f"Doc{doc_counter}")
     content = data.get('content', '')
-    doc_id = str(uuid.uuid4())
     doc_obj = {
         "id": doc_id,
         "name": name,
@@ -243,45 +188,98 @@ def create_doc():
     save_doc_store()
     return jsonify(doc_obj), 201
 
-@app.route('/api/docs/<doc_id>', methods=['GET'])
-def get_doc(doc_id):
-    doc = doc_store.get(doc_id)
-    if not doc:
-        return jsonify({"error": "Doc not found"}), 404
-    return jsonify(doc), 200
-
 @app.route('/api/docs/<doc_id>', methods=['PUT'])
 def update_doc(doc_id):
     data = request.json or {}
     doc = doc_store.get(doc_id)
     if not doc:
-        doc = {
-            "id": doc_id,
-            "name": data.get('name', 'DocX'),
-            "content": data.get('content', ''),
-            "audioFilename": None,
-            "audioTrashed": False
-        }
-        doc_store[doc_id] = doc
-
-    doc['name'] = data.get('name', doc['name'])
-    doc['content'] = data.get('content', doc['content'])
-    # we never overwrite audioFilename or audioTrashed here unless you want to
+        return jsonify({"error": "Doc not found"}), 404
+    doc["name"] = data.get("name", doc["name"])
+    doc["content"] = data.get("content", doc["content"])
     save_doc_store()
     return jsonify(doc), 200
 
 @app.route('/api/docs/<doc_id>', methods=['DELETE'])
 def delete_doc(doc_id):
-    if doc_id in doc_store:
-        del doc_store[doc_id]
-        save_doc_store()
+    d = doc_store.get(doc_id)
+    if not d:
+        return jsonify({"message": "Doc not found"}), 404
+
+    # If doc has an audio file that is not yet trashed, move it to trash.
+    filename = d.get("audioFilename")
+    if filename and not d.get("audioTrashed"):
+        src_path = os.path.join(UPLOAD_FOLDER, filename)
+        dst_path = os.path.join(TRASH_FOLDER, filename)
+        if os.path.exists(src_path):
+            os.rename(src_path, dst_path)
+            d["audioTrashed"] = True
+            app.logger.info(f"Moved file to trash: {src_path}")
+
+    # Remove doc from store.
+    del doc_store[doc_id]
+    save_doc_store()
     return jsonify({"message": "Doc deleted"}), 200
 
 ########################################
-#   SOCKET.IO (DOC EDIT)
+# TRASH & FILE MANAGEMENT ROUTES
+########################################
+@app.route('/trash-files', methods=['GET'])
+def get_trash_files():
+    try:
+        files = os.listdir(TRASH_FOLDER)
+        return jsonify({"files": files}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching trash files: {e}")
+        return jsonify({"error": "Failed to fetch trash files"}), 500
+
+@app.route('/restore_file/<filename>', methods=['GET'])
+def restore_file(filename):
+    trash_path = os.path.join(TRASH_FOLDER, filename)
+    upload_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(trash_path):
+        os.rename(trash_path, upload_path)
+        # Update any doc that referenced this file (if necessary)
+        mark_doc_audio_trashed(filename, False)
+        app.logger.info(f"Restored file: {filename}")
+        return jsonify({"message": "File restored"}), 200
+    else:
+        return jsonify({"message": "File not found in trash"}), 404
+
+@app.route('/permanent_delete/<filename>', methods=['DELETE'])
+def permanent_delete(filename):
+    trash_path = os.path.join(TRASH_FOLDER, filename)
+    if not os.path.exists(trash_path):
+        return jsonify({"message": "File not found in trash"}), 404
+    try:
+        os.remove(trash_path)
+        return jsonify({"message": "File permanently deleted"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Error permanently deleting file: {e}"}), 500
+
+@app.route('/upload-files', methods=['GET'])
+def get_upload_files():
+    try:
+        files = os.listdir(UPLOAD_FOLDER)
+        return jsonify({"files": files}), 200
+    except Exception as e:
+        app.logger.error(f"Error listing uploads: {e}")
+        return jsonify({"error": "Error listing uploads"}), 500
+
+def mark_doc_audio_trashed(filename, is_trashed):
+    global doc_store
+    changed = False
+    for doc in doc_store.values():
+        if doc.get("audioFilename") == filename:
+            doc["audioTrashed"] = is_trashed
+            changed = True
+    if changed:
+        save_doc_store()
+
+########################################
+# SOCKET.IO FOR DOC EDITING
 ########################################
 @socketio.on('join_doc')
-def handle_join_doc(data):
+def handle_join_doc_evt(data):
     doc_id = data.get('doc_id')
     join_room(doc_id)
     doc = doc_store.get(doc_id)
@@ -289,20 +287,21 @@ def handle_join_doc(data):
         emit('doc_content_update', {
             'doc_id': doc_id,
             'content': doc['content']
-        })
+        }, room=doc_id)
 
 @socketio.on('edit_doc')
-def handle_edit_doc(data):
+def handle_edit_doc_evt(data):
     doc_id = data.get('doc_id')
-    content = data.get('content')
+    new_content = data.get('content')
     doc = doc_store.get(doc_id)
     if doc:
-        doc['content'] = content
+        doc['content'] = new_content
         save_doc_store()
     emit('doc_content_update', {
         'doc_id': doc_id,
-        'content': content
+        'content': new_content
     }, room=doc_id, include_self=False)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+

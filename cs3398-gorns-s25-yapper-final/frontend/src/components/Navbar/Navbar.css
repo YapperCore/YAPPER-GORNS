@@ -6,19 +6,16 @@
   color: #fff;
   padding: 1rem;
 }
-
 .Navbar .brand {
   font-size: 1.2rem;
   font-weight: bold;
-  margin-right: 1.5rem;
+  margin-right: 2rem;
 }
-
 .Navbar a {
   color: #fff;
   text-decoration: none;
   margin-right: 1rem;
 }
-
 .Navbar a:hover {
   text-decoration: underline;
 }

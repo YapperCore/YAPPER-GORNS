@@ -1,4 +1,3 @@
-// src/pages/Trash.js
 import React from 'react';
 import TrashBucket from '../components/TrashBucket/TrashBucket';
 
@@ -10,4 +9,3 @@ export default function Trash() {
     </div>
   );
 }
-
