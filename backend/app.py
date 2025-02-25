@@ -20,15 +20,16 @@ DOC_STORE_FILE = 'doc_store.json'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TRASH_FOLDER, exist_ok=True)
 
-# In-memory doc store with persistence.
+# Our doc store now supports soft-deletion.
 # Each doc is stored as:
 # {
 #   "id": <doc id>,
 #   "name": <doc name>,
 #   "content": <text content>,
-#   "audioFilename": <unique filename used for storage>,
-#   "originalFilename": <original file name from upload>,
-#   "audioTrashed": <boolean>
+#   "audioFilename": <unique filename used on disk>,
+#   "originalFilename": <original file name>,
+#   "audioTrashed": <bool>,
+#   "deleted": <bool>     # false for active docs; true for soft-deleted docs
 # }
 doc_store = {}
 doc_counter = 0
@@ -60,7 +61,7 @@ load_doc_store()
 
 @app.route('/')
 def index():
-    return "Backend with doc store, chunked transcription, and trash integration."
+    return "Backend with doc store (soft-delete), chunk transcription, and trash integration."
 
 ########################################
 # UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
@@ -69,13 +70,10 @@ def index():
 def upload_audio():
     global doc_counter
     if 'audio' not in request.files:
-        app.logger.error("No audio file found in request.")
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    # Get the original file name for display purposes
     original_filename = audio_file.filename
-    # Generate a unique name by prepending a UUID
     unique_name = f"{uuid.uuid4()}_{original_filename}"
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
 
@@ -92,19 +90,18 @@ def upload_audio():
     doc_counter += 1
     doc_id = str(uuid.uuid4())
     doc_name = f"Doc{doc_counter}"
-    # Create doc referencing the audio file:
     doc_obj = {
         "id": doc_id,
         "name": doc_name,
         "content": "",
-        "audioFilename": unique_name,      # Unique name used in filesystem
-        "originalFilename": original_filename,  # For UI display if needed
-        "audioTrashed": False
+        "audioFilename": unique_name,
+        "originalFilename": original_filename,
+        "audioTrashed": False,
+        "deleted": False
     }
     doc_store[doc_id] = doc_obj
     save_doc_store()
 
-    # Start background transcription (chunked)
     socketio.start_background_task(background_transcription, save_path, doc_id)
 
     return jsonify({
@@ -160,12 +157,14 @@ def append_to_doc(doc_id, chunk_list):
 ########################################
 @app.route('/api/docs', methods=['GET'])
 def list_docs():
-    return jsonify(list(doc_store.values())), 200
+    # Return only docs that are not marked as deleted.
+    active_docs = [d for d in doc_store.values() if not d.get("deleted", False)]
+    return jsonify(active_docs), 200
 
 @app.route('/api/docs/<doc_id>', methods=['GET'])
 def get_doc(doc_id):
     d = doc_store.get(doc_id)
-    if not d:
+    if not d or d.get("deleted"):
         return jsonify({"error": "Doc not found"}), 404
     return jsonify(d), 200
 
@@ -182,7 +181,9 @@ def create_doc():
         "name": name,
         "content": content,
         "audioFilename": None,
-        "audioTrashed": False
+        "originalFilename": None,
+        "audioTrashed": False,
+        "deleted": False
     }
     doc_store[doc_id] = doc_obj
     save_doc_store()
@@ -192,7 +193,7 @@ def create_doc():
 def update_doc(doc_id):
     data = request.json or {}
     doc = doc_store.get(doc_id)
-    if not doc:
+    if not doc or doc.get("deleted"):
         return jsonify({"error": "Doc not found"}), 404
     doc["name"] = data.get("name", doc["name"])
     doc["content"] = data.get("content", doc["content"])
@@ -202,10 +203,13 @@ def update_doc(doc_id):
 @app.route('/api/docs/<doc_id>', methods=['DELETE'])
 def delete_doc(doc_id):
     d = doc_store.get(doc_id)
-    if not d:
+    if not d or d.get("deleted"):
         return jsonify({"message": "Doc not found"}), 404
 
-    # If doc has an audio file that is not yet trashed, move it to trash.
+    # Instead of physically removing the doc, mark it as deleted.
+    d["deleted"] = True
+
+    # Move associated audio file to trash (if not already trashed)
     filename = d.get("audioFilename")
     if filename and not d.get("audioTrashed"):
         src_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -214,9 +218,6 @@ def delete_doc(doc_id):
             os.rename(src_path, dst_path)
             d["audioTrashed"] = True
             app.logger.info(f"Moved file to trash: {src_path}")
-
-    # Remove doc from store.
-    del doc_store[doc_id]
     save_doc_store()
     return jsonify({"message": "Doc deleted"}), 200
 
@@ -238,8 +239,14 @@ def restore_file(filename):
     upload_path = os.path.join(UPLOAD_FOLDER, filename)
     if os.path.exists(trash_path):
         os.rename(trash_path, upload_path)
-        # Update any doc that referenced this file (if necessary)
         mark_doc_audio_trashed(filename, False)
+        # Also, if a doc referenced this file and was marked as deleted,
+        # we can restore it (set deleted = False) so it shows in docs.
+        for doc in doc_store.values():
+            if doc.get("audioFilename") == filename:
+                doc["deleted"] = False
+                doc["audioTrashed"] = False
+        save_doc_store()
         app.logger.info(f"Restored file: {filename}")
         return jsonify({"message": "File restored"}), 200
     else:
@@ -283,7 +290,7 @@ def handle_join_doc_evt(data):
     doc_id = data.get('doc_id')
     join_room(doc_id)
     doc = doc_store.get(doc_id)
-    if doc:
+    if doc and not doc.get("deleted"):
         emit('doc_content_update', {
             'doc_id': doc_id,
             'content': doc['content']
@@ -294,7 +301,7 @@ def handle_edit_doc_evt(data):
     doc_id = data.get('doc_id')
     new_content = data.get('content')
     doc = doc_store.get(doc_id)
-    if doc:
+    if doc and not doc.get("deleted"):
         doc['content'] = new_content
         save_doc_store()
     emit('doc_content_update', {
