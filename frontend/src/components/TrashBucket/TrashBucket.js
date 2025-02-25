@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './TrashBucket.css';
 import { Restore } from '../../util/confirmable';
-import 'primereact/resources/themes/saga-blue/theme.css';  
-import 'primereact/resources/primereact.min.css';          
-import 'primeicons/primeicons.css';   
 
 const TrashBucket = () => {
   const [trashFiles, setTrashFiles] = useState([]);
@@ -15,33 +12,30 @@ const TrashBucket = () => {
         });
 
         if (response.ok) {
-            setTrashFiles((prevFiles) => prevFiles.filter((file) => file !== filename));
+            setTrashFiles((prev) => prev.filter((f) => f !== filename));
         } else {
             const data = await response.json();
             alert(`Error restoring file: ${data.message}`);
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred while restoring the file');
+        alert('Error restoring file');
     }
   };
 
   useEffect(() => {
-    const fetchTrashFiles = async () => {
+    const fetchTrash = async () => {
       try {
-        const response = await fetch('/trash-files');
-        if (response.ok) {
-          const data = await response.json();
+        const res = await fetch('/trash-files');
+        if(res.ok){
+          const data = await res.json();
           setTrashFiles(data.files);
-        } else {
-          console.error('Failed to fetch trash files');
         }
-      } catch (error) {
-        console.error('Error fetching trash files:', error);
+      } catch(err){
+        console.error("Error fetching trash files:", err);
       }
     };
-
-    fetchTrashFiles();
+    fetchTrash();
   }, []);
 
   return (
@@ -51,8 +45,8 @@ const TrashBucket = () => {
         <div className="TrashBucket-container">
           <div className="TrashBucket">
             <ul className="trash-list">
-              {trashFiles.map((file, index) => (
-                <li key={index} className="trash-item">
+              {trashFiles.map((file, i) => (
+                <li key={i} className="trash-item">
                   <span className="trash-filename">{file}</span>
                   <Restore onRestore={() => handleRestore(file)} />
                 </li>

@@ -9,9 +9,9 @@ export default function Confirmable({ onDelete }) {
     const accept = async () => {
         try {
             await onDelete();
-            toast.current?.show({ severity: 'info', summary: 'Confirmed', detail: 'Document deleted successfully', life: 3000 });
-        } catch (error) {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete document', life: 3000 });
+            toast.current?.show({ severity: 'info', summary: 'Confirmed', detail: 'Deleted successfully', life: 3000 });
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete', life: 3000 });
         }
     };
 
@@ -22,7 +22,7 @@ export default function Confirmable({ onDelete }) {
     const confirmDelete = (event) => {
         confirmPopup({
             target: event.currentTarget,
-            message: 'Do you want to delete this document?',
+            message: 'Do you want to delete this item?',
             icon: 'pi pi-info-circle',
             defaultFocus: 'reject',
             acceptClassName: 'p-button-danger',
@@ -35,7 +35,7 @@ export default function Confirmable({ onDelete }) {
         <>
             <Toast ref={toast} />
             <ConfirmPopup />
-            <Button onClick={confirmDelete} icon="pi pi-times" label="Delete" className="p-button-danger"></Button>
+            <Button onClick={confirmDelete} icon="pi pi-times" label="Delete" className="p-button-danger" />
         </>
     );
 }
@@ -46,20 +46,20 @@ export function Restore({ onRestore }) {
     const accept = async () => {
         try {
             await onRestore();
-            toast.current?.show({ severity: 'info', summary: 'Confirmed Restore', detail: 'Document restored successfully', life: 3000 });
-        } catch (error) {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to restore document', life: 3000 });
+            toast.current?.show({ severity: 'info', summary: 'Restored', detail: 'Item restored successfully', life: 3000 });
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to restore', life: 3000 });
         }
     };
 
     const reject = () => {
-        toast.current?.show({ severity: 'warn', summary: 'Rejected Restore', detail: 'Document not restored', life: 3000 });
+        toast.current?.show({ severity: 'warn', summary: 'Rejected', detail: 'Restoration cancelled', life: 3000 });
     };
 
     const confirmRestore = (event) => {
         confirmPopup({
             target: event.currentTarget,
-            message: 'Do you want to restore this document?',
+            message: 'Do you want to restore this item?',
             icon: 'pi pi-info-circle',
             defaultFocus: 'accept',
             acceptClassName: 'p-button-success',
@@ -72,7 +72,7 @@ export function Restore({ onRestore }) {
         <>
             <Toast ref={toast} />
             <ConfirmPopup />
-            <Button onClick={confirmRestore} icon="pi pi-check" label="Restore" className="p-button-success"></Button>
+            <Button onClick={confirmRestore} icon="pi pi-check" label="Restore" className="p-button-success" />
         </>
     );
 }
