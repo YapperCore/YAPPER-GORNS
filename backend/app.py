@@ -205,11 +205,8 @@ def delete_doc(doc_id):
     d = doc_store.get(doc_id)
     if not d or d.get("deleted"):
         return jsonify({"message": "Doc not found"}), 404
-
-    # Instead of physically removing the doc, mark it as deleted.
     d["deleted"] = True
 
-    # Move associated audio file to trash (if not already trashed)
     filename = d.get("audioFilename")
     if filename and not d.get("audioTrashed"):
         src_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -251,17 +248,6 @@ def restore_file(filename):
         return jsonify({"message": "File restored"}), 200
     else:
         return jsonify({"message": "File not found in trash"}), 404
-
-@app.route('/permanent_delete/<filename>', methods=['DELETE'])
-def permanent_delete(filename):
-    trash_path = os.path.join(TRASH_FOLDER, filename)
-    if not os.path.exists(trash_path):
-        return jsonify({"message": "File not found in trash"}), 404
-    try:
-        os.remove(trash_path)
-        return jsonify({"message": "File permanently deleted"}), 200
-    except Exception as e:
-        return jsonify({"message": f"Error permanently deleting file: {e}"}), 500
 
 @app.route('/upload-files', methods=['GET'])
 def get_upload_files():

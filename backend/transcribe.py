@@ -4,7 +4,14 @@ import torch
 import torchaudio
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 
-torchaudio.set_audio_backend("sox_io")
+def set_best_audio_backend():
+    available_backends = torchaudio.list_audio_backends()
+    if "sox_io" in available_backends:
+        torchaudio.set_audio_backend("sox_io")
+    elif "soundfile" in available_backends:
+        torchaudio.set_audio_backend("soundfile")
+
+set_best_audio_backend()
 
 LOCAL_MODEL_PATH = os.path.join(os.getcwd(), "s2t-small-librispeech-asr")
 

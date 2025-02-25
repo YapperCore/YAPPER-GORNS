@@ -7,24 +7,30 @@ const TrashBucket = () => {
 
   const handleRestore = async (filename) => {
     try {
-      const res = await fetch(`/restore_file/${filename}`, { method:'GET' });
-      if(res.ok){
-        setTrashFiles(prev => prev.filter(f => f !== filename));
-        // also any docs referencing that file => audioTrashed = false
+      const res = await fetch(`/restore_file/${filename}`, { method: 'GET' });
+      if (res.ok) {
+        setTrashFiles((prev) => prev.filter((f) => f !== filename));
       } else {
         const data = await res.json();
         alert("Error restoring file: " + data.message);
       }
-    } catch(err){
-      console.error("Err restoring file:", err);
+    } catch (err) {
+      console.error("Error restoring file:", err);
     }
   };
 
   useEffect(() => {
-    fetch('/trash-files')
-      .then(r => r.json())
-      .then(data => setTrashFiles(data.files||[]))
-      .catch(err => console.error("trash fetch:", err));
+    const fetchTrashFiles = async () => {
+      try {
+        const res = await fetch('/trash-files');
+        const data = await res.json();
+        setTrashFiles(data.files || []);
+      } catch (err) {
+        console.error("Error fetching trash files:", err);
+      }
+    };
+
+    fetchTrashFiles();
   }, []);
 
   return (

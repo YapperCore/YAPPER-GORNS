@@ -85,8 +85,8 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
 #### Reports
 
-![Burnup Chart](images/sprint1-burnup-chart.png)
-
+![Burnup Chart](images/Burnup-Sprint-1.JPG)
+    
 #### Next Steps
 **Ali**:
   - Develop a way for the audio to be played in the view/editing in the text editor

@@ -73,10 +73,11 @@ yarn-error.log*
 /backend/uploads
 /backend/trash
 /frontend/src/components/TrashBucket/TrashBucket.test.js
-/backend
 /s2t-small-librispeech-asr
+backend/doc_store.json
 notes.txt
 *.sh
 OUTPUT_TEST/
 
 INPUT_AUDIO_TEST/
+backend/doc_store.json
