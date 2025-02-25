@@ -10,28 +10,21 @@ const TrashBucket = () => {
       const res = await fetch(`/restore_file/${filename}`, { method:'GET' });
       if(res.ok){
         setTrashFiles(prev => prev.filter(f => f !== filename));
+        // also any docs referencing that file => audioTrashed = false
       } else {
         const data = await res.json();
-        alert(`Error restoring file: ${data.message}`);
+        alert("Error restoring file: " + data.message);
       }
     } catch(err){
-      console.error("Error restoring file:", err);
+      console.error("Err restoring file:", err);
     }
   };
 
   useEffect(() => {
-    async function fetchTrash(){
-      try {
-        const res = await fetch('/trash-files');
-        if(res.ok){
-          const data = await res.json();
-          setTrashFiles(data.files || []);
-        }
-      } catch(err){
-        console.error("Error fetching trash files:", err);
-      }
-    }
-    fetchTrash();
+    fetch('/trash-files')
+      .then(r => r.json())
+      .then(data => setTrashFiles(data.files||[]))
+      .catch(err => console.error("trash fetch:", err));
   }, []);
 
   return (
@@ -41,8 +34,8 @@ const TrashBucket = () => {
         <div className="TrashBucket-container">
           <div className="TrashBucket">
             <ul className="trash-list">
-              {trashFiles.map((file, idx) => (
-                <li key={idx} className="trash-item">
+              {trashFiles.map((file, i) => (
+                <li key={i} className="trash-item">
                   <span className="trash-filename">{file}</span>
                   <Restore onRestore={() => handleRestore(file)} />
                 </li>

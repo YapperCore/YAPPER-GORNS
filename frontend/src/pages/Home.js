@@ -8,7 +8,6 @@ function Home() {
   const [docs, setDocs] = useState([]);
 
   useEffect(() => {
-    // Socket to watch partial transcripts globally
     const socket = io();
     socket.on('partial_transcript_batch', data => {
       const lines = data.chunks.map(
@@ -20,11 +19,10 @@ function Home() {
       setTranscripts(prev => [...prev, "Transcription complete."]);
     });
 
-    // fetch docs
     fetch('/api/docs')
       .then(r => r.json())
       .then(d => setDocs(d))
-      .catch(err => console.error("Error fetching docs:", err));
+      .catch(err => console.error("Error docs:", err));
 
     return () => {
       socket.disconnect();
@@ -44,29 +42,29 @@ function Home() {
       const formData = new FormData();
       formData.append('audio', file);
       const res = await fetch('/upload-audio', {
-        method:'POST',
+        method: 'POST',
         body: formData
       });
       if(res.ok){
         const data = await res.json();
-        setUploadMessage(data.message || 'Upload succeeded');
-        // open new tab
+        setUploadMessage(data.message || "Upload succeeded");
+        // open transcription
         if(data.doc_id){
           window.open(`/transcription/${data.doc_id}`, '_blank');
         }
-        // re-fetch docs
-        const docRes = await fetch('/api/docs');
-        if(docRes.ok){
-          const docData = await docRes.json();
+        // refresh doc list
+        const dres = await fetch('/api/docs');
+        if(dres.ok){
+          const docData = await dres.json();
           setDocs(docData);
         }
       } else {
         const eData = await res.json();
-        setUploadMessage(eData.error || 'Upload failed');
+        setUploadMessage(eData.error || "Upload failed");
       }
     } catch(err){
-      console.error("Upload err:", err);
-      setUploadMessage('Upload failed');
+      console.error("Upload error:", err);
+      setUploadMessage("Upload failed");
     }
   };
 
@@ -74,25 +72,25 @@ function Home() {
     <div style={{ padding:'1rem' }}>
       <h2>Home - Upload Audio => Create Doc</h2>
       <div>
-        <input type="file" onChange={handleFileChange} />
+        <input type="file" onChange={handleFileChange}/>
         <button onClick={handleUpload}>Submit</button>
-        <p>{uploadMessage}</p>
       </div>
+      <p>{uploadMessage}</p>
 
       <hr />
-
       <div>
         <h3>Docs in Session:</h3>
         <ul>
-          {docs.map(d => (
-            <li key={d.id}>
-              {d.name} &nbsp;
-              <a href={`/transcription/${d.id}`} target="_blank" rel="noreferrer">
+          {docs.map(doc => (
+            <li key={doc.id}>
+              {doc.name} { doc.audioFilename ? `(Audio: ${doc.audioFilename}${doc.audioTrashed?' [TRASHED]':''})` : '' }
+              &nbsp;|&nbsp;
+              <a href={`/transcription/${doc.id}`} target="_blank" rel="noreferrer">
                 (Transcription)
               </a>
               &nbsp;|&nbsp;
-              <a href={`/docs/edit/${d.id}`} target="_blank" rel="noreferrer">
-                (Edit Doc)
+              <a href={`/docs/edit/${doc.id}`} target="_blank" rel="noreferrer">
+                (Edit)
               </a>
             </li>
           ))}

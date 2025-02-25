@@ -42,7 +42,9 @@ function DocList(){
       <ul>
         {docs.map(d => (
           <li key={d.id}>
-            {d.name} &nbsp;
+            {d.name} 
+            {d.audioFilename ? ` (Audio: ${d.audioFilename}${d.audioTrashed?' [TRASHED]':''})` : ''}
+            &nbsp;|&nbsp;
             <Link to={`edit/${d.id}`} style={{ marginRight:'1rem' }}>
               <button>Edit</button>
             </Link>
@@ -63,7 +65,7 @@ function DocCreate(){
     try {
       const res = await fetch('/api/docs', {
         method:'POST',
-        headers:{ 'Content-Type':'application/json'},
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ name, content })
       });
       if(res.ok){
@@ -82,7 +84,7 @@ function DocCreate(){
         Name: <input value={name} onChange={e => setName(e.target.value)} style={{ marginLeft:'0.5rem' }}/>
       </p>
       <p>Content:</p>
-      <ReactQuill theme="snow" value={content} onChange={setContent} />
+      <ReactQuill theme="snow" value={content} onChange={setContent}/>
       <button onClick={handleSubmit}>Create</button>
     </div>
   );
@@ -124,7 +126,7 @@ function DocEdit(){
     };
   }, [docId]);
 
-  const handleChange = (val) => {
+  const handleChange = val => {
     setContent(val);
     if(socket){
       socket.emit('edit_doc', { doc_id: docId, content: val });
@@ -160,11 +162,17 @@ function DocEdit(){
         <input
           style={{ marginLeft:'0.5rem' }}
           value={doc.name}
-          onChange={e => setDoc({...doc, name:e.target.value})}
+          onChange={e => setDoc({ ...doc, name:e.target.value })}
           onBlur={handleSave}
         />
       </p>
-      <ReactQuill theme="snow" value={content} onChange={handleChange} style={{ minHeight:'300px', background:'#fff' }}/>
+      { doc.audioTrashed && <p style={{ color:'red' }}>Warning: The associated audio file is currently in trash.</p> }
+      <ReactQuill
+        theme="snow"
+        value={content}
+        onChange={handleChange}
+        style={{ minHeight:'300px', background:'#fff' }}
+      />
       <br />
       <button onClick={handleSave}>Save</button>
     </div>

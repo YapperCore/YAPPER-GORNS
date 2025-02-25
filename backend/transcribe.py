@@ -4,7 +4,6 @@ import torch
 import torchaudio
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 
-# Possibly set backend
 torchaudio.set_audio_backend("sox_io")
 
 LOCAL_MODEL_PATH = os.path.join(os.getcwd(), "s2t-small-librispeech-asr")
@@ -29,7 +28,7 @@ def chunked_transcribe_audio(audio_path, chunk_sec=5, model_path=LOCAL_MODEL_PAT
 
     for i in range(num_chunks):
         start = int(i * chunk_sec * sr)
-        end = int((i + 1) * chunk_sec * sr)
+        end = int((i+1) * chunk_sec * sr)
         audio_chunk = signal[start:end]
         if audio_chunk.shape[0] == 0:
             break

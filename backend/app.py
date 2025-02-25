@@ -21,6 +21,14 @@ os.makedirs(TRASH_FOLDER, exist_ok=True)
 DOC_STORE_FILE = 'doc_store.json'
 
 # We'll keep an in-memory doc store, but also load/save to doc_store.json
+# doc format:
+# {
+#   "id": "...",
+#   "name": "...",
+#   "content": "...",
+#   "audioFilename": "...",
+#   "audioTrashed": false
+# }
 doc_store = {}
 doc_counter = 0
 
@@ -47,12 +55,11 @@ def save_doc_store():
     except:
         pass
 
-# Load from file once at startup
 load_doc_store()
 
 @app.route('/')
 def index():
-    return "Backend with integrated doc store and single-line chunk transcripts."
+    return "Backend with doc store and integrated trash referencing system."
 
 ########################################
 #  UPLOAD AUDIO => CREATE DOC => START TRANSCRIBE
@@ -60,7 +67,6 @@ def index():
 @app.route('/upload-audio', methods=['POST'])
 def upload_audio():
     global doc_counter
-
     if 'audio' not in request.files:
         app.logger.error("No audio file found in request.")
         return jsonify({"error": "No audio file found"}), 400
@@ -80,19 +86,21 @@ def upload_audio():
         app.logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
 
-    # Create a new doc
     doc_counter += 1
     doc_id = str(uuid.uuid4())
     doc_name = f"Doc{doc_counter}"
+    # Create doc referencing audio
     doc_obj = {
         "id": doc_id,
         "name": doc_name,
-        "content": ""
+        "content": "",
+        "audioFilename": unique_name,
+        "audioTrashed": False
     }
     doc_store[doc_id] = doc_obj
     save_doc_store()
 
-    # Start background transcription
+    # Start chunked transcription
     socketio.start_background_task(background_transcription, save_path, doc_id)
 
     return jsonify({
@@ -110,7 +118,6 @@ def background_transcription(file_path, doc_id):
                 'total_chunks': total,
                 'text': text
             })
-            # Send partial if >=5 chunks
             if len(chunk_buffer) >= 5:
                 socketio.emit('partial_transcript_batch', {
                     'doc_id': doc_id,
@@ -119,7 +126,6 @@ def background_transcription(file_path, doc_id):
                 socketio.sleep(0.1)
                 append_to_doc(doc_id, chunk_buffer)
                 chunk_buffer = []
-
         if chunk_buffer:
             socketio.emit('partial_transcript_batch', {
                 'doc_id': doc_id,
@@ -136,13 +142,12 @@ def background_transcription(file_path, doc_id):
         app.logger.error(f"Error during transcription: {e}")
 
 def append_to_doc(doc_id, chunk_list):
-    # single-line chunk appending with space
     global doc_store
     doc = doc_store.get(doc_id)
-    if not doc:
-        return
+    if not doc: return
     combined_text = doc["content"]
     for chunk in chunk_list:
+        # single line with a space
         combined_text += " " + chunk["text"]
     doc["content"] = combined_text
     save_doc_store()
@@ -158,9 +163,23 @@ def delete_file(filename):
     if os.path.exists(file_path):
         os.rename(file_path, trash_path)
         app.logger.info(f"Moved file to trash: {file_path}")
+
+        # Also mark any doc referencing this file as audioTrashed = True
+        mark_doc_audio_trashed(filename, True)
+
         return jsonify({"message": "File moved to trash"}), 200
     else:
         return jsonify({"message": "File not found"}), 404
+
+def mark_doc_audio_trashed(filename, is_trashed):
+    global doc_store
+    changed = False
+    for doc_id, doc in doc_store.items():
+        if doc.get("audioFilename") == filename:
+            doc["audioTrashed"] = is_trashed
+            changed = True
+    if changed:
+        save_doc_store()
 
 ########################################
 #  TRASH
@@ -180,6 +199,8 @@ def restore_file(filename):
     upload_path = os.path.join(UPLOAD_FOLDER, filename)
     if os.path.exists(trash_path):
         os.rename(trash_path, upload_path)
+        # mark doc audioTrashed = false
+        mark_doc_audio_trashed(filename, False)
         app.logger.info(f"Restored file: {filename}")
         return jsonify({"message": "File restored"}), 200
     else:
@@ -214,7 +235,9 @@ def create_doc():
     doc_obj = {
         "id": doc_id,
         "name": name,
-        "content": content
+        "content": content,
+        "audioFilename": None,
+        "audioTrashed": False
     }
     doc_store[doc_id] = doc_obj
     save_doc_store()
@@ -232,16 +255,18 @@ def update_doc(doc_id):
     data = request.json or {}
     doc = doc_store.get(doc_id)
     if not doc:
-        # create if not found
         doc = {
             "id": doc_id,
-            "name": data.get('name', "DocX"),
-            "content": data.get('content', "")
+            "name": data.get('name', 'DocX'),
+            "content": data.get('content', ''),
+            "audioFilename": None,
+            "audioTrashed": False
         }
         doc_store[doc_id] = doc
 
     doc['name'] = data.get('name', doc['name'])
     doc['content'] = data.get('content', doc['content'])
+    # we never overwrite audioFilename or audioTrashed here unless you want to
     save_doc_store()
     return jsonify(doc), 200
 
@@ -249,7 +274,7 @@ def update_doc(doc_id):
 def delete_doc(doc_id):
     if doc_id in doc_store:
         del doc_store[doc_id]
-    save_doc_store()
+        save_doc_store()
     return jsonify({"message": "Doc deleted"}), 200
 
 ########################################

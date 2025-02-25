@@ -4,25 +4,32 @@ import io from 'socket.io-client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
+/**
+ * For real-time transcription, single-line chunk usage, doc references an audio file.
+ */
 export default function TranscriptionEditor(){
   const { docId } = useParams();
   const socketRef = useRef(null);
   const [content, setContent] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const [audioTrashed, setAudioTrashed] = useState(false);
+  const [audioFilename, setAudioFilename] = useState('');
 
   useEffect(() => {
-    async function loadDoc(){
+    // load doc
+    (async () => {
       try {
         const res = await fetch(`/api/docs/${docId}`);
         if(res.ok){
           const docData = await res.json();
           setContent(docData.content || '');
+          setAudioTrashed(!!docData.audioTrashed);
+          setAudioFilename(docData.audioFilename || '');
         }
       } catch(err){
-        console.error("Error loading doc:", err);
+        console.error("Err loading doc:", err);
       }
-    }
-    loadDoc();
+    })();
   }, [docId]);
 
   useEffect(() => {
@@ -30,21 +37,23 @@ export default function TranscriptionEditor(){
     socketRef.current = socket;
     socket.emit('join_doc', { doc_id: docId });
 
-    const handlePartial = data => {
+    const handlePartial = (data) => {
       if(data.doc_id === docId){
         let updated = content;
         data.chunks.forEach(ch => {
-          updated += " " + ch.text;  // single line spacing
+          updated += " " + ch.text;
         });
         setContent(updated);
+        // also call updateDoc
+        updateDocContent(updated);
       }
     };
-    const handleFinal = data => {
+    const handleFinal = (data) => {
       if(data.doc_id === docId && data.done){
         setIsComplete(true);
       }
     };
-    const handleDocUpdate = upd => {
+    const handleDocUpdate = (upd) => {
       if(upd.doc_id === docId){
         setContent(upd.content);
       }
@@ -62,16 +71,32 @@ export default function TranscriptionEditor(){
     };
   }, [docId, content]);
 
-  const handleChange = val => {
+  const updateDocContent = async (newContent) => {
+    try {
+      await fetch(`/api/docs/${docId}`, {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ content:newContent })
+      });
+    } catch(err){
+      console.error("Update doc err:", err);
+    }
+  };
+
+  const handleChange = (val) => {
     setContent(val);
     if(socketRef.current){
       socketRef.current.emit('edit_doc', { doc_id: docId, content: val });
     }
+    updateDocContent(val);
   };
 
   return (
     <div style={{ background:'#f5f5f5', minHeight:'100vh', padding:'1rem' }}>
-      <h2>Transcription Editor - Doc: {docId}</h2>
+      <h2>Transcription for Doc: {docId}</h2>
+      {audioFilename && (
+        <p>Audio: {audioFilename}{audioTrashed?' (in TRASH)':''}</p>
+      )}
       {isComplete && <p style={{ color:'green' }}>Transcription Complete!</p>}
 
       <ReactQuill
