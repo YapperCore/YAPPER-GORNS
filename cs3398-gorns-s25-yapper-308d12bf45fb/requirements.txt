@@ -1,6 +1,0 @@
-Flask==2.2.2
-eventlet==0.33.3
-flask_socketio==5.3.3
-torch==2.0.0
-torchaudio==2.0.1
-transformers==4.29.2
