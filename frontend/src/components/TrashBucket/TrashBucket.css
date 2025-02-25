@@ -27,7 +27,6 @@
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .TrashBucket h3 {
@@ -59,19 +58,6 @@
 .trash-filename {
   color: #fefeff;
   font-weight: 500;
-}
-
-.delete-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.delete-button:hover {
-  background-color: #c82333;
 }
 
 p {

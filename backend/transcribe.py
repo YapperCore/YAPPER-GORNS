@@ -4,16 +4,8 @@ import torch
 import torchaudio
 from transformers import Speech2TextProcessor, Speech2TextForConditionalGeneration
 
-# We can force sox_io
+# Possibly set backend
 torchaudio.set_audio_backend("sox_io")
-if os.name == 'posix':
-    # Possibly for mac
-    try:
-        import platform
-        if platform.system() == "Darwin":
-            torchaudio.set_audio_backend("sox_io")
-    except:
-        pass
 
 LOCAL_MODEL_PATH = os.path.join(os.getcwd(), "s2t-small-librispeech-asr")
 

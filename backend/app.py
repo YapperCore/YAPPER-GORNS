@@ -6,7 +6,6 @@ from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit, join_room
 from transcribe import chunked_transcribe_audio
 
-# Disable Eventlet's green DNS and patch the stdlib
 os.environ['EVENTLET_NO_GREENDNS'] = '1'
 eventlet.monkey_patch()
 
@@ -14,26 +13,50 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Folders for uploads and trash
 UPLOAD_FOLDER = 'uploads'
 TRASH_FOLDER = 'trash'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TRASH_FOLDER, exist_ok=True)
 
-# For doc management (in-memory)
+DOC_STORE_FILE = 'doc_store.json'
+
+# We'll keep an in-memory doc store, but also load/save to doc_store.json
 doc_store = {}
 doc_counter = 0
 
-###################################################
-#     BASIC / HELLO
-###################################################
+def load_doc_store():
+    global doc_store, doc_counter
+    if os.path.exists(DOC_STORE_FILE):
+        try:
+            with open(DOC_STORE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                doc_store.update(data.get('docs', {}))
+                doc_counter = data.get('counter', 0)
+        except:
+            pass
+
+def save_doc_store():
+    global doc_store, doc_counter
+    data = {
+        'docs': doc_store,
+        'counter': doc_counter
+    }
+    try:
+        with open(DOC_STORE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except:
+        pass
+
+# Load from file once at startup
+load_doc_store()
+
 @app.route('/')
 def index():
-    return "Backend running with integrated doc mgmt and chunked transcription."
+    return "Backend with integrated doc store and single-line chunk transcripts."
 
-###################################################
-#     UPLOAD AUDIO => CREATE DOC => START TRANSCRIBE
-###################################################
+########################################
+#  UPLOAD AUDIO => CREATE DOC => START TRANSCRIBE
+########################################
 @app.route('/upload-audio', methods=['POST'])
 def upload_audio():
     global doc_counter
@@ -43,32 +66,33 @@ def upload_audio():
         return jsonify({"error": "No audio file found"}), 400
 
     audio_file = request.files['audio']
-    file_ext = audio_file.filename.rsplit('.', 1)[-1].lower()
-    unique_name = f"{uuid.uuid4()}.{file_ext}"
+    ext = audio_file.filename.rsplit('.', 1)[-1].lower()
+    unique_name = f"{uuid.uuid4()}.{ext}"
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
 
-    # Save
+    if os.path.exists(save_path):
+        return jsonify({"error": "File already exists"}), 400
+
     try:
-        if os.path.exists(save_path):
-            return jsonify({"error": "File already exists"}), 400
         audio_file.save(save_path)
         app.logger.info(f"Saved file to: {save_path}")
     except Exception as e:
         app.logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
 
-    # Create a doc automatically, store in doc_store
+    # Create a new doc
     doc_counter += 1
     doc_id = str(uuid.uuid4())
     doc_name = f"Doc{doc_counter}"
     doc_obj = {
         "id": doc_id,
         "name": doc_name,
-        "content": "",
+        "content": ""
     }
     doc_store[doc_id] = doc_obj
+    save_doc_store()
 
-    # Start chunked transcription in background
+    # Start background transcription
     socketio.start_background_task(background_transcription, save_path, doc_id)
 
     return jsonify({
@@ -80,25 +104,22 @@ def upload_audio():
 def background_transcription(file_path, doc_id):
     try:
         chunk_buffer = []
-        # We call chunked_transcribe_audio generator
         for i, total, text in chunked_transcribe_audio(file_path):
             chunk_buffer.append({
                 'chunk_index': i,
                 'total_chunks': total,
                 'text': text
             })
-            # If we have 5 chunks, emit partial
+            # Send partial if >=5 chunks
             if len(chunk_buffer) >= 5:
                 socketio.emit('partial_transcript_batch', {
                     'doc_id': doc_id,
                     'chunks': chunk_buffer
                 })
                 socketio.sleep(0.1)
-                # Also append them to doc content
                 append_to_doc(doc_id, chunk_buffer)
                 chunk_buffer = []
 
-        # leftover
         if chunk_buffer:
             socketio.emit('partial_transcript_batch', {
                 'doc_id': doc_id,
@@ -107,28 +128,28 @@ def background_transcription(file_path, doc_id):
             socketio.sleep(0.1)
             append_to_doc(doc_id, chunk_buffer)
 
-        # final
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
             'done': True
         })
-
     except Exception as e:
         app.logger.error(f"Error during transcription: {e}")
 
 def append_to_doc(doc_id, chunk_list):
-    """Append chunk texts into doc_store[doc_id]['content']. """
+    # single-line chunk appending with space
+    global doc_store
     doc = doc_store.get(doc_id)
     if not doc:
         return
     combined_text = doc["content"]
     for chunk in chunk_list:
-        combined_text += "\n" + chunk["text"]
+        combined_text += " " + chunk["text"]
     doc["content"] = combined_text
+    save_doc_store()
 
-###################################################
-#    DELETE FILE => MOVE TO TRASH
-###################################################
+########################################
+#  DELETE FILE => MOVE TO TRASH
+########################################
 @app.route('/delete_file/<filename>', methods=['DELETE'])
 def delete_file(filename):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -136,14 +157,14 @@ def delete_file(filename):
 
     if os.path.exists(file_path):
         os.rename(file_path, trash_path)
-        app.logger.info(f"Deleted file => moved to trash: {file_path}")
+        app.logger.info(f"Moved file to trash: {file_path}")
         return jsonify({"message": "File moved to trash"}), 200
     else:
         return jsonify({"message": "File not found"}), 404
 
-###################################################
-#    LIST TRASH
-###################################################
+########################################
+#  TRASH
+########################################
 @app.route('/trash-files', methods=['GET'])
 def get_trash_files():
     try:
@@ -151,42 +172,33 @@ def get_trash_files():
         return jsonify({"files": files}), 200
     except Exception as e:
         app.logger.error(f"Error fetching trash files: {e}")
-        return jsonify({"error": "Failed to fetch trash files"}), 500
+        return jsonify({"error": "Failed"}), 500
 
-###################################################
-#    RESTORE FILE
-###################################################
 @app.route('/restore_file/<filename>', methods=['GET'])
 def restore_file(filename):
     trash_path = os.path.join(TRASH_FOLDER, filename)
     upload_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(trash_path):
+        os.rename(trash_path, upload_path)
+        app.logger.info(f"Restored file: {filename}")
+        return jsonify({"message": "File restored"}), 200
+    else:
+        return jsonify({"message": "File not found in trash"}), 404
 
-    try:
-        if os.path.exists(trash_path):
-            os.rename(trash_path, upload_path)
-            app.logger.info(f"Restored file: {trash_path}")
-            return jsonify({"message": "File restored"}), 200
-        else:
-            return jsonify({"message": "File not found in trash"}), 404
-    except Exception as e:
-        app.logger.error(f"Error restoring file: {e}")
-        return jsonify({"message": f"Error restoring file: {str(e)}"}), 500
-
-###################################################
-#    LIST UPLOAD FILES
-###################################################
+########################################
+#  LIST UPLOADS
+########################################
 @app.route('/upload-files', methods=['GET'])
 def get_upload_files():
     try:
         files = os.listdir(UPLOAD_FOLDER)
         return jsonify({"files": files}), 200
-    except Exception as e:
-        app.logger.error(f"Error fetching upload files: {e}")
-        return jsonify({"error": "Failed to fetch upload files"}), 500
+    except:
+        return jsonify({"error": "Error listing uploads"}), 500
 
-###################################################
-#    DOC MANAGEMENT
-###################################################
+########################################
+#  DOC MGMT
+########################################
 @app.route('/api/docs', methods=['GET'])
 def list_docs():
     return jsonify(list(doc_store.values())), 200
@@ -196,19 +208,16 @@ def create_doc():
     global doc_counter
     data = request.json or {}
     doc_counter += 1
-    default_name = f"Doc{doc_counter}"
-
-    name = data.get('name', default_name)
+    name = data.get('name', f"Doc{doc_counter}")
     content = data.get('content', '')
     doc_id = str(uuid.uuid4())
-
     doc_obj = {
         "id": doc_id,
         "name": name,
         "content": content
     }
     doc_store[doc_id] = doc_obj
-
+    save_doc_store()
     return jsonify(doc_obj), 201
 
 @app.route('/api/docs/<doc_id>', methods=['GET'])
@@ -223,37 +232,38 @@ def update_doc(doc_id):
     data = request.json or {}
     doc = doc_store.get(doc_id)
     if not doc:
-        # create it if not found
+        # create if not found
         doc = {
             "id": doc_id,
-            "name": data.get('name', 'DocX'),
-            "content": data.get('content', '')
+            "name": data.get('name', "DocX"),
+            "content": data.get('content', "")
         }
         doc_store[doc_id] = doc
 
     doc['name'] = data.get('name', doc['name'])
     doc['content'] = data.get('content', doc['content'])
+    save_doc_store()
     return jsonify(doc), 200
 
 @app.route('/api/docs/<doc_id>', methods=['DELETE'])
 def delete_doc(doc_id):
     if doc_id in doc_store:
         del doc_store[doc_id]
+    save_doc_store()
     return jsonify({"message": "Doc deleted"}), 200
 
-###################################################
-#   SOCKET.IO for Real-Time Doc Editing
-###################################################
+########################################
+#   SOCKET.IO (DOC EDIT)
+########################################
 @socketio.on('join_doc')
 def handle_join_doc(data):
     doc_id = data.get('doc_id')
     join_room(doc_id)
     doc = doc_store.get(doc_id)
     if doc:
-        # Send current content
         emit('doc_content_update', {
-            "doc_id": doc_id,
-            "content": doc['content']
+            'doc_id': doc_id,
+            'content': doc['content']
         })
 
 @socketio.on('edit_doc')
@@ -263,9 +273,10 @@ def handle_edit_doc(data):
     doc = doc_store.get(doc_id)
     if doc:
         doc['content'] = content
+        save_doc_store()
     emit('doc_content_update', {
-        "doc_id": doc_id,
-        "content": content
+        'doc_id': doc_id,
+        'content': content
     }, room=doc_id, include_self=False)
 
 if __name__ == '__main__':
