@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+uploads/
+trash/
+$PROJECT_NAME/frontend/node_modules/
