@@ -116,17 +116,17 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - Make the UI look better for the text editor.
 
 **Michael**:  
-- continue debugging the confidence score feature (SCRUM-35)
-- have transcription text highlight words or sections with a 25% or less confidence score
-- add functionality to montior the process of the current transcription (SCRUM-2)
+- continue debugging the confidence score feature (SCRUM-35)  
+- have transcription text highlight words or sections with a 25% or less confidence score  
+- add functionality to montior the process of the current transcription (SCRUM-2)  
 
 **Joshua**:
-- Definitely continue implementing the DB and the storage
-- Work on integrating customer log in to the DB
+- Definitely continue implementing the DB and the storage  
+- Work on integrating customer log in to the DB  
 
 <br />
 ## Screenshots
-![Logo](Yapperlogoimg.png)
+![Logo](images/Yapperlogoimg.png)
 
 <!-- If you have screenshots you'd like to share, include them here. -->
 
