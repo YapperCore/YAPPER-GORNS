@@ -81,6 +81,12 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   - `Jira Task: Ali - Brent - Error Handling for Deletions` 
     - [Scrum-17](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-17), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/bugfix/SCRUM-17-error-handling-for-deletions)
+
+**Michael**: "Made a simple UI design for the Home page and Trash page, as well as doing implementing the delete function" 
+
+  - `Jira Task: Michael - View Transcription Text` 
+    - [Scrum-25](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-25), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-25-process-audio-file-for-transcription) 
 <br />
 
 #### Reports
@@ -91,7 +97,12 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 **Ali**:  
 - Develop a way for the audio to be played in the view/editing in the text editor  
 - Develop a way for the audio to be formatted in a note-like way  
-- Make the UI look better for the text editor.  
+- Make the UI look better for the text editor.
+
+**Michael**:  
+- continue debugging the confidence score feature (SCRUM-35)
+- have transcription text highlight words or sections with a 25% or less confidence score
+- add functionality to montior the process of the current transcription (SCRUM-2)
 
 <br />
 ## Screenshots
