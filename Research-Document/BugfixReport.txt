@@ -1,0 +1,17 @@
+Bug Fix Report: SCRUM-17 Delete and Restore Functionality
+
+Date: 2/21/25
+
+Report Author: Ali Jalil
+
+Testing Summary:
+- Feature Tested: Delete Functionality
+- Feature Tested: Restore Functionality
+
+Findings:
+After thorough testing of both the delete and restore functionalities, 
+no bugs or issues were seen. The features did what we were think of it doing 
+
+Conclusion:
+The delete and restore functionalities are working correctly and do not require any bug fixes at this time. 
+Continued monitoring.

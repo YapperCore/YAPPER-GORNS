@@ -16,14 +16,6 @@
 <!-- * [License](#license) -->
 
 
-## General Information
-- Provide general information about your project here.
-- What problem does it (intend to) solve?
-- What is the purpose of your project?
-- Why did you undertake it?
-<!-- You don't have to answer all the questions - just the ones relevant to your project. -->
-
-
 ---
 
 # Project YAPPER
@@ -59,9 +51,6 @@ The primary objective of Project YAPPER is to eliminate communication barriers b
 Recognizing the challenges posed by language barriers in our increasingly interconnected world, our team—**Ali Jalil, Joshua Egwaikhide, Abheek Pradhan, and Michael Elder**—embarked on the development of Project YAPPER. Leveraging the latest advancements in cloud technology and machine learning, we aimed to create a tool that not only transcribes audio with high precision but also translates it in real time, thereby enhancing communication across different languages and cultures.
 
 ---
-
-
-
 ## Technologies Used
 - Electron 34.0.2
 - Python 3.10
@@ -70,35 +59,112 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
 
 ## Features for this audio transcription
-#### 1. Upload a File  
-- Description: Users can upload an audio file to be transcribed.  
-- Users: Students mainly or anyone  
-- User Story: As a user, I want to upload an audio file so that I can generate a transcription.  
-#### 2. Play Audio File  
-- Description: Users can play the uploaded audio file directly within the application.  
-- Users: Anyone reviewing the transcription alongside the audio.  
-- User Story: As a user, I want to play the audio file so that I can verify the transcription.  
-#### 3. View Transcription Text  
-- Description: The transcribed text is displayed in a readable format.  
-- Users: Users who need written notes from audio.  
-- User Story: As a user, I want to see the text so that I can read. 
-#### 4. Edit Transcription Content  
-- Description: Users can edit the text to correct errors or improve clarity.  
-- Users: Anyone who wants to edit their transcription.  
-- User Story: As a user, I want to edit the text so that I can correct mistakes.  
+### Sprint 1
+#### Contributions
+**Ali**: "Made a simple UI design for the Home page and Trash page, as well as doing implementing the delete function" 
 
-### Future Features  
+  - `Jira Task: Ali - Implement displaying list of transcriptions docs` 
+    - [Scrum-16](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-16), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/UI-Design/) 
+  - `Jira Task: Ali - Design and Implement Delete Button Functionality` 
+    - [Scrum-26](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-26), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/UI--Backend-Delete/) 
+  - `Jira Task: Ali - Confirmation Window for delete button` 
+    - [Scrum-28](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-28), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-28-confirmation-window) 
+  - `Jira Task: Ali - Implement Trash Bucket page/backend for deleted doc` 
+    - [Scrum-14](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-14), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-14-implement-trash-bucket-page-bac) 
+  - `Jira Task: Ali - Implement Undo Delete doc` 
+    - [Scrum-30](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-30),
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-30-implement-undo-delete) 
+  - `Jira Task: Ali - Brent - Error Handling for Deletions` 
+    - [Scrum-17](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-17), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/bugfix/SCRUM-17-error-handling-for-deletions)
 
-#### 1. Split Audio into Sections  
-- Description: The audio will be divided into sections, allowing you to listen to only that part of the audio.  
-#### 2. Share Notes  
-- Description: Users will be able to share their notes with others.  
-#### 3. Group Notes  
-- Description: Users can categorize and group their notes for better organization.  
+**Michael**: "Made a simple UI design for the Home page and Trash page, as well as doing implementing the delete function" 
+
+  - `Jira Task: Michael - View Transcription Text` 
+  - [Scrum-25](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-25), 
+  [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-25-process-audio-file-for-transcription)
+  
+    
+**Abheek:**  
+*"I worked on implementing display and editing for transcriptions in the front end, implementing real-time transcription, and processing audio for transcription, as well as front end and backend integration."*  
+
+- Jira Task: Abheek - Implement display and editing for transcriptions  
+  *Scrum-23, Bitbucket*  
+  [SCRUM-23-frontend-display-and-editing-for/](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-23-frontend-display-and-editing-for/)  
+
+- Jira Task: Abheek - Implement real-time transcription  
+  *Scrum-29, Bitbucket*  
+  [SCRUM-29-implement-real-time-transcripti/](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-29-implement-real-time-transcripti/)  
+
+- Jira Task: Abheek - Process audio file for transcription  
+  *Scrum-25, Bitbucket*  
+  [feature/SCRUM-25-process-audio-file-for-transcription](https://bitbucket.org/cs3398-gorns-s25/yapper/src/fbdb6e91bae85a8ec6bc3f34b6598bab4a8f8289/?at=feature%2FSCRUM-25-process-audio-file-for-transcription)  
+  
+**Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
+
+  - `Jira Task: Joshua - Research Supported Formats`  
+    - [Scrum-24](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-24),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-24-research-and-define-supported-a/YAPPER%20supported%20formats.pdf)  
+      
+  - `Jira Task: Joshua - Implementing Backend File Upload`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/commits/0b4d5d70ca94be5034ec2820984e1155be2b7a90)  
+
+  - `Jira Task: Joshua - Creating the Database and Storage`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png)  
+
+ 
+<br />
+
+#### Reports
+
+![Burnup Chart](images/Burnup-Sprint-1.JPG)
+    
+#### Next Steps
+**Ali**:  
+- Develop a way for the audio to be played in the view/editing in the text editor  
+- Develop a way for the audio to be formatted in a note-like way  
+- Make the UI look better for the text editor.
+
+**Michael**:  
+- continue debugging the confidence score feature (SCRUM-35)  
+- have transcription text highlight words or sections with a 25% or less confidence score  
+- add functionality to montior the process of the current transcription (SCRUM-2)  
 
 
+**Abheek:**
+- **Enhance Signal Quality and Integrity (Real-Time Filtering):**  
+  1. Research and select advanced digital signal processing (DSP) techniques (e.g., band-pass filters, noise reduction algorithms).  
+  2. Integrate these DSP modules to perform near real-time filtering of incoming audio streams.  
+  3. Continuously evaluate and optimize the signal-to-noise ratio (SNR) to ensure clean, high-fidelity audio for further processing.
+
+- **Voice Modulation, Isolation, and Identification:**  
+  1. Implement pre-processing methods (e.g., voice activity detection, channel separation) to isolate individual voices or sound sources.  
+  2. Use metadata tagging for different speakers prior to feeding audio into the machine learning model.  
+  3. Perform post-processing steps to refine speaker identification results, ensuring higher accuracy in voice-specific translations.
+
+- **Cross-Platform Input Integration (Phone/Watch/Online Media):**  
+  1. Enable microphone streaming from various devices (mobile phones, smartwatches) to the central database.  
+  2. Integrate and parse audio from other sources (e.g., phone calls, YouTube videos) for storage and further transcription.  
+  3. Implement secure data transfer protocols to maintain data integrity and confidentiality.
+
+- **GPU Acceleration and Model Enhancement (MoE):**  
+  1. Migrate existing speech-to-text and translation models to GPU-optimized frameworks (e.g., PyTorch, TensorFlow with CUDA).  
+  2. Explore a Mixture of Experts (MoE) model to efficiently handle multi-functionalities like speech-to-text, modulation, translation, and speaker isolation.  
+  3. Conduct thorough performance benchmarks, fine-tuning hyperparameters to ensure minimal latency and maximal accuracy.
+
+**Joshua**:
+- Definitely continue implementing the DB and the storage  
+- Work on integrating customer log in to the DB  
+
+<br />
 ## Screenshots
-![Logo](Yapperlogoimg.png)
+![Logo](images/Yapperlogoimg.png)
 
 <!-- If you have screenshots you'd like to share, include them here. -->
 
