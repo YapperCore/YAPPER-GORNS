@@ -48,3 +48,36 @@ Thumbs.db
 *.mov
 *.wmv
 
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+/backend/uploads
+/backend/trash
+/frontend/src/components/TrashBucket/TrashBucket.test.js
+/s2t-small-librispeech-asr
+backend/doc_store.json
+notes.txt
+*.sh
+OUTPUT_TEST/
+
+INPUT_AUDIO_TEST/
+backend/doc_store.json
