@@ -85,9 +85,25 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 **Michael**: "Made a simple UI design for the Home page and Trash page, as well as doing implementing the delete function" 
 
   - `Jira Task: Michael - View Transcription Text` 
-    - [Scrum-25](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-25), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-25-process-audio-file-for-transcription)
+  - [Scrum-25](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-25), 
+  [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-25-process-audio-file-for-transcription)
+  
+    
+**Abheek:**  
+*"I worked on implementing display and editing for transcriptions in the front end, implementing real-time transcription, and processing audio for transcription, as well as front end and backend integration."*  
 
+- Jira Task: Abheek - Implement display and editing for transcriptions  
+  *Scrum-23, Bitbucket*  
+  [SCRUM-23-frontend-display-and-editing-for/](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-23-frontend-display-and-editing-for/)  
+
+- Jira Task: Abheek - Implement real-time transcription  
+  *Scrum-29, Bitbucket*  
+  [SCRUM-29-implement-real-time-transcripti/](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-29-implement-real-time-transcripti/)  
+
+- Jira Task: Abheek - Process audio file for transcription  
+  *Scrum-25, Bitbucket*  
+  [feature/SCRUM-25-process-audio-file-for-transcription](https://bitbucket.org/cs3398-gorns-s25/yapper/src/fbdb6e91bae85a8ec6bc3f34b6598bab4a8f8289/?at=feature%2FSCRUM-25-process-audio-file-for-transcription)  
+  
 **Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
 
   - `Jira Task: Joshua - Research Supported Formats`  
@@ -119,6 +135,28 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - continue debugging the confidence score feature (SCRUM-35)  
 - have transcription text highlight words or sections with a 25% or less confidence score  
 - add functionality to montior the process of the current transcription (SCRUM-2)  
+
+
+**Abheek:**
+- **Enhance Signal Quality and Integrity (Real-Time Filtering):**  
+  1. Research and select advanced digital signal processing (DSP) techniques (e.g., band-pass filters, noise reduction algorithms).  
+  2. Integrate these DSP modules to perform near real-time filtering of incoming audio streams.  
+  3. Continuously evaluate and optimize the signal-to-noise ratio (SNR) to ensure clean, high-fidelity audio for further processing.
+
+- **Voice Modulation, Isolation, and Identification:**  
+  1. Implement pre-processing methods (e.g., voice activity detection, channel separation) to isolate individual voices or sound sources.  
+  2. Use metadata tagging for different speakers prior to feeding audio into the machine learning model.  
+  3. Perform post-processing steps to refine speaker identification results, ensuring higher accuracy in voice-specific translations.
+
+- **Cross-Platform Input Integration (Phone/Watch/Online Media):**  
+  1. Enable microphone streaming from various devices (mobile phones, smartwatches) to the central database.  
+  2. Integrate and parse audio from other sources (e.g., phone calls, YouTube videos) for storage and further transcription.  
+  3. Implement secure data transfer protocols to maintain data integrity and confidentiality.
+
+- **GPU Acceleration and Model Enhancement (MoE):**  
+  1. Migrate existing speech-to-text and translation models to GPU-optimized frameworks (e.g., PyTorch, TensorFlow with CUDA).  
+  2. Explore a Mixture of Experts (MoE) model to efficiently handle multi-functionalities like speech-to-text, modulation, translation, and speaker isolation.  
+  3. Conduct thorough performance benchmarks, fine-tuning hyperparameters to ensure minimal latency and maximal accuracy.
 
 **Joshua**:
 - Definitely continue implementing the DB and the storage  
