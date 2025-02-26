@@ -88,10 +88,11 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 ![Burnup Chart](images/Burnup-Sprint-1.JPG)
     
 #### Next Steps
-**Ali**:
-  - Develop a way for the audio to be played in the view/editing in the text editor
-  - Develop a way for the audio to be formated in a note -like way
-  - Make the UI look better for the text editor.
+**Ali**:  
+- Develop a way for the audio to be played in the view/editing in the text editor  
+- Develop a way for the audio to be formatted in a note-like way  
+- Make the UI look better for the text editor.  
+
 <br />
 ## Screenshots
 ![Logo](Yapperlogoimg.png)
