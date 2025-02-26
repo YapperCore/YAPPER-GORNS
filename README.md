@@ -87,17 +87,21 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   - `Jira Task: Michael - View Transcription Text` 
     - [Scrum-25](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-25), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-25-process-audio-file-for-transcription)
-    
-**Joshua**: Helped immplement backened file upload, as well as creating the storage and database .
- -`Jira Task: Joshua - Research supported formats`
-  - [Scrum-24](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-24), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-24-research-and-define-supported-a/YAPPER%20supported%20formats.pdf)
- -`Jira Task: Joshua - Implementing backend file upload`
-  - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/commits/0b4d5d70ca94be5034ec2820984e1155be2b7a90)
- -`Jira Task: Joshua - Creating the database and storage
-  - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33)
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png)
+
+**Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
+
+  - `Jira Task: Joshua - Research Supported Formats`  
+    - [Scrum-24](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-24),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-24-research-and-define-supported-a/YAPPER%20supported%20formats.pdf)  
+      
+  - `Jira Task: Joshua - Implementing Backend File Upload`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/commits/0b4d5d70ca94be5034ec2820984e1155be2b7a90)  
+
+  - `Jira Task: Joshua - Creating the Database and Storage`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png)  
+
  
 <br />
 
