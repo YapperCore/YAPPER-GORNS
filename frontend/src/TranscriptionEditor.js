@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import AudioPlayer from './components/AudioPlayer';
 
 /**
  * For real-time transcription, single-line chunk usage, doc references an audio file.
@@ -14,6 +15,7 @@ export default function TranscriptionEditor(){
   const [isComplete, setIsComplete] = useState(false);
   const [audioTrashed, setAudioTrashed] = useState(false);
   const [audioFilename, setAudioFilename] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
 
   useEffect(() => {
     // load doc
@@ -25,6 +27,7 @@ export default function TranscriptionEditor(){
           setContent(docData.content || '');
           setAudioTrashed(!!docData.audioTrashed);
           setAudioFilename(docData.audioFilename || '');
+          setAudioUrl(`/uploads/${docData.audioFilename}`);
         }
       } catch(err){
         console.error("Err loading doc:", err);
@@ -105,6 +108,7 @@ export default function TranscriptionEditor(){
         onChange={handleChange}
         style={{ height:'600px', background:'#fff' }}
       />
+      {audioUrl && <AudioPlayer audioUrl={audioUrl} />}
     </div>
   );
 }
