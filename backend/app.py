@@ -4,7 +4,6 @@ import json
 import eventlet
 from flask import Flask, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
-from pydub import AudioSegment
 from transcribe import chunked_transcribe_audio
 
 os.environ['EVENTLET_NO_GREENDNS'] = '1'
@@ -116,12 +115,6 @@ def upload_audio():
         "filename": os.path.basename(converted_path),
         "doc_id": doc_id
     }), 200
-
-def convert_audio_to_wav(file_path):
-    audio = AudioSegment.from_file(file_path)
-    wav_path = file_path.rsplit('.', 1)[0] + '.wav'
-    audio.export(wav_path, format='wav')
-    return wav_path
 
 def background_transcription(file_path, doc_id):
     try:
