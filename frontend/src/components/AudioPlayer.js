@@ -1,11 +1,30 @@
 import React, { useRef, useState, useEffect } from 'react';
 import './AudioPlayer.css';
 
-const AudioPlayer = ({ audioUrl }) => {
+const AudioPlayer = ({ filename }) => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [audioUrl, setAudioUrl] = useState('');
+
+  useEffect(() => {
+    const fetchAudioUrl = async () => {
+      try {
+        const response = await fetch(`/uploads/${filename}`);
+        if (response.ok) {
+          const url = URL.createObjectURL(await response.blob());
+          setAudioUrl(url);
+        } else {
+          console.error('Failed to fetch audio file');
+        }
+      } catch (error) {
+        console.error('Error fetching audio file:', error);
+      }
+    };
+
+    fetchAudioUrl();
+  }, [filename]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -65,9 +84,10 @@ const AudioPlayer = ({ audioUrl }) => {
         max="100"
         value={(currentTime / duration) * 100 || 0}
         onChange={handleProgressChange}
+        className="progress-bar"
       />
       <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-      <input type="range" min="0" max="1" step="0.01" onChange={handleVolumeChange} />
+      <input type="range" min="0" max="1" step="0.01" onChange={handleVolumeChange} className="volume-bar"/>
     </div>
   );
 };

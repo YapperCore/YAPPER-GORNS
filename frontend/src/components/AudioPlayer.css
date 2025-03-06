@@ -20,9 +20,16 @@
   cursor: pointer;
 }
 
-.audio-player input[type="range"] {
+.audio-player .progress-bar {
   width: 100px;
   margin: 0 10px;
+  background: #007bff; /* Progress bar color */
+}
+
+.audio-player .volume-bar {
+  width: 100px;
+  margin: 0 10px;
+  background: #28a745; /* Volume bar color */
 }
 
 .audio-player span {

@@ -108,7 +108,7 @@ export default function TranscriptionEditor(){
         onChange={handleChange}
         style={{ height:'600px', background:'#fff' }}
       />
-      {audioUrl && <AudioPlayer audioUrl={audioUrl} />}
+      {audioUrl && <AudioPlayer audioUrl={audioUrl} filename={audioFilename} />}
     </div>
   );
 }
