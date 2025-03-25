@@ -19,6 +19,10 @@ load_doc_store()
 def index():
     return "Backend with doc store (soft-delete), chunk transcription, and trash integration."
 
+@app.route('/uploads/<filename>', methods=['GET'])
+def get_audio_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 ########################################
 # UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
 ########################################
