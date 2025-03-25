@@ -2,9 +2,12 @@ import os
 import uuid
 import json
 import eventlet
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
+from pydub import AudioSegment
 from transcribe import chunked_transcribe_audio
+from Firestore_implementation import upload_file, save_to_firestore
+
 
 os.environ['EVENTLET_NO_GREENDNS'] = '1'
 eventlet.monkey_patch()
@@ -63,6 +66,10 @@ load_doc_store()
 def index():
     return "Backend with doc store (soft-delete), chunk transcription, and trash integration."
 
+@app.route('/uploads/<filename>', methods=['GET'])
+def get_audio_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 ########################################
 # UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
 ########################################
@@ -75,72 +82,99 @@ def upload_audio():
     audio_file = request.files['audio']
     original_filename = audio_file.filename
     unique_name = f"{uuid.uuid4()}_{original_filename}"
-    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
-
-    if os.path.exists(save_path):
-        return jsonify({"error": "File already exists"}), 400
 
     try:
-        audio_file.save(save_path)
-        app.logger.info(f"Saved file to: {save_path}")
+        app.logger.info(f"Uploading file: {original_filename}")
+
+        # Upload file to Firebase
+        file_url = upload_file(audio_file)  # No need to pass stream separately
+        app.logger.info(f"File uploaded successfully: {file_url}")
+
+        # Increment document counter
+        doc_counter += 1
+        doc_id = str(uuid.uuid4())
+        doc_name = f"Doc{doc_counter}"
+
+        # Store document metadata
+        doc_obj = {
+            "id": doc_id,
+            "name": doc_name,
+            "content": "",
+            "audioUrl": file_url,  # Store the Firebase URL instead of a local file path
+            "originalFilename": original_filename,
+            "audioTrashed": False,
+            "deleted": False
+        }
+        doc_store[doc_id] = doc_obj
+        save_doc_store()
+
+        # Start transcription in the background using Firebase URL
+        socketio.start_background_task(background_transcription, file_url, doc_id)
+
+        return jsonify({
+            "message": "Upload successful",
+            "doc_id": doc_id,
+            "file_url": file_url
+        }), 200
+
     except Exception as e:
-        app.logger.error(f"Error saving file: {e}")
-        return jsonify({"error": "File saving failed"}), 500
+        app.logger.error(f"Error in upload process: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": f"File upload failed: {str(e)}"
+        }), 500
 
-    doc_counter += 1
-    doc_id = str(uuid.uuid4())
-    doc_name = f"Doc{doc_counter}"
-    doc_obj = {
-        "id": doc_id,
-        "name": doc_name,
-        "content": "",
-        "audioFilename": unique_name,
-        "originalFilename": original_filename,
-        "audioTrashed": False,
-        "deleted": False
-    }
-    doc_store[doc_id] = doc_obj
-    save_doc_store()
+def convert_audio_to_wav(file_path):
+    audio = AudioSegment.from_file(file_path)
+    wav_path = file_path.rsplit('.', 1)[0] + '.wav'
+    audio.export(wav_path, format='wav')
+    return wav_path
 
-    socketio.start_background_task(background_transcription, save_path, doc_id)
-
-    return jsonify({
-        "message": "File received and doc created",
-        "filename": unique_name,
-        "doc_id": doc_id
-    }), 200
-
-def background_transcription(file_path, doc_id):
+def background_transcription(file_url, doc_id):
     try:
+        # Download and save file locally
+        response = requests.get(file_url, stream=True)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download file from {file_url}")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    temp_audio.write(chunk)
+            temp_audio_path = temp_audio.name
+
         chunk_buffer = []
-        for i, total, text in chunked_transcribe_audio(file_path):
-            chunk_buffer.append({
-                'chunk_index': i,
-                'total_chunks': total,
-                'text': text
-            })
+
+        for i, total, text in chunked_transcribe_audio(temp_audio_path):
+            chunk_buffer.append({"chunk_index": i, "total_chunks": total, "text": text})
+
             if len(chunk_buffer) >= 5:
                 socketio.emit('partial_transcript_batch', {
                     'doc_id': doc_id,
                     'chunks': chunk_buffer
                 })
                 socketio.sleep(0.1)
-                append_to_doc(doc_id, chunk_buffer)
+                save_to_firestore(doc_id, file_url, chunk_buffer)  # Save partial results
                 chunk_buffer = []
+
         if chunk_buffer:
             socketio.emit('partial_transcript_batch', {
                 'doc_id': doc_id,
                 'chunks': chunk_buffer
             })
             socketio.sleep(0.1)
-            append_to_doc(doc_id, chunk_buffer)
+            save_to_firestore(doc_id, file_url, chunk_buffer)
 
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
             'done': True
         })
+
+        save_to_firestore(doc_id, file_url, chunk_buffer, final=True)  # Mark final transcript in Firestore
+
     except Exception as e:
         app.logger.error(f"Error during transcription: {e}")
+        socketio.emit('transcription_error', {'doc_id': doc_id, 'error': str(e)})
+
 
 def append_to_doc(doc_id, chunk_list):
     doc = doc_store.get(doc_id)

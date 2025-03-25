@@ -4,25 +4,33 @@ import Home from './pages/Home';
 import Trash from './pages/Trash';
 import DocEditor from './DocEditor';
 import TranscriptionEditor from './TranscriptionEditor';
+import Signup from './pages/Signup';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <div className="App">
         <nav style={{ background:'#333', color:'#fff', padding:'1rem' }}>
-          <Link to="/" style={{ color:'#fff', marginRight:'1rem' }}>Home</Link>
+          
+          <Link to="/" style={{ color:'#fff', marginRight:'1rem' }}>Signup</Link>
+          
+          <Link to="/home" style={{ color:'#fff', marginRight:'1rem' }}>Home</Link>
           <Link to="/trash" style={{ color:'#fff', marginRight:'1rem' }}>Trash</Link>
           <Link to="/docs" style={{ color:'#fff' }}>Docs</Link>
         </nav>
 
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Signup />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/trash" element={<Trash />} />
           <Route path="/docs/*" element={<DocEditor />} />
           <Route path="/transcription/:docId" element={<TranscriptionEditor />} />
         </Routes>
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 
