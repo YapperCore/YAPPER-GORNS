@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import '../static/Home.css';
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -48,11 +49,9 @@ function Home() {
       if(res.ok){
         const data = await res.json();
         setUploadMessage(data.message || "Upload succeeded");
-        // open transcription
         if(data.doc_id){
           window.open(`/transcription/${data.doc_id}`, '_blank');
         }
-        // refresh doc list
         const dres = await fetch('/api/docs');
         if(dres.ok){
           const docData = await dres.json();
@@ -69,39 +68,61 @@ function Home() {
   };
 
   return (
-    <div style={{ padding:'1rem' }}>
-      <h2>Home - Upload Audio => Create Doc</h2>
-      <div>
-        <input type="file" onChange={handleFileChange}/>
-        <button onClick={handleUpload}>Submit</button>
+    <div className="home-container">
+      <h2>Home - Upload Audio ={'>'} Create Doc</h2>
+      <div className="upload-section">
+        <input 
+          type="file" 
+          onChange={handleFileChange}
+          className="file-input"
+        />
+        <button 
+          onClick={handleUpload}
+          className="upload-button"
+        >
+          Submit
+        </button>
       </div>
-      <p>{uploadMessage}</p>
+      <p className="message">{uploadMessage}</p>
 
-      <hr />
+      <hr className="divider" />
       <div>
         <h3>Docs in Session:</h3>
-        <ul>
+        <div className="docs-grid">
           {docs.map(doc => (
-            <li key={doc.id}>
-              {doc.name} { doc.audioFilename ? `(Audio: ${doc.audioFilename}${doc.audioTrashed?' [TRASHED]':''})` : '' }
-              &nbsp;|&nbsp;
-              <a href={`/transcription/${doc.id}`} target="_blank" rel="noreferrer">
-                (Transcription)
-              </a>
-              &nbsp;|&nbsp;
-              <a href={`/docs/edit/${doc.id}`} target="_blank" rel="noreferrer">
-                (Edit)
-              </a>
-            </li>
+            <div key={doc.id} className="doc-card">
+              <h4 className="doc-title">{doc.name}</h4>
+              {doc.audioFilename && (
+                <p className="audio-info">
+                  Audio: {doc.audioFilename}
+                  {doc.audioTrashed && ' [TRASHED]'}
+                </p>
+              )}
+              
+              <div className="doc-actions">
+                <a 
+                  href={`/transcription/${doc.id}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="action-link transcription-link"
+                >
+                  View Doc
+                </a>
+                <a 
+                  href={`/docs/edit/${doc.id}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="action-link edit-link"
+                >
+                  Edit Doc
+                </a>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
-      <hr />
-      <div>
-        <h3>Global Transcripts</h3>
-        {transcripts.map((t,i) => <div key={i}>{t}</div>)}
-      </div>
+      <hr className="divider" />
     </div>
   );
 }

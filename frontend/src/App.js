@@ -1,4 +1,4 @@
-import './App.css';
+import './static/App.css';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Trash from './pages/Trash';
