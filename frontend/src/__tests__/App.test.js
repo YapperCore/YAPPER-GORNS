@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 
-test('renders Home link', () => {
+test('renders header', () => {
   render(<App />);
-  const linkElement = screen.getByText(/Home/i);
+  const linkElement = screen.getByText(/Select a file/i);
   expect(linkElement).toBeInTheDocument();
 });
