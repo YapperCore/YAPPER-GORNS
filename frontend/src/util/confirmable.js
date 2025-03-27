@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
+import '../static/Home.css';
 
 export default function Confirmable({ onDelete }) {
     const toast = useRef(null);
@@ -35,7 +36,12 @@ export default function Confirmable({ onDelete }) {
         <>
             <Toast ref={toast} />
             <ConfirmPopup />
-            <Button onClick={confirmDelete} icon="pi pi-times" label="Delete" className="p-button-danger" />
+            <a  
+                onClick={confirmDelete} 
+                className="action-link delete-link"
+            >
+                Delete Doc
+            </a>
         </>
     );
 }
