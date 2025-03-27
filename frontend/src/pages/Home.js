@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import '../static/Home.css';
+import Confirmable from '../util/confirmable';
+import 'primereact/resources/themes/saga-blue/theme.css';  
+import 'primereact/resources/primereact.min.css';          
+    
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -67,6 +71,18 @@ function Home() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const url = `/api/docs/${id}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      if (res.ok) {
+        setDocs(prev => prev.filter(d => d.id !== id));
+      }
+    } catch (err) {
+      console.error("Error deleting doc:", err);
+    }
+  };
+
   return (
     <div className="home-container">
       <h2>Home - Upload Audio ={'>'} Create Doc</h2>
@@ -116,6 +132,9 @@ function Home() {
                 >
                   Edit Doc
                 </a>
+                <Confirmable 
+                  onDelete={() => handleDelete(doc.id)} 
+                />
               </div>
             </div>
           ))}
