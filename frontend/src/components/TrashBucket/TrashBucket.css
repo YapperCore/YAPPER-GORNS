@@ -14,7 +14,7 @@
 
 .TrashBucket-container {
   margin-top: 20px;
-  padding: 20px;
+  padding: 1rem;
   border: 2px solid #ccc;
   border-radius: 12px;
   background-color: #f9f9f9;
@@ -43,25 +43,88 @@
   list-style-type: none;
 }
 
+.trash-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0;
+  list-style-type: none;
+}
+
 .trash-item {
-  padding: 5px; 
-  background-color: #090909;
-  border-radius: 5px;
-  color: white;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .trash-item:hover {
-  background-color: #54525b; 
-  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .trash-filename {
-  color: #fefeff;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #333;
   font-weight: 500;
+}
+
+.trash-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.action-link {
+  padding: 0.3rem 0.6rem;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.action-link:focus,
+.action-link:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.restore-link {
+  background: #4CAF50;
+}
+
+.restore-link:hover {
+  background: #45a049;
 }
 
 p {
   color: #495057;
   font-weight: 500;
   margin-top: 1rem;
+}
+
+.p-confirm-popup {
+  background: #ffffff;
+  color: #495057;
+  border: 1px solid #000; 
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+.p-button.p-button-danger, 
+.p-button-group.p-button-danger > .p-button, 
+.p-splitbutton.p-button-danger > .p-button, 
+.p-fileupload-choose.p-button-danger {
+    color: #ffffff;
+    background: #689f38;
+    border: 1px solid #689f38;
 }
