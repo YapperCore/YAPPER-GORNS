@@ -2,8 +2,9 @@ import os
 import uuid
 import json
 import eventlet
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
+from pydub import AudioSegment
 from transcribe import chunked_transcribe_audio
 
 os.environ['EVENTLET_NO_GREENDNS'] = '1'
@@ -63,6 +64,10 @@ load_doc_store()
 def index():
     return "Backend with doc store (soft-delete), chunk transcription, and trash integration."
 
+@app.route('/uploads/<filename>', methods=['GET'])
+def get_audio_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 ########################################
 # UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
 ########################################
@@ -83,6 +88,8 @@ def upload_audio():
     try:
         audio_file.save(save_path)
         app.logger.info(f"Saved file to: {save_path}")
+        # Convert audio to desired format (e.g., WAV)
+        converted_path = convert_audio_to_wav(save_path)
     except Exception as e:
         app.logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
@@ -94,7 +101,7 @@ def upload_audio():
         "id": doc_id,
         "name": doc_name,
         "content": "",
-        "audioFilename": unique_name,
+        "audioFilename": os.path.basename(converted_path),
         "originalFilename": original_filename,
         "audioTrashed": False,
         "deleted": False
@@ -102,13 +109,19 @@ def upload_audio():
     doc_store[doc_id] = doc_obj
     save_doc_store()
 
-    socketio.start_background_task(background_transcription, save_path, doc_id)
+    socketio.start_background_task(background_transcription, converted_path, doc_id)
 
     return jsonify({
         "message": "File received and doc created",
-        "filename": unique_name,
+        "filename": os.path.basename(converted_path),
         "doc_id": doc_id
     }), 200
+
+def convert_audio_to_wav(file_path):
+    audio = AudioSegment.from_file(file_path)
+    wav_path = file_path.rsplit('.', 1)[0] + '.wav'
+    audio.export(wav_path, format='wav')
+    return wav_path
 
 def background_transcription(file_path, doc_id):
     try:

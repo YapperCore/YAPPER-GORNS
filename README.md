@@ -104,6 +104,9 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   *Scrum-25, Bitbucket*  
   [feature/SCRUM-25-process-audio-file-for-transcription](https://bitbucket.org/cs3398-gorns-s25/yapper/src/fbdb6e91bae85a8ec6bc3f34b6598bab4a8f8289/?at=feature%2FSCRUM-25-process-audio-file-for-transcription)  
   
+ *Got it! Here’s your formatted text in the same style as Ali’s:  
+
+  
 **Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
 
   - `Jira Task: Joshua - Research Supported Formats`  
@@ -116,7 +119,9 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
   - `Jira Task: Joshua - Creating the Database and Storage`  
     - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
-      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png)  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png) 
+
+
 
  
 <br />
@@ -162,6 +167,72 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - Definitely continue implementing the DB and the storage  
 - Work on integrating customer log in to the DB  
 
+### Sprint 2
+#### Contributions
+
+**Ali**: "Added A audio player for when you view notes, as well as updated the UI to look better on the eyes" 
+
+  - `Jira Task: Ali - Design and Implement the Audio Player` 
+    - [Scrum-44](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-44), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-44-design-and-implement-the-audio-) 
+  - `Jira Task: Ali - Research` 
+    - [Scrum-47](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-47), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-47-research) 
+  - `Jira Task: Ali - Develop Backend for Formatting Transcriptions` 
+    - [Scrum-48](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-48), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-48-develop-backend-api-for-formatt) 
+  - `Jira Task: Ali - Design and Implement Frontend UI for Viewing Formatted Notes` 
+    - [Scrum-50](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-50), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-50-design-and-implement-frontend-u) 
+
+**Michael** "Worked on implementing a Confidence Score for the transcription and worked on switching from Hugging Face to Whisper for transcription"
+ - `Jira Task: Michael - "Implement Confidence Score Process & Error Flagging`
+  - [SCRUM-31] (https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-31)
+    [Bitbucket] (https://bitbucket.org/cs3398-gorns-s25/yapper/branch/feature/SCRUM-31-implement-confidence-score-proc)
+
+ - `Jira Task: Michael - "Estimate Transcription Completion Time`
+  - [SCRUM-35] (https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-35)
+    [Bitbucket] (https://bitbucket.org/cs3398-gorns-s25/yapper/branch/feature/SCRUM-35-estimate-transcription-completion)
+ 
+ - `Jira Task: Michael - "Send Notifications on Transcription Completion`
+  - [SCRUM-36] (https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-36)
+    [Bitbucket] (https://bitbucket.org/cs3398-gorns-s25/yapper/branch/feature/SCRUM-36-send-notifications-on-transcription)
+
+  
+**Joshua**: "Implemented the Firebase/ Firestore upload logic and almost finished user signup."
+
+  - `Jira Task: Joshua - Implemented Secure file Storage`  
+    - [Scrum-39](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-39),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/85c8d62e16e7e4798a729e4cb32154f5dc542bbd/?at=feature%2FSCRUM-39-implement-secure-file-storage)  
+      
+  - `Jira Task: Joshua - Implementing User Signup` 
+    - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
+
+  
+
+<br />
+
+#### Reports
+
+![Burnup Chart](images/Burnup-Sprint-2.JPG.png)
+
+#### Next Steps
+**Ali**:  
+- Have the a formatted note style show.
+- Make the UI better looking. 
+- Have a way to generate a shareable link.
+
+**Michael**
+- help Ali with UI
+- was unable to complete (SCRUM-31,35, and 36) due to a possible 
+Mac OS dependency binary incompatability. 2 libraries and Torch or Flask, depend on two different of eventlet that are incomptability with each other. 
+One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eventlet 0.35.0
+
+**Joshua**:
+-Finish User Signup and update UI.
+-I am going to add User login
+- Lastly I am going to implement google authentication
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
