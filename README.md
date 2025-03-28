@@ -162,6 +162,35 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - Definitely continue implementing the DB and the storage  
 - Work on integrating customer log in to the DB  
 
+### Sprint 2
+#### Contributions
+
+**Ali**: "Added A audio player for when you view notes, as well as updated the UI to look better on the eyes" 
+
+  - `Jira Task: Ali - Design and Implement the Audio Player` 
+    - [Scrum-44](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-44), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-44-design-and-implement-the-audio-) 
+  - `Jira Task: Ali - Research` 
+    - [Scrum-47](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-47), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-47-research) 
+  - `Jira Task: Ali - Develop Backend for Formatting Transcriptions` 
+    - [Scrum-48](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-48), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-48-develop-backend-api-for-formatt) 
+  - `Jira Task: Ali - Design and Implement Frontend UI for Viewing Formatted Notes` 
+    - [Scrum-50](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-50), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-50-design-and-implement-frontend-u) 
+
+<br />
+
+#### Reports
+
+![Burnup Chart](images/Burnup-Sprint-2.JPG)
+
+#### Next Steps
+**Ali**:  
+- Have the a formatted note style show.
+- Make the UI better looking. 
+- Have a way to generate a shareable link.
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
