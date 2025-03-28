@@ -209,6 +209,11 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - Have the a formatted note style show.
 - Make the UI better looking. 
 - Have a way to generate a shareable link.
+
+**Joshua**:
+-Finish User Signup and update UI.
+-I am going to add User login
+- Lastly I am going to implement google authentication
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
