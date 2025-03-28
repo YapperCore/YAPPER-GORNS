@@ -191,6 +191,12 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 - Have the a formatted note style show.
 - Make the UI better looking. 
 - Have a way to generate a shareable link.
+
+**Michael**
+- help Ali with UI
+- was unable to complete (SCRUM-31,35, and 36) due to a possible 
+Mac OS dependency binary incompatability. 2 libraries and Torch or Flask, depend on two different of eventlet that are incomptability with each other. One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eventlet 0.35.0
+
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
