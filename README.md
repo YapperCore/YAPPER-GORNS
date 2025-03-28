@@ -184,7 +184,7 @@ Recognizing the challenges posed by language barriers in our increasingly interc
 
 #### Reports
 
-![Burnup Chart](images/Burnup-Sprint-2.JPG)
+![Burnup Chart](images\Burnup-Sprint-2.JPG.png)
 
 #### Next Steps
 **Ali**:  
