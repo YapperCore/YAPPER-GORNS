@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import io from 'socket.io-client';
+import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import io from 'socket.io-client';
 
-/**
- * This page covers /docs, /docs/new, /docs/edit/:docId
- * Allows basic doc creation, listing, editing, with real-time updates
- */
-export default function DocEditor() {
+export default function DocEditor(){
   return (
     <Routes>
       <Route path="/" element={<DocList />} />
@@ -18,72 +14,41 @@ export default function DocEditor() {
   );
 }
 
-function DocList() {
+function DocList(){
   const [docs, setDocs] = useState([]);
-  const [dir, setDir] = useState('');
-  const location = useLocation();
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const d = params.get('dir') || '';
-    setDir(d);
-    fetchDocs(d);
-  }, [location]);
-
-  const fetchDocs = async (directory) => {
-    try {
-      let url = '/api/docs';
-      if (directory) {
-        url += `?dir=${encodeURIComponent(directory)}`;
-      }
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setDocs(data);
-      }
-    } catch (err) {
-      console.error("Error fetching docs:", err);
-    }
-  };
+    fetch('/api/docs')
+      .then(r => r.json())
+      .then(data => setDocs(data))
+      .catch(err => console.error("Error listing docs:", err));
+  }, []);
 
   const handleDelete = async (id) => {
     try {
-      let url = `/api/docs/${id}`;
-      if (dir) url += `?dir=${encodeURIComponent(dir)}`;
-      const res = await fetch(url, { method: 'DELETE' });
-      if (res.ok) {
+      const res = await fetch(`/api/docs/${id}`, { method:'DELETE' });
+      if(res.ok){
         setDocs(prev => prev.filter(d => d.id !== id));
       }
-    } catch (err) {
+    } catch(err){
       console.error("Error deleting doc:", err);
     }
   };
 
   return (
-    <div style={{ background: '#f5f5f5', color: '#000', minHeight: '100vh', padding: '1rem' }}>
-      <h2>Document List</h2>
-      <p>
-        Optional directory:
-        <input
-          style={{ marginLeft: '0.5rem' }}
-          type="text"
-          placeholder="saved_docs"
-          value={dir}
-          onChange={(e) => setDir(e.target.value)}
-        />
-        <button onClick={() => fetchDocs(dir)}>Load</button>
-      </p>
-      <Link to={`new${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`}>
-        <button>Create New Doc</button>
-      </Link>
+    <div style={{ padding:'1rem', background:'#f5f5f5', minHeight:'100vh' }}>
+      <h2>Docs</h2>
+      <Link to="new"><button>Create New Doc</button></Link>
       <ul>
-        {docs.map(doc => (
-          <li key={doc.id} style={{ margin: '8px 0' }}>
-            {doc.name} (ID: {doc.id})
-            <Link to={`edit/${doc.id}${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`} style={{ marginLeft: '1rem' }}>
+        {docs.map(d => (
+          <li key={d.id}>
+            {d.name} 
+            {d.audioFilename ? ` (Audio: ${d.audioFilename}${d.audioTrashed?' [TRASHED]':''})` : ''}
+            &nbsp;|&nbsp;
+            <Link to={`edit/${d.id}`} style={{ marginRight:'1rem' }}>
               <button>Edit</button>
             </Link>
-            <button style={{ marginLeft: '1rem' }} onClick={() => handleDelete(doc.id)}>Delete</button>
+            <button onClick={() => handleDelete(d.id)}>Delete</button>
           </li>
         ))}
       </ul>
@@ -91,157 +56,122 @@ function DocList() {
   );
 }
 
-function DocCreate() {
+function DocCreate(){
   const [name, setName] = useState('');
   const [content, setContent] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSubmit = async () => {
     try {
-      const params = new URLSearchParams(location.search);
-      const dir = params.get('dir') || '';
-      let url = '/api/docs';
-      if (dir) url += `?dir=${encodeURIComponent(dir)}`;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/docs', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ name, content })
       });
-      if (res.ok) {
-        const newDoc = await res.json();
-        navigate(`edit/${newDoc.id}${dir ? `?dir=${encodeURIComponent(dir)}` : ''}`);
+      if(res.ok){
+        const doc = await res.json();
+        navigate(`edit/${doc.id}`);
       }
-    } catch (err) {
+    } catch(err){
       console.error("Error creating doc:", err);
     }
   };
 
   return (
-    <div style={{ background: '#f5f5f5', color: '#000', minHeight: '100vh', padding: '1rem' }}>
-      <h2>Create New Document</h2>
+    <div style={{ padding:'1rem', background:'#f5f5f5', minHeight:'100vh' }}>
+      <h2>Create Doc</h2>
       <p>
-        Name:
-        <input
-          type="text"
-          style={{ marginLeft: '0.5rem' }}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="DocX"
-        />
+        Name: <input value={name} onChange={e => setName(e.target.value)} style={{ marginLeft:'0.5rem' }}/>
       </p>
-      <p>Initial Content:</p>
-      <ReactQuill theme="snow" value={content} onChange={setContent} style={{ background: '#fff' }} />
-      <br />
+      <p>Content:</p>
+      <ReactQuill theme="snow" value={content} onChange={setContent}/>
       <button onClick={handleSubmit}>Create</button>
     </div>
   );
 }
 
-function DocEdit() {
+function DocEdit(){
   const { docId } = useParams();
-  const location = useLocation();
   const [doc, setDoc] = useState(null);
   const [content, setContent] = useState('');
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const params = new URLSearchParams(location.search);
-        const dir = params.get('dir') || '';
-        let url = `/api/docs/${docId}`;
-        if (dir) url += `?dir=${encodeURIComponent(dir)}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          setDoc(data);
-          setContent(data.content || '');
+    fetch(`/api/docs/${docId}`)
+      .then(r => r.json())
+      .then(d => {
+        if(!d.error){
+          setDoc(d);
+          setContent(d.content || '');
         }
-      } catch (err) {
-        console.error("Error fetching doc:", err);
-      }
-    })();
-  }, [docId, location]);
+      })
+      .catch(err => console.error("Err loading doc:", err));
+  }, [docId]);
 
   useEffect(() => {
-    const s = io('http://localhost:5000');
+    const s = io();
     setSocket(s);
+    s.emit('join_doc', { doc_id: docId });
+
+    const handleDocUpdate = (update) => {
+      if(update.doc_id === docId){
+        setContent(update.content);
+      }
+    };
+    s.on('doc_content_update', handleDocUpdate);
+
     return () => {
+      s.off('doc_content_update', handleDocUpdate);
       s.disconnect();
     };
-  }, []);
+  }, [docId]);
 
-  useEffect(() => {
-    if (!doc || !socket) return;
-    socket.emit('join_doc', { doc_id: docId });
-
-    const handleUpdate = (data) => {
-      if (data.doc_id === docId) {
-        setContent(data.content);
-      }
-    };
-    socket.on('doc_content_update', handleUpdate);
-
-    return () => {
-      socket.off('doc_content_update', handleUpdate);
-    };
-  }, [doc, socket, docId]);
-
-  const handleNameChange = (e) => {
-    if (!doc) return;
-    setDoc({ ...doc, name: e.target.value });
-  };
-
-  const handleEditorChange = (val) => {
+  const handleChange = val => {
     setContent(val);
-    if (socket) {
+    if(socket){
       socket.emit('edit_doc', { doc_id: docId, content: val });
     }
   };
 
   const handleSave = async () => {
-    if (!doc) return;
+    if(!doc) return;
     try {
-      const params = new URLSearchParams(location.search);
-      const dir = params.get('dir') || '';
-      let url = `/api/docs/${docId}`;
-      if (dir) url += `?dir=${encodeURIComponent(dir)}`;
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: doc.name, content })
+      const res = await fetch(`/api/docs/${docId}`, {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          name: doc.name,
+          content
+        })
       });
-    } catch (err) {
+      if(!res.ok){
+        console.error("Error saving doc");
+      }
+    } catch(err){
       console.error("Error saving doc:", err);
     }
   };
 
-  if (!doc) {
-    return <div style={{ background: '#f5f5f5', color: '#000', minHeight: '100vh', padding: '1rem' }}>
-      <h2>Loading document...</h2>
-    </div>;
-  }
+  if(!doc) return <div>Loading doc...</div>;
 
   return (
-    <div style={{ background: '#f5f5f5', color: '#000', minHeight: '100vh', padding: '1rem' }}>
-      <h2>Edit Document</h2>
-      <p>Doc ID: {docId}</p>
+    <div style={{ padding:'1rem', background:'#f5f5f5', minHeight:'100vh' }}>
+      <h2>Edit Doc</h2>
       <p>
         Name:
         <input
-          type="text"
+          style={{ marginLeft:'0.5rem' }}
           value={doc.name}
-          onChange={handleNameChange}
-          style={{ marginLeft: '0.5rem' }}
+          onChange={e => setDoc({ ...doc, name:e.target.value })}
+          onBlur={handleSave}
         />
       </p>
+      { doc.audioTrashed && <p style={{ color:'red' }}>Warning: The associated audio file is currently in trash.</p> }
       <ReactQuill
         theme="snow"
         value={content}
-        onChange={handleEditorChange}
-        style={{ height: '400px', background: '#fff' }}
+        onChange={handleChange}
+        style={{ minHeight:'300px', background:'#fff' }}
       />
       <br />
       <button onClick={handleSave}>Save</button>
