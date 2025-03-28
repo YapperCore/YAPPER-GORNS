@@ -104,19 +104,18 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   *Scrum-25, Bitbucket*  
   [feature/SCRUM-25-process-audio-file-for-transcription](https://bitbucket.org/cs3398-gorns-s25/yapper/src/fbdb6e91bae85a8ec6bc3f34b6598bab4a8f8289/?at=feature%2FSCRUM-25-process-audio-file-for-transcription)  
   
-**Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
+ *Got it! Here’s your formatted text in the same style as Ali’s:  
 
-  - `Jira Task: Joshua - Research Supported Formats`  
-    - [Scrum-24](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-24),  
-      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-24-research-and-define-supported-a/YAPPER%20supported%20formats.pdf)  
-      
-  - `Jira Task: Joshua - Implementing Backend File Upload`  
-    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
-      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/commits/0b4d5d70ca94be5034ec2820984e1155be2b7a90)  
+ **Joshua** - Implemented the Firebase/ Firestore upload logic and almost finished user signup 
+- `Jira Task: Joshua - Implement secure file storage`  
+  - [Scrum-39](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-39),  
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/85c8d62e16e7e4798a729e4cb32154f5dc542bbd/?at=feature%2FSCRUM-39-implement-secure-file-storage)  
 
-  - `Jira Task: Joshua - Creating the Database and Storage`  
-    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
-      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png)  
+- `Jira Task: Joshua - Implement user signup`  
+  - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
+
+
 
  
 <br />
