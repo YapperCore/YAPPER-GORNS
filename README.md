@@ -106,14 +106,20 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   
  *Got it! Here’s your formatted text in the same style as Ali’s:  
 
- **Joshua** - Implemented the Firebase/ Firestore upload logic and almost finished user signup 
-- `Jira Task: Joshua - Implement secure file storage`  
-  - [Scrum-39](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-39),  
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/85c8d62e16e7e4798a729e4cb32154f5dc542bbd/?at=feature%2FSCRUM-39-implement-secure-file-storage)  
+  
+**Joshua**: "Helped implement backend file upload, as well as creating the storage and database."
 
-- `Jira Task: Joshua - Implement user signup`  
-  - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
+  - `Jira Task: Joshua - Research Supported Formats`  
+    - [Scrum-24](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-24),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-24-research-and-define-supported-a/YAPPER%20supported%20formats.pdf)  
+      
+  - `Jira Task: Joshua - Implementing Backend File Upload`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/commits/0b4d5d70ca94be5034ec2820984e1155be2b7a90)  
+
+  - `Jira Task: Joshua - Creating the Database and Storage`  
+    - [Scrum-33](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-33),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/pull-requests/new?source=SCRUM-33-implement-backend-file-upload-l#chg-Test-run_DB.png) 
 
 
 
@@ -178,6 +184,19 @@ Recognizing the challenges posed by language barriers in our increasingly interc
   - `Jira Task: Ali - Design and Implement Frontend UI for Viewing Formatted Notes` 
     - [Scrum-50](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-50), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-50-design-and-implement-frontend-u) 
+    
+  
+**Joshua**: "Implemented the Firebase/ Firestore upload logic and almost finished user signup."
+
+  - `Jira Task: Joshua - Implemented Secure file Storage `  
+    - [Scrum-39](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-39),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/85c8d62e16e7e4798a729e4cb32154f5dc542bbd/?at=feature%2FSCRUM-39-implement-secure-file-storage)  
+      
+  - `Jira Task: Joshua - Implementing User Signup  
+    - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
+      [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
+
+ 
 
 <br />
 
