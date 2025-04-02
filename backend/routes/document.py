@@ -2,12 +2,12 @@ import os
 import uuid
 import json
 import logging
-from flask import request, jsonify, send_from_directory
-from pydub import AudioSegment
+from flask import request, jsonify, send_from_directory # type: ignore
+from pydub import AudioSegment # type: ignore
 from transcribe import chunked_transcribe_audio
 from config import UPLOAD_FOLDER
 from services.storage import save_doc_store, doc_store, doc_counter
-from socketio_instance import socketio
+from services.socketio_instance import socketio
 
 logger = logging.getLogger(__name__)
 
