@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 import logging
-from flask import request, jsonify
+from flask import request, jsonify # type: ignore
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
 
