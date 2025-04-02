@@ -4,7 +4,8 @@ from flask import Flask, request, jsonify, send_from_directory
 from config import UPLOAD_FOLDER, TRASH_FOLDER, CORS_ALLOWED_ORIGINS
 from services.storage import load_doc_store, save_doc_store, doc_store, doc_counter
 from routes.document import get_audio_file, upload_audio  # type: ignore
-from socketio_instance import socketio  # Import socketio from the new file
+from socketio_instance import socketio  
+from routes.docmanage import list_docs, get_doc, create_doc, update_doc, delete_doc
 
 app = Flask(__name__)
 socketio.init_app(app)  # Initialize socketio with the app
@@ -28,68 +29,12 @@ app.add_url_rule('/upload-audio', 'upload_audio', upload_audio, methods=['POST']
 ########################################
 # DOC MANAGEMENT ROUTES
 ########################################
-@app.route('/api/docs', methods=['GET'])
-def list_docs():
-    # Return only docs that are not marked as deleted.
-    active_docs = [d for d in doc_store.values() if not d.get("deleted", False)]
-    return jsonify(active_docs), 200
 
-@app.route('/api/docs/<doc_id>', methods=['GET'])
-def get_doc(doc_id):
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-        return jsonify({"error": "Doc not found"}), 404
-    return jsonify(d), 200
-
-@app.route('/api/docs', methods=['POST'])
-def create_doc():
-    global doc_counter
-    data = request.json or {}
-    doc_counter += 1
-    doc_id = str(uuid.uuid4())
-    name = data.get('name', f"Doc{doc_counter}")
-    content = data.get('content', '')
-    doc_obj = {
-        "id": doc_id,
-        "name": name,
-        "content": content,
-        "audioFilename": None,
-        "originalFilename": None,
-        "audioTrashed": False,
-        "deleted": False
-    }
-    doc_store[doc_id] = doc_obj
-    save_doc_store()
-    return jsonify(doc_obj), 201
-
-@app.route('/api/docs/<doc_id>', methods=['PUT'])
-def update_doc(doc_id):
-    data = request.json or {}
-    doc = doc_store.get(doc_id)
-    if not doc or doc.get("deleted"):
-        return jsonify({"error": "Doc not found"}), 404
-    doc["name"] = data.get("name", doc["name"])
-    doc["content"] = data.get("content", doc["content"])
-    save_doc_store()
-    return jsonify(doc), 200
-
-@app.route('/api/docs/<doc_id>', methods=['DELETE'])
-def delete_doc(doc_id):
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-        return jsonify({"message": "Doc not found"}), 404
-    d["deleted"] = True
-
-    filename = d.get("audioFilename")
-    if filename and not d.get("audioTrashed"):
-        src_path = os.path.join(UPLOAD_FOLDER, filename)
-        dst_path = os.path.join(TRASH_FOLDER, filename)
-        if os.path.exists(src_path):
-            os.rename(src_path, dst_path)
-            d["audioTrashed"] = True
-            app.logger.info(f"Moved file to trash: {src_path}")
-    save_doc_store()
-    return jsonify({"message": "Doc deleted"}), 200
+app.add_url_rule('/api/docs', view_func=list_docs, methods=['GET'])
+app.add_url_rule('/api/docs/<doc_id>', view_func=get_doc, methods=['GET'])
+app.add_url_rule('/api/docs', view_func=create_doc, methods=['POST'])
+app.add_url_rule('/api/docs/<doc_id>', view_func=update_doc, methods=['PUT'])
+app.add_url_rule('/api/docs/<doc_id>', view_func=delete_doc, methods=['DELETE'])
 
 ########################################
 # TRASH & FILE MANAGEMENT ROUTES
