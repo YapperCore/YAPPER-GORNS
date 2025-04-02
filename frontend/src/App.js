@@ -2,8 +2,8 @@ import './static/App.css';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Trash from './pages/Trash';
-import DocEditor from './pages/DocEditor';
-import TranscriptionEditor from '../pages/TranscriptionEditor';
+import DocEditor from './util/DocEditor';
+import TranscriptionEditor from './util/TranscriptionEditor';
 
 function App() {
   return (

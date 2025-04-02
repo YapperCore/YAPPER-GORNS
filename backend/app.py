@@ -138,7 +138,7 @@ def background_transcription(file_path, doc_id):
                     'chunks': chunk_buffer
                 })
                 socketio.sleep(0.1)
-                append_to_doc(doc_id, chunk_buffer)
+                append_to_doc(doc_id, chunk_buffer)  # Ensure this updates the document content
                 chunk_buffer = []
         if chunk_buffer:
             socketio.emit('partial_transcript_batch', {
@@ -148,6 +148,7 @@ def background_transcription(file_path, doc_id):
             socketio.sleep(0.1)
             append_to_doc(doc_id, chunk_buffer)
 
+        # Emit final transcript event
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
             'done': True
