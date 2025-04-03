@@ -11,7 +11,7 @@ from services.socketio_instance import socketio  # type: ignore
 app = Flask(__name__)
 socketio.init_app(app)
 
-monkey.patch_all()  # Patch standard library modules to work with gevent's green threads
+monkey.patch_all()  
 
 load_doc_store()
 
