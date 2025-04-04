@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
@@ -34,7 +34,7 @@ export default function Confirmable({ onDelete }) {
 
     return (
         <>
-            <Toast ref={toast} />
+            <Toast ref={toast} position="top-right" />
             <ConfirmPopup />
             <a  
                 onClick={confirmDelete} 
@@ -76,9 +76,29 @@ export function Restore({ onRestore }) {
 
     return (
         <>
-            <Toast ref={toast} />
+            <Toast ref={toast} position="top-right" />
             <ConfirmPopup />
             <Button onClick={confirmRestore} icon="pi pi-check" label="Restore" className="p-button-success" />
+        </>
+    );
+}
+
+export function PermDel({ onDelete }) {
+    const toast = useRef(null);
+
+    const handleDelete = async () => {
+        try {
+            await onDelete();
+            toast.current?.show({ severity: 'info', summary: 'Deleted', detail: 'Item permanently deleted', life: 3000 });
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete permanently', life: 3000 });
+        }
+    };
+
+    return (
+        <>
+            <Toast ref={toast} position="top-right" />
+            <Button onClick={handleDelete} icon="pi pi-trash" label="Perm Delete" className="p-button-danger" />
         </>
     );
 }
