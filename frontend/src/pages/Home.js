@@ -118,7 +118,6 @@ function Home() {
               <div className="doc-actions">
                 <a 
                   href={`/transcription/${doc.id}`} 
-                  target="_blank" 
                   rel="noreferrer"
                   className="action-link transcription-link"
                 >
@@ -126,7 +125,6 @@ function Home() {
                 </a>
                 <a 
                   href={`/docs/edit/${doc.id}`} 
-                  target="_blank" 
                   rel="noreferrer"
                   className="action-link edit-link"
                 >
