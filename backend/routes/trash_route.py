@@ -51,3 +51,27 @@ def mark_doc_audio_trashed(filename, is_trashed):
             changed = True
     if changed:
         save_doc_store()
+
+def perm_delete_files(filename):
+    trash_path = os.path.join(TRASH_FOLDER, filename)
+    if os.path.exists(trash_path):
+        try:
+            os.remove(trash_path)
+            
+            # Firebase integration: Remove references to the file in the database
+            # TODO: Replace this loop with Firebase database deletion logic
+            for doc_id, doc in list(doc_store.items()):
+                if doc.get("audioFilename") == filename:
+                    del doc_store[doc_id]
+            
+            # TODO: Save changes to Firebase database
+            # Replace save_doc_store() with Firebase-specific save logic
+            save_doc_store()
+
+            logger.info(f"Permanently deleted file: {filename}")
+            return jsonify({"message": "File permanently deleted"}), 200
+        except Exception as e:
+            logger.error(f"Error deleting file: {e}")
+            return jsonify({"error": "Failed to delete file"}), 500
+    else:
+        return jsonify({"message": "File not found in trash"}), 404

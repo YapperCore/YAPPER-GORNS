@@ -4,7 +4,7 @@ from flask import Flask # type: ignore
 from services.storage import load_doc_store, save_doc_store, doc_store
 from routes.document import get_audio_file, upload_audio  # type: ignore
 from routes.docmanage import list_docs, get_doc, create_doc, update_doc, delete_doc
-from routes.trash_route import get_trash_files, restore_file, get_upload_files
+from routes.trash_route import get_trash_files, restore_file, get_upload_files, perm_delete_files
 from services.socketio_instance import socketio # type: ignore
 
 app = Flask(__name__)
@@ -43,6 +43,7 @@ app.add_url_rule('/api/docs/<doc_id>', view_func=delete_doc, methods=['DELETE'])
 app.add_url_rule('/trash-files', view_func=get_trash_files, methods=['GET'])
 app.add_url_rule('/restore_file/<filename>', view_func=restore_file, methods=['GET'])
 app.add_url_rule('/upload-files', view_func=get_upload_files, methods=['GET'])
+app.add_url_rule('/delete_file/<filename>', view_func=perm_delete_files, methods=['DELETE'])
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
