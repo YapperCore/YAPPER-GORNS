@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import '../static/Home.css';
 import Confirmable from '../util/confirmable';
+import { Toast } from 'primereact/toast';
 import 'primereact/resources/themes/saga-blue/theme.css';  
 import 'primereact/resources/primereact.min.css';          
-    
 
 function Home() {
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [transcripts, setTranscripts] = useState([]);
+  const [setTranscripts] = useState([]);
   const [docs, setDocs] = useState([]);
+
+  const toast = useRef(null);
 
   useEffect(() => {
     const socket = io();
@@ -85,6 +87,8 @@ function Home() {
 
   return (
     <div className="home-container">
+      <Toast ref={toast} position="top-right" />
+
       <h2>Home - Upload Audio ={'>'} Create Doc</h2>
       <div className="upload-section">
         <input 
@@ -132,6 +136,7 @@ function Home() {
                 </a>
                 <Confirmable 
                   onDelete={() => handleDelete(doc.id)} 
+                  toast={toast} 
                 />
               </div>
             </div>
