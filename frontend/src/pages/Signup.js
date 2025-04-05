@@ -5,23 +5,41 @@ export default function Signup() {
     const emailRef = useRef();
     const passwordRef = useRef();
     const passwordConfirmRef = useRef();
-    const { signup, currentUser } = useAuth()
-    const [error, setError] = useState('')
-    const [loading, setLoading] = useState(false)
+    const { signup, currentUser } = useAuth();
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    
     async function handleSubmit(e) {
-        e.preventDefault()
-
-        if (passwordRef.current.value!==passwordConfirmRef.current.value) {
-            return setError('Passwords do not match')
+        e.preventDefault();
+        
+        console.log("Form submitted");
+    
+        console.log("Password entered:", passwordRef.current.value);
+        console.log("Password confirmation entered:", passwordConfirmRef.current.value);
+    
+        if (passwordRef.current.value !== passwordConfirmRef.current.value) {
+            console.error("Passwords do not match");
+            return setError("Passwords do not match");
         }
+    
         try {
-        setError('')
-        setLoading(true)
-        await signup(emailRef.current.value, passwordRef.current.value)
-        } catch {
-            setError('Failed to create an account')
+            console.log("Attempting to sign up user with email:", emailRef.current.value);
+    
+            setError("");
+            setLoading(true);
+            
+            // Log before calling signup
+            console.log("Calling signup function...");
+            const result = await signup(emailRef.current.value, passwordRef.current.value);
+            // Log after calling signup
+            console.log("Signup successful, result:", result);
+    
+        } catch (error) {
+            console.error("Signup failed:", error);
+            setError("Failed to create an account");
         }
-        setLoading(false)
+    
+        setLoading(false);
     }
   return (
     <>
