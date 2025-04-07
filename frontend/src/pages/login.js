@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Form, Button, Card, Alert } from "react-bootstrap";
+import { Form, Button, Card, Alert, InputGroup, Container } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -41,30 +41,43 @@ export default function Login() {
     }
 
     return (
-        <>
-            <Card>
+        <Container className="d-flex justify-content-center align-items-center vh-100">
+        <div className="w-100" style={{ maxWidth: "400px" }}>
+            <Card className="shadow-lg">
                 <Card.Body>
                     <h2 className="text-center mb-4">Log In</h2>
-                    {currentUser && currentUser.email}
                     {error && <Alert variant="danger">{error}</Alert>}
                     <Form onSubmit={handleSubmit}>
-                        <Form.Group id="email">
+                        
+                        {/* Email Field with Icon */}
+                        <Form.Group id="email" className="mb-3">
                             <Form.Label>Email</Form.Label>
-                            <Form.Control type="email" ref={emailRef} required />
+                            <InputGroup>
+                                <InputGroup.Text>📧</InputGroup.Text>
+                                <Form.Control type="email" ref={emailRef} required placeholder="Enter your email" />
+                            </InputGroup>
                         </Form.Group>
-                        <Form.Group id="password">
+
+                        {/* Password Field with Icon */}
+                        <Form.Group id="password" className="mb-3">
                             <Form.Label>Password</Form.Label>
-                            <Form.Control type="password" ref={passwordRef} required />
+                            <InputGroup>
+                                <InputGroup.Text>🔒</InputGroup.Text>
+                                <Form.Control type="password" ref={passwordRef} required placeholder="Enter your password" />
+                            </InputGroup>
                         </Form.Group>
-                        <Button disabled={loading} className="w-100 mt-3" type="submit">
+
+                        {/* Submit Button */}
+                        <Button disabled={loading} className="w-100" variant="primary" type="submit">
                             Log In
                         </Button>
                     </Form>
                 </Card.Body>
             </Card>
-            <div className="w-100 text-center mt-2">
+            <div className="text-center mt-3">
                 Need an account? <a href="/signup">Sign Up</a>
             </div>
-        </>
-    );
+        </div>
+    </Container>
+);
 }
