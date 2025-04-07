@@ -22,8 +22,8 @@ function App() {
         </nav>
 
         <Routes>
-          <Route path="/" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/home" element={<Home />} />
           <Route path="/trash" element={<Trash />} />
           <Route path="/docs/*" element={<DocEditor />} />
