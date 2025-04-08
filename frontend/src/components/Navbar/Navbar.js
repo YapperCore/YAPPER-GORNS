@@ -1,17 +1,38 @@
 import React from 'react';
-import './Navbar.css';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
+import 'bootstrap/dist/css/bootstrap.min.css'; 
 
-const Navbar = () => {
+export function Navbar() {
+  const { currentUser } = useAuth(); // Access currentUser from AuthContext
+
   return (
-    <nav className="Navbar">
-      <h1 className="logo">Yapper</h1>
-      <ul className="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/trash">Trash</a></li>
-        <li><a href="/docs">Docs</a></li>
-      </ul>
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div className="container-fluid">
+        
+        <div className="navbar-brand"></div>
+
+        
+        <div className="mx-auto">
+          <ul className="navbar-nav">
+            <li className="nav-item">
+              <Link to="/" className="nav-link">Login</Link>
+            </li>
+            <li className="nav-item">
+              <Link to="/home" className="nav-link">Home</Link>
+            </li>
+            <li className="nav-item">
+              <Link to="/trash" className="nav-link">Trash</Link>
+            </li>
+          </ul>
+        </div>
+
+        
+        <div className="navbar-text">
+          {currentUser && currentUser.email} 
+        </div>
+      </div>
     </nav>
   );
-};
-
+}
 export default Navbar;
