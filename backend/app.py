@@ -1,5 +1,7 @@
 import os
 import eventlet # type: ignore
+eventlet.monkey_patch() #! this must be ran before other imports
+
 from flask import Flask # type: ignore
 from services.storage import load_doc_store, save_doc_store, doc_store
 from routes.document import get_audio_file, upload_audio  # type: ignore
@@ -11,7 +13,6 @@ app = Flask(__name__)
 socketio.init_app(app)
 
 os.environ['EVENTLET_NO_GREENDNS'] = '1'
-eventlet.monkey_patch()
 
 load_doc_store()
 
