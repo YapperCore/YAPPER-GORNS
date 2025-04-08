@@ -66,12 +66,9 @@ function Home() {
         if (data.doc_id) {
           window.open(`/transcription/${data.doc_id}`, "_blank");
         }
+        // refresh doc list
         const dres = await fetch('/api/docs');
         if(dres.ok){
-  
-        // Refresh the list of documents to show new uploads
-        const dres = await fetch("/api/docs");
-        if (dres.ok) {
           const docData = await dres.json();
           setDocs(docData);
         }
@@ -100,7 +97,7 @@ function Home() {
 
   return (
     <div style={{ padding:'1rem' }}>
-      <h2>Home - Upload Audio => Create Doc</h2>
+      <h2>Home - Upload Audio ={'>'} Create Doc</h2>
       <div>
         <input type="file" onChange={handleFileChange}/>
         <button onClick={handleUpload}>Submit</button>
