@@ -1,5 +1,5 @@
 import unittest
-from routes.docmanage import add_document, get_document, update_document, delete_document
+from backend.routes.docmanage import add_document, get_document, update_document, delete_document
 
 class TestDocManage(unittest.TestCase):
 
@@ -43,6 +43,5 @@ class TestDocManage(unittest.TestCase):
         self.assertFalse(delete_document(-1))
 
 if __name__ == '__main__':
-
     # run unittest with python <nameofscript>test.py >> testoutput.txt
     unittest.main()
