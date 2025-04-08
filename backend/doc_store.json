@@ -7,7 +7,7 @@
       "audioFilename": "af459549-3b8d-4943-a6b8-390feefab778_mixkit-classic-alarm-995.wav",
       "originalFilename": "mixkit-classic-alarm-995.wav",
       "audioTrashed": false,
-      "deleted": false
+      "deleted": true
     },
     "767b57a4-78a5-45cd-9d81-b90d85c204aa": {
       "id": "767b57a4-78a5-45cd-9d81-b90d85c204aa",
@@ -25,7 +25,7 @@
       "audioFilename": "2d956cb7-18ed-42ce-8b5a-e7c744b4b167_OSR_us_000_0010_8k.wav",
       "originalFilename": "OSR_us_000_0010_8k.wav",
       "audioTrashed": false,
-      "deleted": false
+      "deleted": true
     },
     "d11bacd2-e3c8-45b5-a26c-1ed4a85a3d78": {
       "id": "d11bacd2-e3c8-45b5-a26c-1ed4a85a3d78",
@@ -51,6 +51,42 @@
       "content": "",
       "audioFilename": "76480969-ca47-4f96-a83f-7edd31cd30a1_Pop2.wav",
       "originalFilename": "Pop2.wav",
+      "audioTrashed": false,
+      "deleted": false
+    },
+    "36e4a228-222e-49be-b4ef-2e983c57de9d": {
+      "id": "36e4a228-222e-49be-b4ef-2e983c57de9d",
+      "name": "Doc37",
+      "content": " the birch canoes led on the smooth plank glue the heat to the dark blue background it is easy to tell the depth of a well these lay the chicken leg of a rare dish rice is often served in round bowls the juice of lemons makes fine punch the bark was thrown beside the pug truck the harbour fed chopped horn and garbage four hours of steady work faced us a large size of stockings is hard to sell",
+      "audioFilename": "638b50b8-d5f7-4bc2-b144-1b9c373e10ab_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
+      "audioTrashed": false,
+      "deleted": false
+    },
+    "2ea6e8b4-eb62-46c2-a08a-c402ca40d4d4": {
+      "id": "2ea6e8b4-eb62-46c2-a08a-c402ca40d4d4",
+      "name": "Doc38",
+      "content": " the birch canoes led on the smooth plank glue the heat to the dark blue background it is easy to tell the depth of a well these lay the chicken leg of a rare dish rice is often served in round bowls the juice of lemons makes fine punch the bark was thrown beside the pug truck the harbour fed chopped horn and garbage four hours of steady work faced us a large size of stockings is hard to sell",
+      "audioFilename": "1ccd7877-c6ac-4b62-8e21-c9bd50ed3e87_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
+      "audioTrashed": false,
+      "deleted": false
+    },
+    "f4ea1c1b-efc5-4a5e-be4b-26ca8a679f21": {
+      "id": "f4ea1c1b-efc5-4a5e-be4b-26ca8a679f21",
+      "name": "Doc37",
+      "content": " the birch canoes led on the smooth plank glue the heat to the dark blue background it is easy to tell the depth of a well these lay the chicken leg of a rare dish rice is often served in round bowls the juice of lemons makes fine punch the bark was thrown beside the pug truck the harbour fed chopped horn and garbage four hours of steady work faced us a large size of stockings is hard to sell",
+      "audioFilename": "7d064a07-0407-4bc0-aee7-4c4bc58ae9eb_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
+      "audioTrashed": false,
+      "deleted": false
+    },
+    "a22dfb43-a348-45cc-b7a7-57847ad4ba7a": {
+      "id": "a22dfb43-a348-45cc-b7a7-57847ad4ba7a",
+      "name": "Doc37",
+      "content": " the birch canoes led on the smooth plank glue the heat to the dark blue background it is easy to tell the depth of a well these lay the chicken leg of a rare dish rice is often served in round bowls the juice of lemons makes fine punch the bark was thrown beside the pug truck the harbour fed chopped horn and garbage four hours of steady work faced us a large size of stockings is hard to sell",
+      "audioFilename": "b7b2f5d7-c23c-494a-b872-799233823991_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
       "audioTrashed": false,
       "deleted": false
     }
