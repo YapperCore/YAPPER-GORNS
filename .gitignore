@@ -85,3 +85,5 @@ Accesskey.json
 
 frontend/src/__tests__
 backend/doc_store.json
+
+backend/s2t-small-librispeech-asr
