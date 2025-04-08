@@ -2,12 +2,13 @@ import os
 import uuid
 import json
 import logging
+import requests  # Add this import
+from backend.transcribe import chunked_transcribe_audio
 from flask import request, jsonify, send_from_directory # type: ignore
-from pydub import AudioSegment # type: ignore
-from transcribe import chunked_transcribe_audio
 from config import UPLOAD_FOLDER
 from services.storage import save_doc_store, doc_store, doc_counter
 from services.socketio_instance import socketio
+import torchaudio # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +63,13 @@ def upload_audio():
     }), 200
 
 def convert_audio_to_wav(file_path):
-    audio = AudioSegment.from_file(file_path)
     wav_path = file_path.rsplit('.', 1)[0] + '.wav'
-    audio.export(wav_path, format='wav')
+    try:
+        waveform, sample_rate = torchaudio.load(file_path)  # Load the audio file
+        torchaudio.save(wav_path, waveform, sample_rate)  # Save it as a WAV file
+    except Exception as e:
+        logger.error(f"Error converting audio to WAV: {e}")
+        raise
     return wav_path
 
 def background_transcription(file_path, doc_id):
