@@ -81,4 +81,7 @@ OUTPUT_TEST/
 
 INPUT_AUDIO_TEST/
 backend/doc_store.json
+Accesskey.json
+
 frontend/src/__tests__
+backend/doc_store.json
