@@ -41,32 +41,23 @@ function Home() {
   };
 
   const handleUpload = async () => {
-    if (!file) {
+    if(!file){
       setUploadMessage("No file selected!");
       return;
     }
-  
     try {
       const formData = new FormData();
-      formData.append("audio", file);
-  
-      // Send the file to the Flask backend
-      const res = await fetch("/upload-audio", {
-        method: "POST",
-        body: formData,
+      formData.append('audio', file);
+      const res = await fetch('/upload-audio', {
+        method: 'POST',
+        body: formData
       });
-  
-      if (res.ok) {
+      if(res.ok){
         const data = await res.json();
         setUploadMessage(data.message || "Upload succeeded");
         if(data.doc_id){
           window.open(`/transcription/${data.doc_id}`, '_blank');
-  
-        // Open transcription page
-        if (data.doc_id) {
-          window.open(`/transcription/${data.doc_id}`, "_blank");
         }
-        // refresh doc list
         const dres = await fetch('/api/docs');
         if(dres.ok){
           const docData = await dres.json();
@@ -76,12 +67,11 @@ function Home() {
         const eData = await res.json();
         setUploadMessage(eData.error || "Upload failed");
       }
-    } catch (err) {
+    } catch(err){
       console.error("Upload error:", err);
       setUploadMessage("Upload failed");
     }
   };
-  
 
   const handleDelete = async (id) => {
     try {
@@ -96,11 +86,22 @@ function Home() {
   };
 
   return (
-    <div style={{ padding:'1rem' }}>
+    <div className="home-container">
+      <Toast ref={toast} position="top-right" />
+
       <h2>Home - Upload Audio ={'>'} Create Doc</h2>
-      <div>
-        <input type="file" onChange={handleFileChange}/>
-        <button onClick={handleUpload}>Submit</button>
+      <div className="upload-section">
+        <input 
+          type="file" 
+          onChange={handleFileChange}
+          className="file-input"
+        />
+        <button 
+          onClick={handleUpload}
+          className="upload-button"
+        >
+          Submit
+        </button>
       </div>
       <p className="message">{uploadMessage}</p>
 
