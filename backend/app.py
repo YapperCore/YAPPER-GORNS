@@ -47,4 +47,4 @@ app.add_url_rule('/upload-files', view_func=get_upload_files, methods=['GET'])
 app.add_url_rule('/delete_file/<filename>', view_func=perm_delete_files, methods=['DELETE'])
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001)
