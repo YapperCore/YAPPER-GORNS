@@ -128,3 +128,21 @@ p {
     background: #689f38;
     border: 1px solid #689f38;
 }
+
+.p-button-danger {
+  background-color: #dc3545 !important; /* Ensure the red color is applied */
+  border-color: #dc3545 !important;
+}
+
+.p-button-success {
+  background-color: #28a745 !important; /* Ensure the green color is applied */
+  border-color: #28a745 !important;
+}
+
+
+.p-toast {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 1000 !important;
+}
