@@ -1,11 +1,8 @@
-from flask_socketio import SocketIO, join_room,emit # type: ignore
-from config import CORS_ALLOWED_ORIGINS
+from flask_socketio import SocketIO, join_room, emit
 from services.storage import save_doc_store, doc_store
 
-
-
-socketio = SocketIO(cors_allowed_origins=CORS_ALLOWED_ORIGINS)
-
+# Initialize with threading mode - will be attached to app later
+socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
 
 @socketio.on('join_doc')
 def handle_join_doc_evt(data):
