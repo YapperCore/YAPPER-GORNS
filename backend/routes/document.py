@@ -1,4 +1,3 @@
-# backend/routes/document.py
 import os
 import uuid
 import json
@@ -95,7 +94,6 @@ def serve_local_audio(filename):
 def upload_audio():
     """Upload an audio file and create a document for transcription"""
     global doc_counter
-    
     if 'audio' not in request.files:
         return jsonify({"error": "No audio file found"}), 400
 

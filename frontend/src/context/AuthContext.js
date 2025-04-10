@@ -1,4 +1,3 @@
-// frontend/src/context/AuthContext.js
 import React, { useContext, useState, useEffect } from "react";
 import { auth } from "./firebase";
 import { 
@@ -18,33 +17,12 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function signup(email, password) {
-    try {
-      setError(null);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Create user document
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        email: email,
-        isAdmin: false,
-        createdAt: new Date().toISOString()
-      });
-      
-      return userCredential;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    }
+  function signup(email, password) {
+    return createUserWithEmailAndPassword(auth, email, password);
   }
 
-  async function login(email, password) {
-    try {
-      setError(null);
-      return await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    }
+  function login(email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
   }
 
   function logout() {
@@ -62,18 +40,9 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const adminStatus = await checkAdminStatus(user);
-        setIsAdmin(adminStatus);
-      } else {
-        setIsAdmin(false);
-      }
-      
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      setLoading(false);
     });
-    
     return unsubscribe;
   }, []);
 
@@ -86,9 +55,5 @@ export function AuthProvider({ children }) {
     getIdToken
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

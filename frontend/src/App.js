@@ -1,4 +1,3 @@
-// frontend/src/App.js
 import './static/App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';

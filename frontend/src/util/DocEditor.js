@@ -1,10 +1,8 @@
-// frontend/src/util/DocEditor.js
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import io from 'socket.io-client';
-import { useAuth } from '../context/AuthContext';
 
 export default function DocEditor() {
   return (
@@ -129,7 +127,6 @@ function DocCreate() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
 
   const handleSubmit = async () => {
     if (!currentUser) {
@@ -258,13 +255,12 @@ function DocEdit() {
     s.on('doc_content_update', handleDocUpdate);
 
     return () => {
-      if (socket) {
-        socket.disconnect();
-      }
+      s.off('doc_content_update', handleDocUpdate);
+      s.disconnect();
     };
   }, [docId, currentUser]);
 
-  const handleChange = async (val) => {
+  const handleChange = val => {
     setContent(val);
     if (socket) {
       socket.emit('edit_doc', { doc_id: docId, content: val });

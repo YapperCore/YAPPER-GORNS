@@ -118,3 +118,4 @@ def chunked_transcribe_audio(audio_path, model_name=WHISPER_MODEL, chunk_size=30
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         yield 0, 1, f"Error transcribing audio: {str(e)}"
+

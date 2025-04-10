@@ -6,7 +6,7 @@ import { Toast } from 'primereact/toast';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { useAuth } from '../../context/AuthContext';
 
-function TrashBucket() {
+const TrashBucket = () => {
   const [trashFiles, setTrashFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -14,22 +14,6 @@ function TrashBucket() {
   const [actionInProgress, setActionInProgress] = useState(false);
   const toast = useRef(null);
   const { currentUser } = useAuth();
-
-  // Fetch trash files
-  const fetchTrashFiles = useCallback(async () => {
-    try {
-      const res = await api.get('/trash-files');
-      setTrashFiles(res.files || []);
-    } catch (err) {
-      console.error('Error fetching trash files:', err);
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to load trash items', 
-        life: 3000 
-      });
-    }
-  }, [api]);
 
   useEffect(() => {
     fetchTrashFiles();
@@ -208,6 +192,6 @@ function TrashBucket() {
       )}
     </div>
   );
-}
+};
 
 export default TrashBucket;

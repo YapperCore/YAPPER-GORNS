@@ -1,4 +1,3 @@
-// frontend/src/pages/Home.js
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import '../static/Home.css';
@@ -23,16 +22,13 @@ function Home() {
   const [docToMove, setDocToMove] = useState(null);
 
   useEffect(() => {
-    // Setup Socket.IO connection
     const socket = io();
-
     socket.on('partial_transcript_batch', data => {
       const lines = data.chunks.map(
         c => `Chunk ${c.chunk_index}/${c.total_chunks}: ${c.text}`
       );
       setTranscripts(prev => [...prev, ...lines]);
     });
-
     socket.on('final_transcript', data => {
       setTranscripts(prev => [...prev, "Transcription complete."]);
     });
@@ -81,23 +77,6 @@ function Home() {
     };
   }, [currentUser]);
 
-  const fetchDocs = async () => {
-    try {
-      setLoading(true);
-      const data = await api.get('/api/docs');
-      setDocs(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Error fetching docs:", err);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load documents'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleFileChange = e => {
     setFile(e.target.files[0]);
   };
@@ -107,7 +86,6 @@ function Home() {
       setUploadMessage("No file selected!");
       return;
     }
-
     try {
       const formData = new FormData();
       formData.append('audio', file);
@@ -138,14 +116,7 @@ function Home() {
       }
     } catch (err) {
       console.error("Upload error:", err);
-      setUploadMessage(err.message || "Upload failed");
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: err.message || 'Failed to upload file'
-      });
-    } finally {
-      setLoading(false);
+      setUploadMessage("Upload failed");
     }
   };
 
@@ -161,13 +132,6 @@ function Home() {
       }
     } catch (err) {
       console.error("Error deleting doc:", err);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: err.message || 'Failed to delete document'
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -287,29 +251,23 @@ function Home() {
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
 
-      <h2>Upload Audio &rarr; Create Document</h2>
-
+      <h2>Home - Upload Audio ={'>'} Create Doc</h2>
       <div className="upload-section">
         <input
           type="file"
           onChange={handleFileChange}
           className="file-input"
-          accept="audio/*"
-          disabled={loading}
         />
         <button
           onClick={handleUpload}
           className="upload-button"
-          disabled={loading || !file}
         >
-          {loading ? "Processing..." : "Submit"}
+          Submit
         </button>
       </div>
-
-      {uploadMessage && <p className="message">{uploadMessage}</p>}
+      <p className="message">{uploadMessage}</p>
 
       <hr className="divider" />
-
       <div>
         <button onClick={handleCreateFolder} className="action-link edit-link">Create Folder</button>
       </div>
@@ -366,11 +324,9 @@ function Home() {
                   Move to Folder
                 </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p>No documents found. Upload an audio file to get started!</p>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <Dialog
@@ -411,3 +367,4 @@ function Home() {
 }
 
 export default Home;
+
