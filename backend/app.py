@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 """
 Cross-platform compatible Flask application for Yapper with Whisper transcription,
