@@ -259,7 +259,6 @@ def delete_file(storage_path, requesting_user_id):
         return False
 
 def move_file(source_path, dest_path, requesting_user_id):
-
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False

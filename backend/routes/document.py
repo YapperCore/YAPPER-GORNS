@@ -54,6 +54,7 @@ def serve_local_audio(filename):
     # First check if the user has permission to access this file
     for doc in doc_store.values():
         if doc.get("audioFilename") == filename:
+            # Check if user has permission
             if doc.get("owner") != request.uid and not is_admin(request.uid):
                 return jsonify({"error": "Access denied"}), 403
                 
@@ -77,7 +78,9 @@ def serve_local_audio(filename):
             # If local file doesn't exist or error occurred, try to get a URL from Firebase
             uid = doc.get("owner")
             firebase_path = f"users/{uid}/uploads/{filename}"
+            
             try:
+                # Get signed URL with proper permission check
                 url = get_signed_url(firebase_path)
                 if url:
                     return jsonify({"url": url}), 200
@@ -95,6 +98,7 @@ def serve_local_audio(filename):
 def upload_audio():
     """Upload an audio file and create a document for transcription"""
     global doc_counter
+    
     if 'audio' not in request.files:
         return jsonify({"error": "No audio file found"}), 400
 
