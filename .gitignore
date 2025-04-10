@@ -9,7 +9,8 @@ dist/
 backend/uploads/
 # Compiled Java class files
 *.class
-
+frontend/build/
+frontend/build
 # Compiled Python bytecode
 *.py[cod]
 
