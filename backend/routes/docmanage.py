@@ -56,6 +56,7 @@ def create_doc():
 
     doc_store[doc_id] = doc_obj
     save_doc_store()
+    logger.info(f"Document {doc_id} created by user {user_id}")
     return jsonify(doc_obj), 201
 
 @docmanage_bp.route('/api/docs/<doc_id>', methods=['PUT'])
@@ -67,10 +68,14 @@ def update_doc(doc_id):
     if not doc or doc.get("deleted") or (doc.get("owner") != request.uid and not is_admin(request.uid)):
         return jsonify({"error": "Doc not found"}), 404
 
+    # Update fields
     doc["name"] = data.get("name", doc.get("name"))
     doc["content"] = data.get("content", doc.get("content"))
+    doc["updatedAt"] = datetime.now().isoformat()
+    doc["updatedBy"] = user_id
 
     save_doc_store()
+    logger.info(f"Document {doc_id} updated by user {user_id}")
     return jsonify(doc), 200
 
 @docmanage_bp.route('/api/docs/<doc_id>', methods=['DELETE'])
@@ -136,7 +141,8 @@ def delete_doc(doc_id):
             logger.error(f"Error moving file to trash: {e}")
     
     save_doc_store()
-    return jsonify({"message": "Doc deleted"}), 200
+    logger.info(f"Document {doc_id} deleted by user {user_id}")
+    return jsonify({"message": "Document deleted"}), 200
 
 def register_docmanage_routes(app):
     """Register document management routes with Flask app"""

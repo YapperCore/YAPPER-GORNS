@@ -258,12 +258,13 @@ function DocEdit() {
     s.on('doc_content_update', handleDocUpdate);
 
     return () => {
-      s.off('doc_content_update', handleDocUpdate);
-      s.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, [docId, currentUser]);
 
-  const handleChange = val => {
+  const handleChange = async (val) => {
     setContent(val);
     if (socket) {
       socket.emit('edit_doc', { doc_id: docId, content: val });

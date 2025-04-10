@@ -121,7 +121,21 @@ export default function TranscriptionEditor() {
           life: 3000
         });
       }
-    };
+      
+      // Also update via REST API for persistence
+      await fetch(`/api/docs/${docId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+          'X-User-ID': currentUser.uid
+        },
+        body: JSON.stringify({ content: newContent })
+      });
+    } catch (err) {
+      console.error("Error updating document:", err);
+    }
+  };
 
     const handleDocUpdate = update => {
       if (update.doc_id === docId) {
