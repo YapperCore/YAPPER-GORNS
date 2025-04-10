@@ -8,7 +8,8 @@ import logging
 import datetime
 from pathlib import Path
 import firebase_admin
-from firebase_admin import credentials, storage, firestore, auth
+from firebase_admin import credentials, storage,firestore, auth
+from firebase import Timestamp
 from firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
 
 # Configure logging
@@ -62,7 +63,6 @@ def is_owner_or_admin(user_id, owner_id):
     if not user_id:
         return False
     return user_id == owner_id or is_admin(user_id)
-
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
     """
     Upload file to Firebase Storage with user ownership
@@ -92,17 +92,16 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         # Create the blob
         blob = bucket.blob(storage_path)
         
-        # Upload the file first
+        # Upload the file (without metadata in the call)
         blob.upload_from_string(file_data, content_type=content_type)
         
-        # Set metadata after upload - this is the correct way
+        # Set metadata after upload
         blob.metadata = {
             'ownerId': user_id,
             'originalFilename': original_filename,
             'uploadTime': timestamp
         }
-        # Update the blob with new metadata
-        blob.patch()
+        blob.patch()  # Update the blob with the metadata
         
         # Get a signed URL that expires in 7 days
         signed_url = blob.generate_signed_url(
@@ -121,8 +120,9 @@ def upload_file(file_data, original_filename, user_id, content_type='application
             'ownerId': user_id,
             'uploadTime': firestore.SERVER_TIMESTAMP,
             'url': signed_url,
-            'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
-            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()  # Use string as backup
+            'expiresAt': firestore.Timestamp.from_datetime(
+                datetime.datetime.now() + datetime.timedelta(days=7)
+            )
         })
         
         logger.info(f"File uploaded successfully: {storage_path}")
@@ -138,7 +138,7 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         logger.error(f"Error uploading file to Firebase: {e}")
         return {"success": False, "error": str(e)}
 
-def get_file_url(storage_path, requesting_user_id=None):
+def get_file_url(storage_path, requesting_user_id):
     """
     Get a signed URL for a file with permission check
     
@@ -159,16 +159,6 @@ def get_file_url(storage_path, requesting_user_id=None):
         if not blob.exists():
             logger.warning(f"File not found: {storage_path}")
             return None
-            
-        # If no user ID provided, skip permission check
-        if not requesting_user_id:
-            # Generate secure, time-limited URL
-            signed_url = blob.generate_signed_url(
-                version="v4",
-                expiration=datetime.timedelta(hours=1),
-                method="GET"
-            )
-            return signed_url
             
         # Get and validate owner from metadata
         metadata = blob.metadata or {}
@@ -272,12 +262,21 @@ def move_file(source_path, dest_path, requesting_user_id):
         
         # Copy source to destination
         source_blob.reload()  # Ensure we have the latest blob data
+        token = None
+        rewrite_token = None
         
-        # Copy the blob
-        bucket.copy_blob(source_blob, bucket, dest_path)
+        while True:
+            try:
+                rewrite_token, bytes_rewritten, bytes_to_rewrite = bucket.copy_blob(
+                    source_blob, bucket, dest_path, token=rewrite_token
+                )
+                if rewrite_token is None:
+                    break
+            except Exception as e:
+                logger.error(f"Error during rewrite: {e}")
+                return False
         
-        # Ensure metadata is preserved on destination blob
-        dest_blob = bucket.blob(dest_path)
+        # Copy metadata
         dest_blob.metadata = source_blob.metadata
         dest_blob.content_type = source_blob.content_type
         dest_blob.patch()
