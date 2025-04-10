@@ -1,76 +1,370 @@
-# cs3398-gorns-s25-yapper-9a8fb00da542/backend/services/firebase_service.py
-import firebase_admin
-from firebase_admin import credentials, storage
+"""
+Firebase service for Yapper application
+Handles authentication, storage, and user-based access control
+"""
 import os
+import uuid
 import logging
-from config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET
+import datetime
+from pathlib import Path
+import firebase_admin
+from firebase_admin import credentials, storage, firestore, auth
+from firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
 
+# Configure logging
 logger = logging.getLogger(__name__)
+
+# Firebase clients
 bucket = None
+db = None
+firebase_app = None
 
 def initialize_firebase():
-    global bucket
+    """Initialize Firebase Admin SDK with service account credentials"""
+    global bucket, db, firebase_app
+    
     if not firebase_admin._apps:
         try:
+            # Check if service account key file exists
             if not os.path.exists(FIREBASE_SERVICE_ACCOUNT_KEY):
-                logger.error(f"Firebase service account key not found at: {FIREBASE_SERVICE_ACCOUNT_KEY}")
-                raise FileNotFoundError(f"Service account key file not found: {FIREBASE_SERVICE_ACCOUNT_KEY}")
-
+                logger.error(f"Firebase service account key not found: {FIREBASE_SERVICE_ACCOUNT_KEY}")
+                return False
+                
+            # Initialize with service account
             cred = credentials.Certificate(FIREBASE_SERVICE_ACCOUNT_KEY)
-            firebase_admin.initialize_app(cred, {
+            firebase_app = firebase_admin.initialize_app(cred, {
                 'storageBucket': FIREBASE_STORAGE_BUCKET
             })
+            
+            # Initialize services
             bucket = storage.bucket()
-            logger.info(f"Firebase Admin initialized. Storage bucket: {FIREBASE_STORAGE_BUCKET}")
+            db = firestore.client()
+            
+            logger.info("Firebase initialized successfully")
+            return True
         except Exception as e:
-            logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-            # Depending on your app's requirements, you might want to exit or handle this differently
+            logger.error(f"Error initializing Firebase: {e}")
+            return False
     else:
-        # Already initialized, ensure bucket is set
+        # Already initialized, ensure clients are set
         if not bucket:
             bucket = storage.bucket()
-        logger.info("Firebase Admin already initialized.")
+        if not db:
+            db = firestore.client()
+        return True
 
+def is_admin(user_id):
+    """Check if user is an admin"""
+    return user_id in ADMIN_USER_IDS
 
-def upload_to_firebase(local_path, firebase_filename, content_type='application/octet-stream'):
-    """Uploads a file to Firebase Storage."""
+def is_owner_or_admin(user_id, owner_id):
+    """Check if user is an admin or the owner of the resource"""
+    if not user_id:
+        return False
+    return user_id == owner_id or is_admin(user_id)
+
+def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
+    """
+    Upload file to Firebase Storage with user ownership
+    
+    Args:
+        file_data: File data to upload
+        original_filename: Original name of the file
+        user_id: User ID who owns the file
+        content_type: Content type of the file
+        
+    Returns:
+        dict: Upload result with file URL and metadata
+    """
     if not bucket:
-        logger.error("Firebase Storage bucket not initialized. Cannot upload.")
-        return None, "Firebase Storage not initialized"
-
-    blob = bucket.blob(f"audio/{firebase_filename}") # Store in an 'audio' folder
+        logger.error("Firebase not initialized. Cannot upload file.")
+        return {"success": False, "error": "Firebase not initialized"}
+        
     try:
-        blob.upload_from_filename(local_path, content_type=content_type)
-        # Make the blob publicly accessible (optional, adjust based on your security needs)
-        # blob.make_public()
-        # return blob.public_url, None
-        # Get a signed URL valid for a long time (e.g., 100 years) - adjust as needed
-        # Requires appropriate IAM permissions for the service account
-        signed_url = blob.generate_signed_url(version="v4", expiration=3153600000) # approx 100 years
-        logger.info(f"File {firebase_filename} uploaded to Firebase Storage.")
-        return signed_url, None # Or return firebase_filename if you don't need URL immediately
+        # Generate a unique filename
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_id = str(uuid.uuid4())
+        filename = f"{unique_id}_{timestamp}_{original_filename}"
+        
+        # User-specific storage path for access control
+        storage_path = f"users/{user_id}/uploads/{filename}"
+            
+        # Create the blob
+        blob = bucket.blob(storage_path)
+        
+        # Upload the file first
+        blob.upload_from_string(file_data, content_type=content_type)
+        
+        # Set metadata after upload - this is the correct way
+        blob.metadata = {
+            'ownerId': user_id,
+            'originalFilename': original_filename,
+            'uploadTime': timestamp
+        }
+        # Update the blob with new metadata
+        blob.patch()
+        
+        # Get a signed URL that expires in 7 days
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(days=7),
+            method="GET"
+        )
+        
+        # Store metadata in Firestore
+        doc_ref = db.collection('files').document(filename.replace('/', '_'))
+        doc_ref.set({
+            'filename': filename,
+            'originalFilename': original_filename,
+            'storagePath': storage_path,
+            'contentType': content_type,
+            'ownerId': user_id,
+            'uploadTime': firestore.SERVER_TIMESTAMP,
+            'url': signed_url,
+            'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
+            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()  # Use string as backup
+        })
+        
+        logger.info(f"File uploaded successfully: {storage_path}")
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "originalFilename": original_filename,
+            "storage_path": storage_path,
+            "url": signed_url
+        }
     except Exception as e:
-        logger.error(f"Failed to upload {firebase_filename} to Firebase: {e}")
-        return None, f"Firebase upload failed: {e}"
+        logger.error(f"Error uploading file to Firebase: {e}")
+        return {"success": False, "error": str(e)}
 
-def delete_from_firebase(firebase_filename):
-    """Deletes a file from Firebase Storage."""
+def get_file_url(storage_path, requesting_user_id=None):
+    """
+    Get a signed URL for a file with permission check
+    
+    Args:
+        storage_path: Storage path of the file
+        requesting_user_id: User ID requesting access
+        
+    Returns:
+        str or None: Signed URL if user has access, None otherwise
+    """
     if not bucket:
-        logger.error("Firebase Storage bucket not initialized. Cannot delete.")
-        return False, "Firebase Storage not initialized"
-
-    blob = bucket.blob(f"audio/{firebase_filename}")
+        logger.error("Firebase Storage bucket not initialized")
+        return None
+        
     try:
-        if blob.exists():
-            blob.delete()
-            logger.info(f"File audio/{firebase_filename} deleted from Firebase Storage.")
-            return True, None
-        else:
-            logger.warning(f"File audio/{firebase_filename} not found in Firebase Storage for deletion.")
-            return False, "File not found in Firebase Storage"
+        # Check file existence
+        blob = bucket.blob(storage_path)
+        if not blob.exists():
+            logger.warning(f"File not found: {storage_path}")
+            return None
+            
+        # If no user ID provided, skip permission check
+        if not requesting_user_id:
+            # Generate secure, time-limited URL
+            signed_url = blob.generate_signed_url(
+                version="v4",
+                expiration=datetime.timedelta(hours=1),
+                method="GET"
+            )
+            return signed_url
+            
+        # Get and validate owner from metadata
+        metadata = blob.metadata or {}
+        owner_id = metadata.get('ownerId', '')
+        
+        # Check if user has permission (owner or admin)
+        if not is_owner_or_admin(requesting_user_id, owner_id):
+            logger.warning(f"Access denied: User {requesting_user_id} is not owner or admin for {storage_path}")
+            return None
+            
+        # Generate secure, time-limited URL
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(hours=1),  # Short expiration for security
+            method="GET"
+        )
+        
+        return signed_url
     except Exception as e:
-        logger.error(f"Failed to delete audio/{firebase_filename} from Firebase: {e}")
-        return False, f"Firebase deletion failed: {e}"
+        logger.error(f"Error getting file URL: {e}")
+        return None
+
+def delete_file(storage_path, requesting_user_id):
+    """
+    Delete a file with permission check
+    
+    Args:
+        storage_path: Storage path of the file
+        requesting_user_id: User ID requesting deletion
+        
+    Returns:
+        bool: True if deleted successfully, False otherwise
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+        
+    try:
+        # Check file existence
+        blob = bucket.blob(storage_path)
+        if not blob.exists():
+            logger.warning(f"File not found for deletion: {storage_path}")
+            return False
+            
+        # Get and validate owner from metadata
+        metadata = blob.metadata or {}
+        owner_id = metadata.get('ownerId', '')
+        
+        # Check if user has permission (owner or admin)
+        if not is_owner_or_admin(requesting_user_id, owner_id):
+            logger.warning(f"Delete denied: User {requesting_user_id} is not owner or admin for {storage_path}")
+            return False
+            
+        # Delete from Storage
+        blob.delete()
+        
+        # Delete metadata from Firestore
+        doc_id = storage_path.split('/')[-1].replace('/', '_')
+        db.collection('files').document(doc_id).delete()
+        
+        logger.info(f"File deleted: {storage_path}")
+        return True
+    except Exception as e:
+        logger.error(f"Error deleting file: {e}")
+        return False
+
+def move_file(source_path, dest_path, requesting_user_id):
+    """
+    Move a file with permission check
+    
+    Args:
+        source_path: Source storage path
+        dest_path: Destination storage path
+        requesting_user_id: User ID requesting move
+        
+    Returns:
+        bool: True if moved successfully, False otherwise
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+        
+    try:
+        # Check file existence
+        source_blob = bucket.blob(source_path)
+        if not source_blob.exists():
+            logger.warning(f"Source file not found: {source_path}")
+            return False
+            
+        # Get and validate owner from metadata
+        metadata = source_blob.metadata or {}
+        owner_id = metadata.get('ownerId', '')
+        
+        # Check if user has permission (owner or admin)
+        if not is_owner_or_admin(requesting_user_id, owner_id):
+            logger.warning(f"Move denied: User {requesting_user_id} is not owner or admin for {source_path}")
+            return False
+            
+        # Create destination blob with same metadata
+        dest_blob = bucket.blob(dest_path)
+        
+        # Copy source to destination
+        source_blob.reload()  # Ensure we have the latest blob data
+        
+        # Copy the blob
+        bucket.copy_blob(source_blob, bucket, dest_path)
+        
+        # Ensure metadata is preserved on destination blob
+        dest_blob = bucket.blob(dest_path)
+        dest_blob.metadata = source_blob.metadata
+        dest_blob.content_type = source_blob.content_type
+        dest_blob.patch()
+        
+        # Delete source blob
+        source_blob.delete()
+        
+        logger.info(f"File moved: {source_path} -> {dest_path}")
+        return True
+    except Exception as e:
+        logger.error(f"Error moving file: {e}")
+        return False
+
+def list_user_files(user_id, folder_path="uploads"):
+    """
+    List files owned by a user in a specific folder
+    
+    Args:
+        user_id: User ID
+        folder_path: Folder to list (uploads, trash, etc.)
+        
+    Returns:
+        list: List of file objects
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return []
+        
+    try:
+        prefix = f"users/{user_id}/{folder_path}/"
+        blobs = bucket.list_blobs(prefix=prefix)
+        
+        files = []
+        for blob in blobs:
+            # Extract filename from path
+            filename = blob.name.split('/')[-1]
+            
+            # Get metadata
+            blob.reload()
+            metadata = blob.metadata or {}
+            
+            # Create file object
+            file_obj = {
+                'filename': filename,
+                'storagePath': blob.name,
+                'contentType': blob.content_type,
+                'size': blob.size,
+                'timeCreated': blob.time_created.isoformat() if blob.time_created else None,
+                'originalFilename': metadata.get('originalFilename', filename),
+                'ownerId': metadata.get('ownerId', user_id)
+            }
+            
+            files.append(file_obj)
+            
+        return files
+    except Exception as e:
+        logger.error(f"Error listing user files: {e}")
+        return []
+
+def verify_token(id_token):
+    """
+    Verify Firebase ID token and get user ID
+    
+    Args:
+        id_token: Firebase ID token
+        
+    Returns:
+        dict: User data if valid, None otherwise
+    """
+    if not firebase_app:
+        logger.error("Firebase not initialized")
+        return None
+        
+    try:
+        # Verify the token
+        decoded_token = auth.verify_id_token(id_token)
+        user_id = decoded_token.get('uid')
+        email = decoded_token.get('email', '')
+        
+        return {
+            'uid': user_id,
+            'email': email,
+            'is_admin': is_admin(user_id)
+        }
+    except Exception as e:
+        logger.error(f"Error verifying token: {e}")
+        return None
 
 # Initialize on import
 initialize_firebase()
