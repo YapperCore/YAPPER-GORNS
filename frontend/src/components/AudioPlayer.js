@@ -1,52 +1,61 @@
+// src/components/AudioPlayer.js
 import React, { useRef, useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './AudioPlayer.css';
 
-const AudioPlayer = ({ filename }) => {
+export default function AudioPlayer({ filename }) {
+  const { currentUser } = useAuth();
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [audioUrl, setAudioUrl] = useState('');
 
   useEffect(() => {
-    const fetchAudioUrl = async () => {
+    // If there's a filename, fetch the raw audio from /local-audio/<filename> as a Blob
+    async function fetchLocalAudio() {
+      if (!filename || !currentUser) return;
       try {
-        const response = await fetch(`/uploads/${filename}`);
-        if (response.ok) {
-          const url = URL.createObjectURL(await response.blob());
-          setAudioUrl(url);
-        } else {
-          console.error('Failed to fetch audio file');
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`/local-audio/${filename}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          console.error("Failed to fetch local audio, status:", res.status);
+          return;
         }
-      } catch (error) {
-        console.error('Error fetching audio file:', error);
+        const blob = await res.blob();
+        // Create an object URL for the blob so <audio> can play it
+        const objectUrl = URL.createObjectURL(blob);
+        if (audioRef.current) {
+          audioRef.current.src = objectUrl;
+          audioRef.current.load();
+        }
+      } catch (err) {
+        console.error("Error fetching local audio:", err);
       }
-    };
+    }
+    fetchLocalAudio();
+  }, [filename, currentUser]);
 
-    fetchAudioUrl();
-  }, [filename]);
-
+  // Listen for time updates
   useEffect(() => {
     const audio = audioRef.current;
+    if (!audio) return;
 
-    const updateProgress = () => {
-      setCurrentTime(audio.currentTime);
-    };
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedData = () => setDuration(audio.duration);
 
-    const setAudioData = () => {
-      setDuration(audio.duration);
-    };
-
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadeddata', handleLoadedData);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadeddata', handleLoadedData);
     };
   }, []);
 
   const handlePlayPause = () => {
+    if (!audioRef.current) return;
     if (audioRef.current.paused) {
       audioRef.current.play();
       setIsPlaying(true);
@@ -56,25 +65,28 @@ const AudioPlayer = ({ filename }) => {
     }
   };
 
-  const handleVolumeChange = (event) => {
-    audioRef.current.volume = event.target.value;
+  const handleVolumeChange = (e) => {
+    if (audioRef.current) {
+      audioRef.current.volume = e.target.value;
+    }
   };
 
-  const handleProgressChange = (event) => {
-    const newTime = (event.target.value / 100) * duration;
+  const handleProgressChange = (e) => {
+    if (!audioRef.current) return;
+    const newTime = (e.target.value / 100) * duration;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
   };
 
   const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   return (
     <div className="audio-player">
-      <audio ref={audioRef} src={audioUrl} controls={false} />
+      <audio ref={audioRef} controls={false} />
       <button onClick={handlePlayPause}>
         {isPlaying ? '⏸️' : '▶️'}
       </button>
@@ -87,9 +99,15 @@ const AudioPlayer = ({ filename }) => {
         className="progress-bar"
       />
       <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-      <input type="range" min="0" max="1" step="0.01" onChange={handleVolumeChange} className="volume-bar"/>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        onChange={handleVolumeChange}
+        className="volume-bar"
+      />
     </div>
   );
-};
+}
 
-export default AudioPlayer;
