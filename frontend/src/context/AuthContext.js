@@ -1,3 +1,4 @@
+// frontend/src/context/AuthContext.js
 import React, { useContext, useState, useEffect } from "react";
 import { auth } from "./firebase";
 import { 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setLoading(false);
     });
     return unsubscribe;
   }, []);
@@ -55,5 +57,9 @@ export function AuthProvider({ children }) {
     getIdToken
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }

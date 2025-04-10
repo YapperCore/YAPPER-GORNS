@@ -1,8 +1,10 @@
+// frontend/src/util/DocEditor.js
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import io from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
 
 export default function DocEditor() {
   return (
@@ -127,6 +129,7 @@ function DocCreate() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const handleSubmit = async () => {
     if (!currentUser) {

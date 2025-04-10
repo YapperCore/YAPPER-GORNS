@@ -1,3 +1,4 @@
+// frontend/src/App.js
 import './static/App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
@@ -29,7 +30,6 @@ function AppContent() {
   const { currentUser } = useAuth();
   
   return (
-    <AuthProvider>
     <Router>
       <div className="App">
         <Navbar />
