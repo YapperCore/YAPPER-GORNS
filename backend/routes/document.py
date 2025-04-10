@@ -1,4 +1,3 @@
-# backend/routes/document.py
 import os
 import uuid
 import json
@@ -52,7 +51,7 @@ def upload_audio():
         logger.error(f"Error saving file: {e}")
         return jsonify({"error": "File saving failed"}), 500
 
-    # Upload the file to Firebase Storage under the current user's folder
+    # Upload the file to Firebase Storage under the current user’s folder
     uid = request.uid
     firebase_path = f"users/{uid}/uploads/{unique_name}"
     try:
@@ -129,3 +128,4 @@ def append_to_doc(doc_id, chunk_list):
         combined_text += " " + chunk["text"]
     doc["content"] = combined_text
     save_doc_store()
+

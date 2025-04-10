@@ -1,6 +1,5 @@
-// frontend/src/util/TranscriptionEditor.js
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -16,166 +15,50 @@ export default function TranscriptionEditor() {
   const [isComplete, setIsComplete] = useState(false);
   const [audioFilename, setAudioFilename] = useState('');
   const [audioTrashed, setAudioTrashed] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [transcribedChunks, setTranscribedChunks] = useState([]);
-  const [totalChunks, setTotalChunks] = useState(0);
-  const socketRef = useRef(null);
-  const toastRef = useRef(null);
-  
-  // Fetch doc info
+
+  // fetch doc info
   useEffect(() => {
-    const fetchDocInfo = async () => {
+    (async () => {
       if (!currentUser) return;
-      
       try {
-        setLoading(true);
-        setError('');
-        
         const token = await currentUser.getIdToken();
         const res = await fetch(`/api/docs/${docId}`, {
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        
-        const doc = await res.json();
-        setContent(doc.content || '');
-        setAudioFilename(doc.audioFilename || '');
-        setAudioTrashed(!!doc.audioTrashed);
-        
-        if (doc.content && doc.content.trim().length > 0) {
-          setIsComplete(true); // Assume transcription is complete if content exists
+        if (res.ok) {
+          const d = await res.json();
+          setContent(d.content || '');
+          setAudioFilename(d.audioFilename || '');
+          setAudioTrashed(!!d.audioTrashed);
+        } else {
+          console.error("Doc fetch failed:", res.statusText);
         }
       } catch (err) {
-        console.error("Error loading document:", err);
-        setError(`Error loading document: ${err.message}`);
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to load document: ${err.message}`,
-          life: 3000
-        });
-      } finally {
-        setLoading(false);
+        console.error("Error loading doc:", err);
       }
     };
 
     fetchDocInfo();
   }, [docId, currentUser]);
 
-  // Socket.IO for real-time updates
+  // listen for final transcript
   useEffect(() => {
     const socket = io();
-    socketRef.current = socket;
-    
     socket.emit('join_doc', { doc_id: docId });
-
-    const handlePartialBatch = data => {
-      if (data.doc_id === docId) {
-        // Update transcribed chunks and progress
-        const newChunks = [...transcribedChunks, ...data.chunks];
-        setTranscribedChunks(newChunks);
-        
-        // Set total chunks if this is new info
-        if (data.chunks.length > 0 && data.chunks[0].total_chunks > 0) {
-          setTotalChunks(data.chunks[0].total_chunks);
-        }
-        
-        // Update progress percentage
-        if (totalChunks > 0) {
-          const processedIndices = new Set(newChunks.map(c => c.chunk_index));
-          const completedChunks = processedIndices.size;
-          const newProgress = Math.floor((completedChunks / totalChunks) * 100);
-          setProgress(newProgress);
-        }
-        
-        // Update content in editor
-        const batchText = data.chunks.map(c => c.text).join(" ");
-        setContent(prev => prev + " " + batchText);
-        
-        // Show notification for new batch
-        toastRef.current?.show({
-          severity: 'info',
-          summary: 'New Transcription Batch',
-          detail: `Received ${data.chunks.length} new chunk(s)`,
-          life: 1500
-        });
-      }
-    };
 
     const handleFinal = data => {
       if (data.doc_id === docId && data.done) {
+        setContent(data.text || '');
         setIsComplete(true);
-        setProgress(100);
-        
-        toastRef.current?.show({
-          severity: 'success',
-          summary: 'Transcription Complete',
-          detail: 'The audio file has been fully transcribed',
-          life: 3000
-        });
       }
     };
 
-    const handleDocUpdate = update => {
-      if (update.doc_id === docId) {
-        setContent(update.content);
-      }
-    };
-
-    const handleTranscriptionError = data => {
-      if (data.doc_id === docId) {
-        setError(`Transcription error: ${data.error}`);
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Transcription Error',
-          detail: data.error,
-          life: 5000
-        });
-      }
-    };
-
-    socket.on('partial_transcript_batch', handlePartialBatch);
     socket.on('final_transcript', handleFinal);
-    socket.on('doc_content_update', handleDocUpdate);
-    socket.on('transcription_error', handleTranscriptionError);
-
     return () => {
-      socket.off('partial_transcript_batch', handlePartialBatch);
       socket.off('final_transcript', handleFinal);
-      socket.off('doc_content_update', handleDocUpdate);
-      socket.off('transcription_error', handleTranscriptionError);
       socket.disconnect();
     };
-  }, [docId, transcribedChunks, totalChunks]);
-
-  const handleContentChange = async (newContent) => {
-    setContent(newContent);
-    
-    // Update doc on the server
-    if (currentUser) {
-      try {
-        const token = await currentUser.getIdToken();
-        await fetch(`/api/docs/${docId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ content: newContent })
-        });
-      } catch (err) {
-        console.error("Error updating document:", err);
-        setError(`Error saving changes: ${err.message}`);
-      }
-    }
-  };
+  }, [docId]);
 
   if (loading) {
     return (
@@ -205,30 +88,18 @@ export default function TranscriptionEditor() {
           {audioTrashed && " (in TRASH)"}
         </p>
       )}
-      
-      {!isComplete && (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Transcription in progress... {progress}% complete</p>
-          <ProgressBar value={progress} />
-        </div>
-      )}
+      {!isComplete && <p>Transcription in progress...</p>}
 
       <ReactQuill
         theme="snow"
         value={content}
-        onChange={handleContentChange}
-        style={{ height: '600px', background: '#fff' }}
+        onChange={setContent}
+        style={{ height:'600px', background:'#fff' }}
       />
-      
       {audioFilename && !audioTrashed && (
-        <div style={{ marginTop: '1rem' }}>
-          <AudioPlayer filename={audioFilename} />
-        </div>
+        <AudioPlayer filename={audioFilename} />
       )}
-      
-      <div style={{ marginTop: '1rem' }}>
-        <Link to="/home">Back to Home</Link>
-      </div>
     </div>
   );
 }
+

@@ -1,4 +1,3 @@
-# backend/routes/trash_route.py
 import os
 import logging
 from flask import jsonify, request
@@ -75,47 +74,21 @@ def mark_doc_audio_trashed(filename, is_trashed):
 @verify_firebase_token
 def perm_delete_files(filename):
     # Permanently delete a file from Firebase trash for the authenticated user.
-    try:
-        for doc_id, doc in list(doc_store.items()):
-            if doc.get("audioFilename") == filename:
-                if doc.get("owner") != request.uid and not is_admin(request.uid):
-                    return jsonify({"error": "Access denied"}), 403
-                uid = doc.get("owner")
-                trash_path = f"users/{uid}/trash/{filename}"
-                try:
-                    delete_file_by_path(trash_path)
-                    # Remove the doc from the in‑memory store.
-                    del doc_store[doc_id]
-                    save_doc_store()
-                    logger.info(f"Permanently deleted file: {filename}")
-                    return jsonify({"message": "File permanently deleted"}), 200
-                except Exception as e:
-                    logger.error(f"Error deleting file: {e}")
-                    return jsonify({"error": "Failed to delete file", "details": str(e)}), 500
-        return jsonify({"message": "File not found in trash"}), 404
-    except Exception as e:
-        logger.error(f"Error in perm_delete_files: {e}")
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
-@verify_firebase_token
-def mark_file_trashed(filename):
-    """
-    Move a file to the trash folder in Firebase Storage.
-    """
-    for doc in doc_store.values():
+    for doc_id, doc in list(doc_store.items()):
         if doc.get("audioFilename") == filename:
             if doc.get("owner") != request.uid and not is_admin(request.uid):
                 return jsonify({"error": "Access denied"}), 403
             uid = doc.get("owner")
-            upload_path = f"users/{uid}/uploads/{filename}"
             trash_path = f"users/{uid}/trash/{filename}"
             try:
-                move_file(upload_path, trash_path)
-                doc["audioTrashed"] = True
+                delete_file_by_path(trash_path)
+                # Remove the doc from the in‑memory store.
+                del doc_store[doc_id]
                 save_doc_store()
-                logger.info(f"Moved file to trash: {filename}")
-                return jsonify({"message": "File moved to trash"}), 200
+                logger.info(f"Permanently deleted file: {filename}")
+                return jsonify({"message": "File permanently deleted"}), 200
             except Exception as e:
-                logger.error(f"Error moving file to trash: {e}")
-                return jsonify({"error": "Failed to move file to trash", "details": str(e)}), 500
-    return jsonify({"message": "File not found"}), 404
+                logger.error(f"Error deleting file: {e}")
+                return jsonify({"error": "Failed to delete file", "details": str(e)}), 500
+    return jsonify({"message": "File not found in trash"}), 404
+

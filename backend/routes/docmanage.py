@@ -1,13 +1,11 @@
-# backend/routes/docmanage.py
 import os
 import uuid
 import json
 import logging
-from flask import request, jsonify
+from flask import request, jsonify  # type: ignore
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
 from auth import verify_firebase_token, is_admin
-from routes.trash_route import mark_file_trashed
 
 logger = logging.getLogger(__name__)
 
@@ -75,9 +73,7 @@ def delete_doc(doc_id):
         return jsonify({"message": "Doc not found"}), 404
 
     d["deleted"] = True
-    filename = d.get("audioFilename")
-    if filename and not d.get("audioTrashed"):
-        # Move the file to trash in Firebase
-        mark_file_trashed(filename)
+    # Note: File deletion (moving to trash) is handled in the upload endpoints.
     save_doc_store()
     return jsonify({"message": "Doc deleted"}), 200
+
