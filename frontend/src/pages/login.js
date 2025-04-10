@@ -27,10 +27,11 @@ export default function Login() {
             setLoading(true);
             
             const result = await login(emailRef.current.value, passwordRef.current.value);
-            console.log("Login successful");
+            console.log("Login successful, result:", result);
             
             // Redirect to home page after successful login
             navigate("/home", { replace: true });
+            console.log("Redirecting to home page...");
         } catch (error) {
             console.error("Login failed:", error);
             setError(`Failed to log in: ${error.message}`);
@@ -40,51 +41,33 @@ export default function Login() {
     }
 
     return (
-        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+        <Container className="d-flex justify-content-center align-items-center vh-100">
             <div className="w-100" style={{ maxWidth: "400px" }}>
-                <Card className="shadow">
+                <Card className="shadow-lg">
                     <Card.Body>
                         <h2 className="text-center mb-4">Log In</h2>
                         {error && <Alert variant="danger">{error}</Alert>}
-                        <form onSubmit={handleSubmit}>
-                            <div className="mb-3">
-                                <label htmlFor="email">Email</label>
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Group id="email" className="mb-3">
+                                <Form.Label>Email</Form.Label>
                                 <InputGroup>
                                     <InputGroup.Text>📧</InputGroup.Text>
-                                    <input 
-                                        type="email" 
-                                        id="email"
-                                        ref={emailRef} 
-                                        required 
-                                        placeholder="Enter your email" 
-                                        className="form-control"
-                                    />
+                                    <Form.Control type="email" ref={emailRef} required placeholder="Enter your email" />
                                 </InputGroup>
-                            </div>
+                            </Form.Group>
 
-                            <div className="mb-3">
-                                <label htmlFor="password">Password</label>
+                            <Form.Group id="password" className="mb-3">
+                                <Form.Label>Password</Form.Label>
                                 <InputGroup>
                                     <InputGroup.Text>🔒</InputGroup.Text>
-                                    <input 
-                                        type="password" 
-                                        id="password"
-                                        ref={passwordRef} 
-                                        required 
-                                        placeholder="Enter your password" 
-                                        className="form-control"
-                                    />
+                                    <Form.Control type="password" ref={passwordRef} required placeholder="Enter your password" />
                                 </InputGroup>
-                            </div>
+                            </Form.Group>
 
-                            <button 
-                                disabled={loading} 
-                                className="w-100 btn btn-primary" 
-                                type="submit"
-                            >
-                                {loading ? "Logging in..." : "Log In"}
-                            </button>
-                        </form>
+                            <Button disabled={loading} className="w-100" variant="primary" type="submit">
+                                Log In
+                            </Button>
+                        </Form>
                     </Card.Body>
                 </Card>
                 <div className="text-center mt-3">
@@ -94,3 +77,4 @@ export default function Login() {
         </Container>
     );
 }
+

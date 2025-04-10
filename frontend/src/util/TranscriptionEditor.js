@@ -1,6 +1,5 @@
-// frontend/src/util/TranscriptionEditor.js
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -26,18 +25,12 @@ export default function TranscriptionEditor() {
   
   // Fetch doc info
   useEffect(() => {
-    const fetchDocInfo = async () => {
+    (async () => {
       if (!currentUser) return;
-      
       try {
-        setLoading(true);
-        setError('');
-        
         const token = await currentUser.getIdToken();
         const res = await fetch(`/api/docs/${docId}`, {
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
         
         if (!res.ok) {
@@ -58,27 +51,16 @@ export default function TranscriptionEditor() {
           }
         }
       } catch (err) {
-        console.error("Error loading document:", err);
-        setError(`Error loading document: ${err.message}`);
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to load document: ${err.message}`,
-          life: 3000
-        });
-      } finally {
-        setLoading(false);
+        console.error("Error loading doc:", err);
       }
     };
 
     fetchDocInfo();
   }, [docId, currentUser]);
 
-  // Socket.IO for real-time updates
+  // listen for final transcript
   useEffect(() => {
     const socket = io();
-    socketRef.current = socket;
-    
     socket.emit('join_doc', { doc_id: docId });
 
     const handlePartialBatch = data => {
@@ -108,6 +90,7 @@ export default function TranscriptionEditor() {
 
     const handleFinal = data => {
       if (data.doc_id === docId && data.done) {
+        setContent(data.text || '');
         setIsComplete(true);
         setProgress(100);
         
@@ -176,14 +159,8 @@ export default function TranscriptionEditor() {
 
     socket.on('partial_transcript_batch', handlePartialBatch);
     socket.on('final_transcript', handleFinal);
-    socket.on('doc_content_update', handleDocUpdate);
-    socket.on('transcription_error', handleTranscriptionError);
-
     return () => {
-      socket.off('partial_transcript_batch', handlePartialBatch);
       socket.off('final_transcript', handleFinal);
-      socket.off('doc_content_update', handleDocUpdate);
-      socket.off('transcription_error', handleTranscriptionError);
       socket.disconnect();
     };
   }, [docId, currentUser]);
@@ -243,13 +220,7 @@ export default function TranscriptionEditor() {
           {audioTrashed && " (in TRASH)"}
         </p>
       )}
-      
-      {!isComplete && (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Transcription in progress... {progress}% complete</p>
-          <ProgressBar value={progress} />
-        </div>
-      )}
+      {!isComplete && <p>Transcription in progress...</p>}
 
       <ReactQuill
         theme="snow"
@@ -258,16 +229,10 @@ export default function TranscriptionEditor() {
         style={{ height: '600px', background: '#fff' }}
         ref={editorRef}
       />
-      
       {audioFilename && !audioTrashed && (
-        <div style={{ marginTop: '1rem' }}>
-          <AudioPlayer filename={audioFilename} />
-        </div>
+        <AudioPlayer filename={audioFilename} />
       )}
-      
-      <div style={{ marginTop: '1rem' }}>
-        <Link to="/home">Back to Home</Link>
-      </div>
     </div>
   );
 }
+

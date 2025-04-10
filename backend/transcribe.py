@@ -1,7 +1,3 @@
-# backend/transcribe.py
-import os
-import logging
-import torch
 import whisper
 import platform
 from pathlib import Path

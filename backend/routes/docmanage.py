@@ -1,4 +1,3 @@
-# backend/routes/docmanage.py
 import os
 import uuid
 import logging
@@ -7,7 +6,6 @@ from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
 from services.firebase_service import move_file, check_blob_exists
 from auth import verify_firebase_token, is_admin
-from routes.trash_route import mark_file_trashed
 
 logger = logging.getLogger(__name__)
 

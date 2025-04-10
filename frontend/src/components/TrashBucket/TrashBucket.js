@@ -1,10 +1,11 @@
-// frontend/src/components/TrashBucket/TrashBucket.js
 import React, { useState, useEffect, useRef } from 'react';
 import './TrashBucket.css';
-import { Button } from 'primereact/button';
+import '../../static/Home.css'; // Reuse the Home.css styles
+import { Restore, PermDel } from '../../util/confirmable';
+import 'primereact/resources/themes/saga-blue/theme.css'; // Or another PrimeReact theme
+import 'primereact/resources/primereact.min.css';
 import { Toast } from 'primereact/toast';
-import { ConfirmDialog } from 'primereact/confirmdialog';
-import { useAuth } from '../../context/AuthContext';
+import { ConfirmPopup } from 'primereact/confirmpopup';
 
 const TrashBucket = () => {
   const [trashFiles, setTrashFiles] = useState([]);
@@ -16,63 +17,30 @@ const TrashBucket = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    fetchTrashFiles();
-  }, [currentUser]);
-
-  const fetchTrashFiles = async () => {
-    if (!currentUser) return;
-    
-    setLoading(true);
-    try {
-      const token = await currentUser.getIdToken();
-      const res = await fetch('/trash-files', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (res.ok) {
+    const fetchTrashFiles = async () => {
+      try {
+        const res = await fetch('/trash-files');
         const data = await res.json();
         setTrashFiles(data.files || []);
-      } else {
-        console.error("Error fetching trash files:", res.statusText);
-        showToast('error', 'Error', 'Failed to load trash files');
+      } catch (err) {
+        console.error("Error fetching trash files:", err);
       }
-    } catch (err) {
-      console.error("Error fetching trash files:", err);
-      showToast('error', 'Error', 'Failed to load trash files');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const showToast = (severity, summary, detail) => {
-    toast.current?.show({
-      severity: severity,
-      summary: summary,
-      detail: detail,
-      life: 3000
-    });
-  };
+    fetchTrashFiles();
+  }, []);
 
   const handleRestore = async (filename) => {
     if (!currentUser || actionInProgress) return;
     
     setActionInProgress(true);
     try {
-      const token = await currentUser.getIdToken();
-      const res = await fetch(`/restore_file/${filename}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
+      const res = await fetch(`/restore_file/${filename}`, { method: 'GET' });
       if (res.ok) {
-        setTrashFiles(prev => prev.filter(f => f !== filename));
-        showToast('success', 'Restored', 'File restored successfully');
+        setTrashFiles((prev) => prev.filter((f) => f !== filename));
       } else {
         const data = await res.json();
-        showToast('error', 'Error', `Failed to restore file: ${data.error || data.message || 'Unknown error'}`);
+        alert("Error restoring file: " + data.message);
       }
     } catch (err) {
       console.error("Error restoring file:", err);
@@ -137,17 +105,7 @@ const TrashBucket = () => {
   return (
     <div className="TrashBucket-container">
       <Toast ref={toast} position="top-right" />
-      <ConfirmDialog
-        visible={confirmVisible}
-        onHide={() => setConfirmVisible(false)}
-        message="Are you sure you want to permanently delete this file? This action cannot be undone."
-        header="Confirm Permanent Deletion"
-        icon="pi pi-exclamation-triangle"
-        accept={handlePermDelete}
-        reject={() => setConfirmVisible(false)}
-        acceptClassName="p-button-danger"
-      />
-      
+      <ConfirmPopup />
       <h2>Trash Bucket</h2>
       
       <div className="trash-controls">

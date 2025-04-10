@@ -1,4 +1,3 @@
-# backend/routes/document.py
 import os
 import uuid
 import json
