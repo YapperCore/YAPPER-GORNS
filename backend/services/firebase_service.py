@@ -182,7 +182,6 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         return {"success": False, "error": str(e)}
 
 def get_file_url(storage_path, requesting_user_id=None):
-
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return None
@@ -225,7 +224,6 @@ def get_file_url(storage_path, requesting_user_id=None):
         return None
 
 def delete_file(storage_path, requesting_user_id):
-
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
