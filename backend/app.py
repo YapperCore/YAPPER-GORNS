@@ -9,14 +9,14 @@ import logging
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
 # --- Platform Detection ---
 import platform
 IS_WINDOWS = platform.system() == "Windows"
-IS_WSL = "microsoft" in platform.uname().release.lower()
+IS_WSL = "microsoft" in platform.uname().release.lower() if hasattr(platform, 'uname') else False
 PLATFORM_NAME = f"{platform.system()} {'(WSL)' if IS_WSL else ''}"
 
 # --- Windows Patch ---
@@ -41,6 +41,9 @@ from routes.docmanage import register_docmanage_routes
 from routes.document import register_document_routes
 from routes.trash_route import register_trash_routes
 
+# --- Auth ---
+from auth import verify_firebase_token, is_admin
+
 # --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
@@ -58,6 +61,7 @@ logger.info(f"Python version: {platform.python_version()}")
 
 # --- Ensure Directories Exist ---
 def ensure_directories():
+    """Create necessary directories for uploads and trash"""
     Path(UPLOAD_FOLDER).mkdir(exist_ok=True, parents=True)
     Path(TRASH_FOLDER).mkdir(exist_ok=True, parents=True)
     logger.info(f"Upload folder: {UPLOAD_FOLDER}")
@@ -66,6 +70,7 @@ def ensure_directories():
 
 # --- App Initialization ---
 def create_app():
+    """Create and configure the Flask application"""
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'yapper_secret_key')
@@ -94,9 +99,7 @@ def create_app():
 
 # --- Basic Routes ---
 def register_basic_routes(app):
-    from flask import jsonify
-    from auth import verify_firebase_token, is_admin
-    
+    """Register basic application routes"""
     @app.route('/')
     def index():
         return jsonify({
@@ -117,7 +120,6 @@ def register_basic_routes(app):
     @app.route('/auth/check', methods=['GET'])
     @verify_firebase_token
     def check_auth():
-        from flask import request
         return jsonify({
             "authenticated": True,
             "uid": request.uid,
@@ -126,8 +128,7 @@ def register_basic_routes(app):
 
 # --- Error Handlers ---
 def register_error_handlers(app):
-    from flask import jsonify
-    
+    """Register application error handlers"""
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"error": "Bad request"}), 400
@@ -162,6 +163,6 @@ if __name__ == '__main__':
         # Use Flask's development server with debug mode
         socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
     else:
-        # Use waitress for production - more stable across platforms
+        # Use socketio's production-ready server
         print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")
         socketio.run(app, host='0.0.0.0', port=port)

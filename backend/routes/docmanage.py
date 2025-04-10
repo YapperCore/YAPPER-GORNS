@@ -1,14 +1,12 @@
 # backend/routes/docmanage.py
 import os
 import uuid
-import json
 import logging
 from flask import request, jsonify, Blueprint
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
-from services.firebase_service import delete_file, move_file
+from services.firebase_service import move_file
 from auth import verify_firebase_token, is_admin
-from routes.trash_route import mark_file_trashed
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +91,24 @@ def delete_doc(doc_id):
         trash_path = f"users/{uid}/trash/{filename}"
         
         try:
-            if move_file(upload_path, trash_path, request.uid):
+            # Move in Firebase - users should always be able to move their own files
+            firebase_moved = move_file(upload_path, trash_path, request.uid)
+            
+            # Try to move local file if it exists
+            local_moved = False
+            try:
+                local_upload_path = os.path.join(UPLOAD_FOLDER, filename)
+                local_trash_path = os.path.join(TRASH_FOLDER, filename)
+                if os.path.exists(local_upload_path):
+                    os.makedirs(os.path.dirname(local_trash_path), exist_ok=True)
+                    os.rename(local_upload_path, local_trash_path)
+                    local_moved = True
+                    logger.info(f"Moved local file to trash: {filename}")
+            except Exception as local_err:
+                logger.error(f"Error moving local file to trash: {local_err}")
+            
+            # Update document status if either operation succeeded
+            if firebase_moved or local_moved:
                 d["audioTrashed"] = True
                 logger.info(f"Moved file to trash: {filename}")
             else:
