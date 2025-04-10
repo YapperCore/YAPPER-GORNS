@@ -1,10 +1,11 @@
-// src/components/EditorLauncher.js
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 function EditorLauncher() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("Click here to select a file");
   const [uploadMessage, setUploadMessage] = useState("");
+  const { currentUser } = useAuth();
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -17,22 +18,23 @@ function EditorLauncher() {
       setUploadMessage("No file selected!");
       return;
     }
-    // Open new tab immediately (it will start as about:blank)
+    // Open a new tab immediately (it will start as about:blank)
     const newWindow = window.open('about:blank', '_blank');
-
     try {
       const fd = new FormData();
       fd.append("audio", file);
-
+      const token = await currentUser.getIdToken();
       const res = await fetch("/upload-audio", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         body: fd
       });
       if (res.ok) {
         const data = await res.json();
         setUploadMessage(data.message || "Upload success");
         if (data.doc_id && newWindow) {
-          // Directly redirect the new window to the transcription editor route.
           newWindow.location.href = `/transcription/${data.doc_id}`;
         }
       } else {
