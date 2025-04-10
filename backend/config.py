@@ -1,9 +1,10 @@
 import os
 
 # Configuration settings
-UPLOAD_FOLDER = 'uploads'
-TRASH_FOLDER = 'trash'
-DOC_STORE_FILE = 'doc_store.json'
+# Use absolute paths for better cross-platform compatibility
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+TRASH_FOLDER = os.path.join(os.getcwd(), 'trash')
+DOC_STORE_FILE = os.path.join(os.getcwd(), 'doc_store.json')
 
 # Flask & SocketIO settings
 CORS_ALLOWED_ORIGINS = "*"
@@ -12,6 +13,5 @@ CORS_ALLOWED_ORIGINS = "*"
 ADMIN_UIDS = []  
 
 # Ensure necessary directories exist
-#os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-#os.makedirs(TRASH_FOLDER, exist_ok=True)
-
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TRASH_FOLDER, exist_ok=True)

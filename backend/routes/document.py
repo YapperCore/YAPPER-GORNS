@@ -3,7 +3,7 @@ import os
 import uuid
 import json
 import logging
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint, send_from_directory
 from pydub import AudioSegment
 from transcribe import chunked_transcribe_audio
 from config import UPLOAD_FOLDER
@@ -37,9 +37,49 @@ def get_audio_file(filename):
                 else:
                     return jsonify({"error": "Could not get file access"}), 403
             except Exception as e:
+                logger.error(f"Error getting signed URL: {e}")
                 return jsonify({"error": "Could not get file", "details": str(e)}), 500
                 
     return jsonify({"error": "File not found"}), 404
+
+@document_bp.route('/local-audio/<filename>')
+@verify_firebase_token
+def serve_local_audio(filename):
+    """
+    Serve a locally stored audio file if the user owns it.
+    Falls back to Firebase signed URL if local file doesn't exist.
+    """
+    # First check if the user has permission to access this file
+    for doc in doc_store.values():
+        if doc.get("audioFilename") == filename:
+            if doc.get("owner") != request.uid and not is_admin(request.uid):
+                return jsonify({"error": "Access denied"}), 403
+                
+            # Try to serve from the local file system first
+            local_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.exists(local_path):
+                return send_from_directory(
+                    UPLOAD_FOLDER, 
+                    filename, 
+                    as_attachment=False,
+                    mimetype="audio/mpeg"  # Set appropriate MIME type
+                )
+                
+            # If local file doesn't exist, try to get a URL from Firebase
+            uid = doc.get("owner")
+            firebase_path = f"users/{uid}/uploads/{filename}"
+            try:
+                url = get_signed_url(firebase_path)
+                if url:
+                    return jsonify({"url": url}), 200
+                else:
+                    return jsonify({"error": "Could not access file"}), 403
+            except Exception as e:
+                logger.error(f"Error getting signed URL: {e}")
+                return jsonify({"error": "File not accessible", "details": str(e)}), 500
+    
+    # If we got here, the file wasn't found or user doesn't have permission
+    return jsonify({"error": "File not found or access denied"}), 404
 
 @document_bp.route('/upload-audio', methods=['POST'])
 @verify_firebase_token
@@ -59,13 +99,13 @@ def upload_audio():
     # Generate a unique filename
     unique_name = f"{uuid.uuid4()}_{original_filename}"
     
-    # Save locally for transcription (temporary)
+    # Create upload directory if it doesn't exist
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    
+    # Save locally for transcription
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
     
     try:
-        # Create upload directory if it doesn't exist
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        
         # Save file locally first
         audio_file.save(save_path)
         logger.info(f"Saved file locally to: {save_path}")
@@ -186,12 +226,10 @@ def background_transcription(file_path, doc_id):
             'done': True
         })
         
-        # Clean up temporary local file
-        try:
-            os.remove(file_path)
-            logger.info(f"Removed temporary file: {file_path}")
-        except Exception as cleanup_err:
-            logger.error(f"Failed to clean up temp file: {cleanup_err}")
+        # Clean up temporary local file - but only after transcription is complete
+        # Keep the file around for potential download or playback
+        # We'll let trash management handle deletion
+        logger.info(f"Transcription completed for {file_path}")
             
     except Exception as e:
         logger.error(f"Error during transcription: {e}")

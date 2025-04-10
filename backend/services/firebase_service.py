@@ -57,11 +57,49 @@ def is_admin(user_id):
     """Check if user is an admin"""
     return user_id in ADMIN_USER_IDS
 
-def is_owner_or_admin(user_id, owner_id):
-    """Check if user is an admin or the owner of the resource"""
+def extract_owner_from_path(path):
+    """
+    Extract owner user ID from a Firebase path
+    
+    Args:
+        path: Storage path like "users/{uid}/uploads/filename"
+        
+    Returns:
+        str or None: Owner user ID if found, None otherwise
+    """
+    parts = path.split('/')
+    if len(parts) >= 2 and parts[0] == 'users':
+        return parts[1]
+    return None
+
+def is_owner_or_admin(user_id, resource_path_or_owner_id):
+    """
+    Check if user is an admin or the owner of the resource
+    
+    Args:
+        user_id: User ID requesting access
+        resource_path_or_owner_id: Either a resource path or direct owner ID
+        
+    Returns:
+        bool: True if user is owner or admin
+    """
     if not user_id:
         return False
-    return user_id == owner_id or is_admin(user_id)
+        
+    # If already admin, grant access
+    if is_admin(user_id):
+        return True
+    
+    # If direct owner ID is provided
+    if '/' not in str(resource_path_or_owner_id):
+        return user_id == resource_path_or_owner_id
+        
+    # Extract owner from path
+    path_owner = extract_owner_from_path(resource_path_or_owner_id)
+    if path_owner:
+        return user_id == path_owner
+        
+    return False
 
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
     """
@@ -154,31 +192,30 @@ def get_file_url(storage_path, requesting_user_id=None):
         return None
         
     try:
+        # If no user ID provided, skip permission check (internal use)
+        if not requesting_user_id:
+            blob = bucket.blob(storage_path)
+            if blob.exists():
+                signed_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=datetime.timedelta(hours=1),
+                    method="GET"
+                )
+                return signed_url
+            return None
+            
+        # Check if path belongs to user (simple path check for efficiency)
+        path_owner = extract_owner_from_path(storage_path)
+        if path_owner and requesting_user_id != path_owner and not is_admin(requesting_user_id):
+            logger.warning(f"Access denied: User {requesting_user_id} is not owner of {storage_path}")
+            return None
+            
         # Check file existence
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found: {storage_path}")
             return None
-            
-        # If no user ID provided, skip permission check
-        if not requesting_user_id:
-            # Generate secure, time-limited URL
-            signed_url = blob.generate_signed_url(
-                version="v4",
-                expiration=datetime.timedelta(hours=1),
-                method="GET"
-            )
-            return signed_url
-            
-        # Get and validate owner from metadata
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
         
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Access denied: User {requesting_user_id} is not owner or admin for {storage_path}")
-            return None
-            
         # Generate secure, time-limited URL
         signed_url = blob.generate_signed_url(
             version="v4",
@@ -207,30 +244,29 @@ def delete_file(storage_path, requesting_user_id):
         return False
         
     try:
-        # Check file existence
+        # Check file existence first
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found for deletion: {storage_path}")
             return False
             
-        # Get and validate owner from metadata
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
-        
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Delete denied: User {requesting_user_id} is not owner or admin for {storage_path}")
-            return False
+        # Check if path belongs to user (simple path check)
+        path_owner = extract_owner_from_path(storage_path)
+        if path_owner and path_owner == requesting_user_id or is_admin(requesting_user_id):
+            # Delete from Storage
+            blob.delete()
             
-        # Delete from Storage
-        blob.delete()
-        
-        # Delete metadata from Firestore
-        doc_id = storage_path.split('/')[-1].replace('/', '_')
-        db.collection('files').document(doc_id).delete()
-        
-        logger.info(f"File deleted: {storage_path}")
-        return True
+            # Delete metadata from Firestore
+            doc_id = storage_path.split('/')[-1].replace('/', '_')
+            doc_ref = db.collection('files').document(doc_id)
+            if doc_ref.get().exists:
+                doc_ref.delete()
+            
+            logger.info(f"File deleted: {storage_path}")
+            return True
+        else:
+            logger.warning(f"Delete denied: User {requesting_user_id} is not owner of {storage_path}")
+            return False
     except Exception as e:
         logger.error(f"Error deleting file: {e}")
         return False
@@ -258,35 +294,38 @@ def move_file(source_path, dest_path, requesting_user_id):
             logger.warning(f"Source file not found: {source_path}")
             return False
             
-        # Get and validate owner from metadata
-        metadata = source_blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
+        # Check if source path belongs to requesting user
+        source_owner = extract_owner_from_path(source_path)
+        dest_owner = extract_owner_from_path(dest_path)
         
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Move denied: User {requesting_user_id} is not owner or admin for {source_path}")
+        # Validate source and destination owners match and match requesting user
+        if source_owner and dest_owner and source_owner == dest_owner:
+            if source_owner == requesting_user_id or is_admin(requesting_user_id):
+                # Copy source to destination
+                bucket.copy_blob(source_blob, bucket, dest_path)
+                
+                # Get metadata to preserve
+                source_blob.reload()
+                metadata = source_blob.metadata or {}
+                content_type = source_blob.content_type
+                
+                # Apply metadata to destination
+                dest_blob = bucket.blob(dest_path)
+                dest_blob.metadata = metadata
+                dest_blob.content_type = content_type
+                dest_blob.patch()
+                
+                # Delete source blob only after successful copy
+                source_blob.delete()
+                
+                logger.info(f"File moved: {source_path} -> {dest_path}")
+                return True
+            else:
+                logger.warning(f"Move denied: User {requesting_user_id} doesn't match owner {source_owner}")
+                return False
+        else:
+            logger.warning(f"Move denied: Source owner {source_owner} and destination owner {dest_owner} don't match")
             return False
-            
-        # Create destination blob with same metadata
-        dest_blob = bucket.blob(dest_path)
-        
-        # Copy source to destination
-        source_blob.reload()  # Ensure we have the latest blob data
-        
-        # Copy the blob
-        bucket.copy_blob(source_blob, bucket, dest_path)
-        
-        # Ensure metadata is preserved on destination blob
-        dest_blob = bucket.blob(dest_path)
-        dest_blob.metadata = source_blob.metadata
-        dest_blob.content_type = source_blob.content_type
-        dest_blob.patch()
-        
-        # Delete source blob
-        source_blob.delete()
-        
-        logger.info(f"File moved: {source_path} -> {dest_path}")
-        return True
     except Exception as e:
         logger.error(f"Error moving file: {e}")
         return False
