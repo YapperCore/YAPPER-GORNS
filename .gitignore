@@ -6,7 +6,7 @@
 # Node artifact files
 node_modules/
 dist/
-
+backend/uploads/
 # Compiled Java class files
 *.class
 
