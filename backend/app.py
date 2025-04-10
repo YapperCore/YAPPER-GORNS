@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 """
 Cross-platform compatible Flask application for Yapper with Whisper transcription,
@@ -169,4 +168,3 @@ if __name__ == '__main__':
         # Use socketio's production-ready server
         print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")
         socketio.run(app, host='0.0.0.0', port=port)
-

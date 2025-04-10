@@ -1,11 +1,10 @@
+// frontend/src/components/TrashBucket/TrashBucket.js
 import React, { useState, useEffect, useRef } from 'react';
 import './TrashBucket.css';
-import '../../static/Home.css'; // Reuse the Home.css styles
-import { Restore, PermDel } from '../../util/confirmable';
-import 'primereact/resources/themes/saga-blue/theme.css'; // Or another PrimeReact theme
-import 'primereact/resources/primereact.min.css';
+import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
-import { ConfirmPopup } from 'primereact/confirmpopup';
+import { ConfirmDialog } from 'primereact/confirmdialog';
+import { useAuth } from '../../context/AuthContext';
 
 const TrashBucket = () => {
   const [trashFiles, setTrashFiles] = useState([]);
@@ -17,9 +16,22 @@ const TrashBucket = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    const fetchTrashFiles = async () => {
-      try {
-        const res = await fetch('/trash-files');
+    fetchTrashFiles();
+  }, [currentUser]);
+
+  const fetchTrashFiles = async () => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/trash-files', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
         const data = await res.json();
         setTrashFiles(data.files || []);
       } catch (err) {
@@ -39,8 +51,8 @@ const TrashBucket = () => {
       if (res.ok) {
         setTrashFiles((prev) => prev.filter((f) => f !== filename));
       } else {
-        const data = await res.json();
-        alert("Error restoring file: " + data.message);
+        console.error("Error fetching trash files:", res.statusText);
+        showToast('error', 'Error', 'Failed to load trash files');
       }
     } catch (err) {
       console.error("Error restoring file:", err);
@@ -105,7 +117,17 @@ const TrashBucket = () => {
   return (
     <div className="TrashBucket-container">
       <Toast ref={toast} position="top-right" />
-      <ConfirmPopup />
+      <ConfirmDialog
+        visible={confirmVisible}
+        onHide={() => setConfirmVisible(false)}
+        message="Are you sure you want to permanently delete this file? This action cannot be undone."
+        header="Confirm Permanent Deletion"
+        icon="pi pi-exclamation-triangle"
+        accept={handlePermDelete}
+        reject={() => setConfirmVisible(false)}
+        acceptClassName="p-button-danger"
+      />
+      
       <h2>Trash Bucket</h2>
       
       <div className="trash-controls">

@@ -1,8 +1,10 @@
+// frontend/src/util/DocEditor.js
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import io from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
 
 export default function DocEditor() {
   return (
@@ -16,21 +18,73 @@ export default function DocEditor() {
 
 function DocList() {
   const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { currentUser, getIdToken } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/docs')
-      .then(r => r.json())
-      .then(data => setDocs(data))
-      .catch(err => console.error("Error listing docs:", err));
-  }, []);
+    const fetchDocs = async () => {
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError('');
+        
+        const token = await currentUser.getIdToken();
+        const res = await fetch('/api/docs', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        
+        // Ensure data is always an array
+        if (Array.isArray(data)) {
+          setDocs(data);
+        } else {
+          console.error("API returned non-array data:", data);
+          setDocs([]);
+          setError('Invalid data format received from server');
+        }
+      } catch (err) {
+        console.error("Error loading docs:", err);
+        setDocs([]);
+        setError(`Error loading documents: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocs();
+  }, [currentUser, navigate]);
 
   const handleDelete = async (id) => {
     if (!currentUser) return;
     
     try {
-      const res = await fetch(`/api/docs/${id}`, { method:'DELETE' });
-      if(res.ok){
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/docs/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
         setDocs(prev => prev.filter(d => d.id !== id));
+      } else {
+        const errorData = await res.json();
+        console.error("Failed to delete document:", errorData);
+        setError(`Failed to delete document: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error("Error deleting doc:", err);
@@ -43,22 +97,28 @@ function DocList() {
   }
 
   return (
-    <div style={{ padding:'1rem', background:'#f5f5f5', minHeight:'100vh' }}>
-      <h2>Docs</h2>
-      <Link to="new"><button>Create New Doc</button></Link>
-      <ul>
-        {docs.map(d => (
-          <li key={d.id}>
-            {d.name} 
-            {d.audioFilename ? ` (Audio: ${d.audioFilename}${d.audioTrashed?' [TRASHED]':''})` : ''}
-            &nbsp;|&nbsp;
-            <Link to={`edit/${d.id}`} style={{ marginRight:'1rem' }}>
-              <button>Edit</button>
-            </Link>
-            <button onClick={() => handleDelete(d.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+    <div style={{ padding: '1rem', background: '#f5f5f5', minHeight: '100vh' }}>
+      <h2>Documents</h2>
+      {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+      <Link to="new"><button>Create New Document</button></Link>
+      
+      {docs.length === 0 ? (
+        <p style={{ marginTop: '1rem' }}>No documents found. Create a new one to get started!</p>
+      ) : (
+        <ul>
+          {docs.map(d => (
+            <li key={d.id}>
+              {d.name} 
+              {d.audioFilename ? ` (Audio: ${d.audioFilename}${d.audioTrashed ? ' [TRASHED]' : ''})` : ''}
+              &nbsp;|&nbsp;
+              <Link to={`edit/${d.id}`} style={{ marginRight: '1rem' }}>
+                <button>Edit</button>
+              </Link>
+              <button onClick={() => handleDelete(d.id)}>Delete</button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -69,6 +129,7 @@ function DocCreate() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const handleSubmit = async () => {
     if (!currentUser) {
@@ -82,14 +143,25 @@ function DocCreate() {
     }
     
     try {
+      setLoading(true);
+      setError('');
+      
+      const token = await currentUser.getIdToken();
       const res = await fetch('/api/docs', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ name, content })
       });
-      if(res.ok){
+      
+      if (res.ok) {
         const doc = await res.json();
         navigate(`edit/${doc.id}`);
+      } else {
+        const errorData = await res.json();
+        setError(`Failed to create document: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error("Error creating doc:", err);
@@ -129,57 +201,97 @@ function DocEdit() {
   const [doc, setDoc] = useState(null);
   const [content, setContent] = useState('');
   const [socket, setSocket] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`/api/docs/${docId}`)
-      .then(r => r.json())
-      .then(d => {
-        if(!d.error){
-          setDoc(d);
-          setContent(d.content || '');
+    const fetchDoc = async () => {
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError('');
+        
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`/api/docs/${docId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
         }
-      })
-      .catch(err => console.error("Err loading doc:", err));
-  }, [docId]);
+        
+        const docData = await res.json();
+        setDoc(docData);
+        setContent(docData.content || '');
+      } catch (err) {
+        console.error("Error loading doc:", err);
+        setError(`Error loading document: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDoc();
+  }, [docId, currentUser, navigate]);
 
   useEffect(() => {
+    if (!currentUser) return;
+    
     const s = io();
     setSocket(s);
     s.emit('join_doc', { doc_id: docId });
 
     const handleDocUpdate = (update) => {
-      if(update.doc_id === docId){
+      if (update.doc_id === docId) {
         setContent(update.content);
       }
     };
+    
     s.on('doc_content_update', handleDocUpdate);
 
     return () => {
       s.off('doc_content_update', handleDocUpdate);
       s.disconnect();
     };
-  }, [docId]);
+  }, [docId, currentUser]);
 
   const handleChange = val => {
     setContent(val);
-    if(socket){
+    if (socket) {
       socket.emit('edit_doc', { doc_id: docId, content: val });
     }
   };
 
   const handleSave = async () => {
-    if(!doc) return;
+    if (!doc || !currentUser) return;
+    
     try {
+      setError('');
+      
+      const token = await currentUser.getIdToken();
       const res = await fetch(`/api/docs/${docId}`, {
-        method:'PUT',
-        headers:{ 'Content-Type':'application/json' },
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: doc.name,
           content
         })
       });
-      if(!res.ok){
-        console.error("Error saving doc");
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        setError(`Failed to save document: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error("Error saving doc:", err);

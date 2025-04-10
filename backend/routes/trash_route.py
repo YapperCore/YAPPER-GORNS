@@ -1,3 +1,4 @@
+# backend/routes/trash_route.py
 import os
 import logging
 from flask import jsonify, request, Blueprint
