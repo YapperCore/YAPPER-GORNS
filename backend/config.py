@@ -12,6 +12,6 @@ CORS_ALLOWED_ORIGINS = "*"
 ADMIN_UIDS = []  
 
 # Ensure necessary directories exist
-#os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-#os.makedirs(TRASH_FOLDER, exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TRASH_FOLDER, exist_ok=True)
 
