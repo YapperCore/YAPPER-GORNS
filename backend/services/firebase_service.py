@@ -54,14 +54,12 @@ def is_admin(user_id):
     return user_id in ADMIN_USER_IDS
 
 def extract_owner_from_path(path):
-
     parts = path.split('/')
     if len(parts) >= 2 and parts[0] == 'users':
         return parts[1]
     return None
 
 def is_owner_or_admin(user_id, resource_path_or_owner_id):
-
     if not user_id:
         return False
         

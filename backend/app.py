@@ -45,6 +45,9 @@ from routes.folders import folders_bp
 # --- Auth ---
 from auth import verify_firebase_token, is_admin
 
+# --- Auth ---
+from auth import verify_firebase_token, is_admin
+
 # --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
