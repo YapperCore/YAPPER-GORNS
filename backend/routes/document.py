@@ -3,10 +3,11 @@ import os
 import uuid
 import json
 import logging
-from flask import request, jsonify, Blueprint, send_from_directory
+from pathlib import Path
+from flask import request, jsonify, Blueprint, send_from_directory, Response
 from pydub import AudioSegment
 from transcribe import chunked_transcribe_audio
-from config import UPLOAD_FOLDER
+from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store, doc_counter
 from services.socketio_instance import socketio
 from auth import verify_firebase_token, is_admin
@@ -56,16 +57,23 @@ def serve_local_audio(filename):
                 return jsonify({"error": "Access denied"}), 403
                 
             # Try to serve from the local file system first
-            local_path = os.path.join(UPLOAD_FOLDER, filename)
-            if os.path.exists(local_path):
-                return send_from_directory(
-                    UPLOAD_FOLDER, 
-                    filename, 
-                    as_attachment=False,
-                    mimetype="audio/mpeg"  # Set appropriate MIME type
-                )
+            # Use pathlib for cross-platform compatibility
+            upload_path = Path(UPLOAD_FOLDER)
+            local_path = upload_path / filename
+            
+            if local_path.exists():
+                try:
+                    return send_from_directory(
+                        UPLOAD_FOLDER, 
+                        filename, 
+                        as_attachment=False,
+                        mimetype="audio/mpeg"  # Set appropriate MIME type
+                    )
+                except Exception as e:
+                    logger.error(f"Error serving local file: {e}")
+                    # Continue to Firebase fallback
                 
-            # If local file doesn't exist, try to get a URL from Firebase
+            # If local file doesn't exist or error occurred, try to get a URL from Firebase
             uid = doc.get("owner")
             firebase_path = f"users/{uid}/uploads/{filename}"
             try:
@@ -99,25 +107,54 @@ def upload_audio():
     # Generate a unique filename
     unique_name = f"{uuid.uuid4()}_{original_filename}"
     
-    # Create upload directory if it doesn't exist
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    # Ensure upload directory exists with absolute path
+    abs_upload_folder = os.path.abspath(UPLOAD_FOLDER)
+    os.makedirs(abs_upload_folder, exist_ok=True)
+    logger.info(f"Ensured upload directory exists: {abs_upload_folder}")
     
-    # Save locally for transcription
-    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    # Create a platform-independent path using pathlib
+    save_path = Path(abs_upload_folder) / unique_name
+    save_path_str = str(save_path)
+    
+    logger.info(f"Attempting to save file to: {save_path_str}")
     
     try:
-        # Save file locally first
-        audio_file.save(save_path)
-        logger.info(f"Saved file locally to: {save_path}")
+        # Create a temporary file first to ensure we can write to the location
+        temp_path = save_path.with_suffix('.tmp')
+        with open(temp_path, 'wb') as f:
+            f.write(b'Test')
+        
+        # If we get here, we can write to the directory
+        temp_path.unlink()  # Remove test file
+        
+        # Save file locally
+        audio_file.save(save_path_str)
+        logger.info(f"Successfully saved file locally to: {save_path_str}")
+        
+        # Verify file was created and has content
+        if not save_path.exists():
+            raise FileNotFoundError(f"File not created at {save_path_str}")
+            
+        file_size = save_path.stat().st_size
+        if file_size == 0:
+            raise ValueError(f"File created but has zero size: {save_path_str}")
+            
+        logger.info(f"Verified file exists and has size: {file_size} bytes")
         
         # Upload to Firebase under user's directory
         uid = request.uid
         firebase_path = f"users/{uid}/uploads/{unique_name}"
         
         try:
-            # Use upload_file_by_path which is fixed to handle metadata correctly
-            blob = upload_file_by_path(save_path, firebase_path)
+            # Read file data directly to avoid path issues
+            file_data = save_path.read_bytes()
+            
+            # Upload to Firebase
+            blob = upload_file_by_path(save_path_str, firebase_path)
+            
+            # Get a signed URL for access
             file_url = get_signed_url(firebase_path)
+            logger.info(f"Uploaded to Firebase: {firebase_path}")
             
             # Create document for transcription
             doc_counter += 1
@@ -134,14 +171,15 @@ def upload_audio():
                 "deleted": False,
                 "owner": uid,
                 "firebaseUrl": file_url,
-                "firebasePath": firebase_path
+                "firebasePath": firebase_path,
+                "localPath": save_path_str  # Store local path for reference
             }
             
             doc_store[doc_id] = doc_obj
             save_doc_store()
             
             # Start transcription in background
-            socketio.start_background_task(background_transcription, save_path, doc_id)
+            socketio.start_background_task(background_transcription, save_path_str, doc_id)
             
             return jsonify({
                 "message": "File received, uploaded to Firebase, and doc created",
@@ -149,8 +187,10 @@ def upload_audio():
                 "doc_id": doc_id
             }), 200
             
-        except Exception as e:
-            logger.error(f"Error uploading to Firebase: {e}")
+        except Exception as firebase_err:
+            logger.error(f"Error uploading to Firebase: {firebase_err}")
+            import traceback
+            logger.error(f"Firebase error details: {traceback.format_exc()}")
             
             # Fallback: if Firebase fails, still create a doc with the local file
             # This provides graceful degradation even if Firebase is unavailable
@@ -167,14 +207,15 @@ def upload_audio():
                 "audioTrashed": False,
                 "deleted": False,
                 "owner": uid,
-                "firebaseUrl": None  # No Firebase URL
+                "firebaseUrl": None,  # No Firebase URL
+                "localPath": save_path_str
             }
             
             doc_store[doc_id] = doc_obj
             save_doc_store()
             
             # Start transcription in background
-            socketio.start_background_task(background_transcription, save_path, doc_id)
+            socketio.start_background_task(background_transcription, save_path_str, doc_id)
             
             return jsonify({
                 "message": "File received and doc created (Firebase upload failed but will still transcribe)",
@@ -185,17 +226,32 @@ def upload_audio():
             
     except Exception as e:
         logger.error(f"Error uploading file: {e}")
-        # Clean up the local file if it was created
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Detailed error: {error_details}")
+        
+        # Clean up any temporary files
         try:
-            if os.path.exists(save_path):
-                os.remove(save_path)
+            if temp_path.exists():
+                temp_path.unlink()
         except:
             pass
-        return jsonify({"error": "File upload failed", "details": str(e)}), 500
+        
+        return jsonify({
+            "error": "File upload failed", 
+            "details": str(e),
+            "path_attempted": save_path_str
+        }), 500
 
 def background_transcription(file_path, doc_id):
     """Process audio transcription in background"""
     try:
+        # Ensure file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found for transcription: {file_path}")
+            
+        logger.info(f"Starting transcription for file: {file_path}")
+        
         chunk_buffer = []
         for i, total, text in chunked_transcribe_audio(file_path):
             chunk_buffer.append({
@@ -226,13 +282,16 @@ def background_transcription(file_path, doc_id):
             'done': True
         })
         
-        # Clean up temporary local file - but only after transcription is complete
-        # Keep the file around for potential download or playback
-        # We'll let trash management handle deletion
-        logger.info(f"Transcription completed for {file_path}")
+        logger.info(f"Transcription completed for file: {file_path}")
+        
+        # Don't delete local file after transcription
+        # We'll keep it for potential playback and let trash management handle deletion
             
     except Exception as e:
         logger.error(f"Error during transcription: {e}")
+        import traceback
+        logger.error(f"Transcription error details: {traceback.format_exc()}")
+        
         socketio.emit('transcription_error', {
             'doc_id': doc_id,
             'error': str(e)
@@ -240,17 +299,23 @@ def background_transcription(file_path, doc_id):
 
 def append_to_doc(doc_id, chunk_list):
     """Append transcription chunks to document content"""
-    doc = doc_store.get(doc_id)
-    if not doc:
-        return
+    try:
+        doc = doc_store.get(doc_id)
+        if not doc:
+            logger.warning(f"Document not found for appending transcription: {doc_id}")
+            return
+            
+        combined_text = doc.get("content", "")
+        for chunk in chunk_list:
+            combined_text += " " + chunk["text"]
         
-    combined_text = doc["content"]
-    for chunk in chunk_list:
-        combined_text += " " + chunk["text"]
-    
-    doc["content"] = combined_text
-    save_doc_store()
+        doc["content"] = combined_text
+        save_doc_store()
+        logger.debug(f"Updated document {doc_id} with new transcription content")
+    except Exception as e:
+        logger.error(f"Error appending to doc {doc_id}: {e}")
 
 def register_document_routes(app):
     """Register document routes with Flask app"""
     app.register_blueprint(document_bp)
+    logger.info("Document routes registered successfully")
