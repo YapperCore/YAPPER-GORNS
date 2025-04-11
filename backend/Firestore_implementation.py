@@ -2,6 +2,8 @@ import firebase_admin
 from firebase_admin import credentials, storage, firestore
 import logging
 import datetime
+import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -39,22 +41,43 @@ def upload_file_by_path(local_path, firebase_path):
     else:
         user_id = 'unknown'  # Default for non-user paths
     
+    # Normalize the local path to avoid platform-specific issues
+    local_path = os.path.abspath(local_path)
+    
+    # Verify the file exists before attempting to upload
+    if not os.path.exists(local_path):
+        error_msg = f"File not found at path: {local_path}"
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
+    
+    # Log file details for debugging
+    file_size = os.path.getsize(local_path)
+    logger.info(f"Uploading file: {local_path}, Size: {file_size} bytes")
+    
     blob = bucket.blob(firebase_path)
     
-    # Upload file first
-    blob.upload_from_filename(local_path)
+    try:
+        # Upload file directly from data to avoid path issues
+        with open(local_path, 'rb') as file_obj:
+            file_data = file_obj.read()
+            content_type = 'audio/mpeg'  # Default for audio files
+            blob.upload_from_string(file_data, content_type=content_type)
+    except Exception as e:
+        logger.error(f"Error uploading file content: {e}")
+        raise
     
-    # Set metadata after upload - not during
+    # Set metadata after upload
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     
     blob.metadata = {
         'ownerId': user_id,
-        'uploadTime': timestamp
+        'uploadTime': timestamp,
+        'originalPath': local_path
     }
     # Update the blob with new metadata
     blob.patch()
     
-    logger.info(f"File uploaded to {firebase_path} with owner: {user_id}")
+    logger.info(f"File uploaded successfully to {firebase_path} with owner: {user_id}")
     return blob
 
 def get_signed_url(firebase_path, expiration=3600):
@@ -69,6 +92,11 @@ def get_signed_url(firebase_path, expiration=3600):
         str: Signed URL
     """
     blob = bucket.blob(firebase_path)
+    
+    # Check if blob exists before generating URL
+    if not blob.exists():
+        logger.warning(f"Blob not found at path: {firebase_path}")
+        return None
     
     # Generate a short-lived URL for security
     return blob.generate_signed_url(expiration=expiration, version="v4")
