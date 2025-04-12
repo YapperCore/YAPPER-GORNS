@@ -140,13 +140,17 @@ def chunked_transcribe_audio(audio_path, model_name=WHISPER_MODEL, chunk_size=30
     Yields:
         Tuple[int, int, str]: Chunk index, total chunks, and transcription text
     """
-    logger.info(f"Loading Whisper model: {model_name} for chunked transcription")
-    model = whisper.load_model(model_name, device="cuda" if CUDA_AVAILABLE else "cpu")
-    logger.info(f"Model loaded successfully on {'GPU' if CUDA_AVAILABLE else 'CPU'}")
-    
-    # Load audio and get info
     try:
-        audio = whisper.load_audio(audio_path)
+        # Normalize the path before using
+        safe_path = normalize_path(audio_path)
+        
+        logger.info(f"Loading Whisper model: {model_name} for chunked transcription")
+        model = whisper.load_model(model_name, device="cuda" if CUDA_AVAILABLE else "cpu")
+        logger.info(f"Model loaded successfully on {'GPU' if CUDA_AVAILABLE else 'CPU'}")
+        
+        # Load audio and get info
+        logger.info(f"Loading audio file: {safe_path}")
+        audio = whisper.load_audio(safe_path)
         audio_duration = len(audio) / whisper.audio.SAMPLE_RATE
         total_chunks = max(1, int(audio_duration / chunk_size))
         
@@ -165,8 +169,13 @@ def chunked_transcribe_audio(audio_path, model_name=WHISPER_MODEL, chunk_size=30
             text = result.get("text", "").strip()
             
             logger.info(f"Chunk {i+1}/{total_chunks} processed: {len(text)} chars")
-            yield i, total_chunks, text
+            yield i+1, total_chunks, text
             
+    except FileNotFoundError as e:
+        logger.error(f"Error during chunked transcription - file not found: {e}")
+        yield 0, 1, f"Error transcribing audio: File not found - {str(e)}"
     except Exception as e:
         logger.error(f"Error during chunked transcription: {e}")
-        yield 0, 1, f"Error transcribing audio: {e}"
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        yield 0, 1, f"Error transcribing audio: {str(e)}"
