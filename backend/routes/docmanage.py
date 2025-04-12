@@ -5,7 +5,7 @@ import logging
 from flask import request, jsonify, Blueprint
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
-from services.firebase_service import move_file
+from services.firebase_service import move_file, check_blob_exists
 from auth import verify_firebase_token, is_admin
 
 logger = logging.getLogger(__name__)
@@ -91,8 +91,23 @@ def delete_doc(doc_id):
         trash_path = f"users/{uid}/trash/{filename}"
         
         try:
-            # Move in Firebase - users should always be able to move their own files
-            firebase_moved = move_file(upload_path, trash_path, request.uid)
+            # First check if file exists in uploads
+            file_exists_in_uploads = check_blob_exists(upload_path)
+            
+            # If file doesn't exist in uploads, check if it's already in trash
+            file_exists_in_trash = False
+            if not file_exists_in_uploads:
+                file_exists_in_trash = check_blob_exists(trash_path)
+            
+            # Move in Firebase if it exists in uploads
+            firebase_moved = False
+            if file_exists_in_uploads:
+                firebase_moved = move_file(upload_path, trash_path, request.uid)
+                logger.info(f"Firebase move result: {firebase_moved}")
+            elif file_exists_in_trash:
+                # File already in trash
+                firebase_moved = True
+                logger.info(f"File {filename} already in trash")
             
             # Try to move local file if it exists
             local_moved = False
@@ -104,10 +119,14 @@ def delete_doc(doc_id):
                     os.rename(local_upload_path, local_trash_path)
                     local_moved = True
                     logger.info(f"Moved local file to trash: {filename}")
+                elif os.path.exists(local_trash_path):
+                    # File already in local trash
+                    local_moved = True
+                    logger.info(f"File {filename} already in local trash")
             except Exception as local_err:
                 logger.error(f"Error moving local file to trash: {local_err}")
             
-            # Update document status if either operation succeeded
+            # Update document status if either operation succeeded or file was already in trash
             if firebase_moved or local_moved:
                 d["audioTrashed"] = True
                 logger.info(f"Moved file to trash: {filename}")

@@ -11,6 +11,7 @@ const TrashBucket = () => {
   const [loading, setLoading] = useState(true);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
+  const [actionInProgress, setActionInProgress] = useState(false);
   const toast = useRef(null);
   const { currentUser } = useAuth();
 
@@ -55,8 +56,9 @@ const TrashBucket = () => {
   };
 
   const handleRestore = async (filename) => {
-    if (!currentUser) return;
+    if (!currentUser || actionInProgress) return;
     
+    setActionInProgress(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/restore_file/${filename}`, {
@@ -75,17 +77,21 @@ const TrashBucket = () => {
     } catch (err) {
       console.error("Error restoring file:", err);
       showToast('error', 'Error', 'Failed to restore file');
+    } finally {
+      setActionInProgress(false);
     }
   };
 
   const confirmDelete = (filename) => {
+    if (actionInProgress) return;
     setFileToDelete(filename);
     setConfirmVisible(true);
   };
 
   const handlePermDelete = async () => {
-    if (!fileToDelete || !currentUser) return;
+    if (!fileToDelete || !currentUser || actionInProgress) return;
     
+    setActionInProgress(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/perm_delete_files/${fileToDelete}`, {
@@ -115,6 +121,16 @@ const TrashBucket = () => {
     } finally {
       setFileToDelete(null);
       setConfirmVisible(false);
+      setActionInProgress(false);
+    }
+  };
+
+  // Function to retry operations
+  const retryOperation = (operation, filename) => {
+    if (operation === 'restore') {
+      handleRestore(filename);
+    } else if (operation === 'delete') {
+      confirmDelete(filename);
     }
   };
 
@@ -134,6 +150,16 @@ const TrashBucket = () => {
       
       <h2>Trash Bucket</h2>
       
+      <div className="trash-controls">
+        <Button 
+          icon="pi pi-refresh" 
+          label="Refresh" 
+          className="p-button-secondary" 
+          onClick={fetchTrashFiles}
+          disabled={actionInProgress}
+        />
+      </div>
+      
       {loading ? (
         <p>Loading trash files...</p>
       ) : trashFiles.length === 0 ? (
@@ -150,12 +176,14 @@ const TrashBucket = () => {
                   label="Restore" 
                   className="p-button-success" 
                   onClick={() => handleRestore(file)}
+                  disabled={actionInProgress}
                 />
                 <Button 
                   icon="pi pi-trash" 
                   label="Perm Delete" 
                   className="p-button-danger" 
                   onClick={() => confirmDelete(file)}
+                  disabled={actionInProgress}
                 />
               </div>
             </div>

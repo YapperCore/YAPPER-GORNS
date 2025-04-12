@@ -3,6 +3,7 @@ import os
 import uuid
 import json
 import logging
+import re
 from pathlib import Path
 from flask import request, jsonify, Blueprint, send_from_directory, Response
 from pydub import AudioSegment
@@ -244,7 +245,7 @@ def upload_audio():
         }), 500
 
 def background_transcription(file_path, doc_id):
-    """Process audio transcription in background"""
+    """Process audio transcription in background with real-time updates"""
     try:
         # Ensure file exists
         if not os.path.exists(file_path):
@@ -252,41 +253,93 @@ def background_transcription(file_path, doc_id):
             
         logger.info(f"Starting transcription for file: {file_path}")
         
-        chunk_buffer = []
-        for i, total, text in chunked_transcribe_audio(file_path):
-            chunk_buffer.append({
-                'chunk_index': i,
-                'total_chunks': total,
-                'text': text
-            })
+        # Initialize variables for processing
+        all_text = ""
+        processed_chunks = 0
+        total_chunks = 0
+        
+        # Get the document object
+        doc = doc_store.get(doc_id)
+        if not doc:
+            raise ValueError(f"Document {doc_id} not found")
             
-            if len(chunk_buffer) >= 5:
-                socketio.emit('partial_transcript_batch', {
-                    'doc_id': doc_id,
-                    'chunks': chunk_buffer
-                })
-                socketio.sleep(0.1)
-                append_to_doc(doc_id, chunk_buffer)
-                chunk_buffer = []
+        # Clear initial content
+        doc["content"] = ""
+        save_doc_store()
+        
+        # Process chunks one at a time
+        for i, total, text in chunked_transcribe_audio(file_path):
+            # Update total chunks count
+            if total > total_chunks:
+                total_chunks = total
                 
-        if chunk_buffer:
+            processed_chunks += 1
+            
+            # Clean the chunk text
+            chunk_text = text.strip()
+            
+            # Intelligently join text with proper spacing
+            if all_text:
+                # Check last character of current text and first of new text
+                last_char = all_text[-1] if all_text else ""
+                first_char = chunk_text[0] if chunk_text else ""
+                
+                # No space before punctuation
+                if first_char in ".,;:!?\"'":
+                    all_text += chunk_text
+                # Add space between words/sentences
+                elif last_char.isalnum() and first_char.isalnum():
+                    all_text += " " + chunk_text
+                # Default append
+                else:
+                    all_text += chunk_text
+            else:
+                # First chunk - just assign
+                all_text = chunk_text
+            
+            # Update document with current text
+            doc["content"] = all_text
+            save_doc_store()
+            
+            # Calculate progress
+            progress = round((processed_chunks / total_chunks) * 100) if total_chunks > 0 else 0
+            
+            # Emit current chunk for real-time display
             socketio.emit('partial_transcript_batch', {
                 'doc_id': doc_id,
-                'chunks': chunk_buffer
+                'chunks': [{
+                    'chunk_index': i,
+                    'total_chunks': total,
+                    'text': chunk_text
+                }],
+                'progress': progress
             })
-            socketio.sleep(0.1)
-            append_to_doc(doc_id, chunk_buffer)
-
+            
+            # Small delay to prevent socket congestion
+            socketio.sleep(0.05)
+            
+            # Log progress periodically
+            if i % 5 == 0 or i == total:
+                logger.info(f"Transcription progress: {progress}% ({i}/{total} chunks)")
+        
+        # Final text cleanup - fix formatting issues
+        final_text = all_text.strip()
+        final_text = re.sub(r'\s+', ' ', final_text)  # Replace multiple spaces with single space
+        final_text = re.sub(r'\s+([.,;:!?])', r'\1', final_text)  # No space before punctuation
+        
+        # Update doc with cleaned text
+        doc["content"] = final_text
+        save_doc_store()
+        
+        # Send completion event
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
-            'done': True
+            'done': True,
+            'content': final_text
         })
         
         logger.info(f"Transcription completed for file: {file_path}")
         
-        # Don't delete local file after transcription
-        # We'll keep it for potential playback and let trash management handle deletion
-            
     except Exception as e:
         logger.error(f"Error during transcription: {e}")
         import traceback
@@ -305,10 +358,31 @@ def append_to_doc(doc_id, chunk_list):
             logger.warning(f"Document not found for appending transcription: {doc_id}")
             return
             
+        # Get existing content
         combined_text = doc.get("content", "")
-        for chunk in chunk_list:
-            combined_text += " " + chunk["text"]
         
+        # Process each chunk with intelligent text joining
+        for chunk in chunk_list:
+            chunk_text = chunk["text"].strip()
+            
+            # Check if we need proper spacing
+            if combined_text:
+                last_char = combined_text[-1] if combined_text else ""
+                first_char = chunk_text[0] if chunk_text else ""
+                
+                # Don't add space before punctuation
+                if first_char in ".,;:!?\"'":
+                    combined_text += chunk_text
+                # Add space between words/sentences
+                elif last_char.isalnum() and first_char.isalnum():
+                    combined_text += " " + chunk_text
+                # Default append
+                else:
+                    combined_text += chunk_text
+            else:
+                combined_text = chunk_text
+        
+        # Update document
         doc["content"] = combined_text
         save_doc_store()
         logger.debug(f"Updated document {doc_id} with new transcription content")

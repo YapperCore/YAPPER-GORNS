@@ -101,6 +101,56 @@ def is_owner_or_admin(user_id, resource_path_or_owner_id):
         
     return False
 
+def ensure_folder_exists(user_id, folder_type='uploads'):
+    """
+    Ensure the user's folder exists in Firebase Storage
+    
+    Args:
+        user_id: The user ID
+        folder_type: The type of folder (uploads, trash, etc.)
+        
+    Returns:
+        bool: True if folder exists or was created
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+    
+    try:
+        # Create an empty placeholder object to ensure folder exists
+        folder_path = f"users/{user_id}/{folder_type}/.folder_marker"
+        blob = bucket.blob(folder_path)
+        
+        if not blob.exists():
+            blob.upload_from_string('', content_type='application/octet-stream')
+            logger.info(f"Created {folder_type} folder for user {user_id}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error ensuring {folder_type} folder exists: {e}")
+        return False
+
+def check_blob_exists(storage_path):
+    """
+    Check if a blob exists at the given path
+    
+    Args:
+        storage_path: Storage path to check
+        
+    Returns:
+        bool: True if blob exists, False otherwise
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+        
+    try:
+        blob = bucket.blob(storage_path)
+        return blob.exists()
+    except Exception as e:
+        logger.error(f"Error checking blob existence: {e}")
+        return False
+
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
     """
     Upload file to Firebase Storage with user ownership
@@ -119,6 +169,9 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         return {"success": False, "error": "Firebase not initialized"}
         
     try:
+        # Ensure user has uploads folder
+        ensure_folder_exists(user_id, 'uploads')
+        
         # Generate a unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         unique_id = str(uuid.uuid4())
@@ -160,7 +213,8 @@ def upload_file(file_data, original_filename, user_id, content_type='application
             'uploadTime': firestore.SERVER_TIMESTAMP,
             'url': signed_url,
             'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
-            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()  # Use string as backup
+            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat(),  # Use string as backup
+            'status': 'active'  # Track file status (active vs trashed)
         })
         
         logger.info(f"File uploaded successfully: {storage_path}")
@@ -252,7 +306,7 @@ def delete_file(storage_path, requesting_user_id):
             
         # Check if path belongs to user (simple path check)
         path_owner = extract_owner_from_path(storage_path)
-        if path_owner and path_owner == requesting_user_id or is_admin(requesting_user_id):
+        if path_owner and (path_owner == requesting_user_id or is_admin(requesting_user_id)):
             # Delete from Storage
             blob.delete()
             
@@ -292,6 +346,25 @@ def move_file(source_path, dest_path, requesting_user_id):
         source_blob = bucket.blob(source_path)
         if not source_blob.exists():
             logger.warning(f"Source file not found: {source_path}")
+            
+            # Double-check if dest_path already exists (might have been moved already)
+            dest_blob = bucket.blob(dest_path)
+            if dest_blob.exists():
+                logger.info(f"Destination already exists: {dest_path}, treating as success")
+                
+                # Update Firestore status if applicable
+                filename = dest_path.split('/')[-1].replace('/', '_')
+                doc_ref = db.collection('files').document(filename)
+                doc = doc_ref.get()
+                if doc.exists:
+                    status = 'active' if 'uploads' in dest_path else 'trashed'
+                    doc_ref.update({
+                        'storagePath': dest_path,
+                        'status': status
+                    })
+                
+                return True
+            
             return False
             
         # Check if source path belongs to requesting user
@@ -301,6 +374,10 @@ def move_file(source_path, dest_path, requesting_user_id):
         # Validate source and destination owners match and match requesting user
         if source_owner and dest_owner and source_owner == dest_owner:
             if source_owner == requesting_user_id or is_admin(requesting_user_id):
+                # Ensure destination folder exists
+                folder_type = 'uploads' if 'uploads' in dest_path else 'trash'
+                ensure_folder_exists(dest_owner, folder_type)
+                
                 # Copy source to destination
                 bucket.copy_blob(source_blob, bucket, dest_path)
                 
@@ -317,6 +394,17 @@ def move_file(source_path, dest_path, requesting_user_id):
                 
                 # Delete source blob only after successful copy
                 source_blob.delete()
+                
+                # Update Firestore metadata
+                filename = dest_path.split('/')[-1].replace('/', '_')
+                doc_ref = db.collection('files').document(filename)
+                doc = doc_ref.get()
+                if doc.exists:
+                    status = 'active' if 'uploads' in dest_path else 'trashed'
+                    doc_ref.update({
+                        'storagePath': dest_path,
+                        'status': status
+                    })
                 
                 logger.info(f"File moved: {source_path} -> {dest_path}")
                 return True
@@ -351,6 +439,10 @@ def list_user_files(user_id, folder_path="uploads"):
         
         files = []
         for blob in blobs:
+            # Skip folder markers
+            if blob.name.endswith('.folder_marker'):
+                continue
+                
             # Extract filename from path
             filename = blob.name.split('/')[-1]
             

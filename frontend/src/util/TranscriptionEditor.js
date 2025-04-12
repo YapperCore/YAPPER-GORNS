@@ -19,10 +19,10 @@ export default function TranscriptionEditor() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [transcribedChunks, setTranscribedChunks] = useState([]);
-  const [totalChunks, setTotalChunks] = useState(0);
+  const [processedChunks, setProcessedChunks] = useState([]);
   const socketRef = useRef(null);
   const toastRef = useRef(null);
+  const editorRef = useRef(null);
   
   // Fetch doc info
   useEffect(() => {
@@ -49,8 +49,13 @@ export default function TranscriptionEditor() {
         setAudioFilename(doc.audioFilename || '');
         setAudioTrashed(!!doc.audioTrashed);
         
+        // Check if transcription is already complete
         if (doc.content && doc.content.trim().length > 0) {
-          setIsComplete(true); // Assume transcription is complete if content exists
+          if (doc.content.includes("Transcription complete") || 
+              doc.content.length > 100) {
+            setIsComplete(true);
+            setProgress(100);
+          }
         }
       } catch (err) {
         console.error("Error loading document:", err);
@@ -78,34 +83,26 @@ export default function TranscriptionEditor() {
 
     const handlePartialBatch = data => {
       if (data.doc_id === docId) {
-        // Update transcribed chunks and progress
-        const newChunks = [...transcribedChunks, ...data.chunks];
-        setTranscribedChunks(newChunks);
-        
-        // Set total chunks if this is new info
-        if (data.chunks.length > 0 && data.chunks[0].total_chunks > 0) {
-          setTotalChunks(data.chunks[0].total_chunks);
+        // Update progress directly from server data if available
+        if (data.progress !== undefined) {
+          setProgress(data.progress);
         }
         
-        // Update progress percentage
-        if (totalChunks > 0) {
-          const processedIndices = new Set(newChunks.map(c => c.chunk_index));
-          const completedChunks = processedIndices.size;
-          const newProgress = Math.floor((completedChunks / totalChunks) * 100);
-          setProgress(newProgress);
+        // Get the content directly from the server to ensure consistency
+        fetchCurrentContent();
+        
+        // Add new chunks to processed chunks list for tracking
+        if (data.chunks && data.chunks.length > 0) {
+          setProcessedChunks(prev => [...prev, ...data.chunks]);
+          
+          // Show notification for new content
+          toastRef.current?.show({
+            severity: 'info',
+            summary: 'New Content',
+            detail: `Received new transcription content`,
+            life: 1000
+          });
         }
-        
-        // Update content in editor
-        const batchText = data.chunks.map(c => c.text).join(" ");
-        setContent(prev => prev + " " + batchText);
-        
-        // Show notification for new batch
-        toastRef.current?.show({
-          severity: 'info',
-          summary: 'New Transcription Batch',
-          detail: `Received ${data.chunks.length} new chunk(s)`,
-          life: 1500
-        });
       }
     };
 
@@ -113,6 +110,9 @@ export default function TranscriptionEditor() {
       if (data.doc_id === docId && data.done) {
         setIsComplete(true);
         setProgress(100);
+        
+        // Get final content from server
+        fetchCurrentContent();
         
         toastRef.current?.show({
           severity: 'success',
@@ -141,6 +141,25 @@ export default function TranscriptionEditor() {
       }
     };
 
+    // Helper function to fetch current content
+    const fetchCurrentContent = async () => {
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`/api/docs/${docId}`, {
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          }
+        });
+        
+        if (res.ok) {
+          const doc = await res.json();
+          setContent(doc.content || '');
+        }
+      } catch (err) {
+        console.error("Error fetching current content:", err);
+      }
+    };
+
     socket.on('partial_transcript_batch', handlePartialBatch);
     socket.on('final_transcript', handleFinal);
     socket.on('doc_content_update', handleDocUpdate);
@@ -153,12 +172,12 @@ export default function TranscriptionEditor() {
       socket.off('transcription_error', handleTranscriptionError);
       socket.disconnect();
     };
-  }, [docId, transcribedChunks, totalChunks]);
+  }, [docId, currentUser]);
 
   const handleContentChange = async (newContent) => {
     setContent(newContent);
     
-    // Update doc on the server
+    // Save changes to the server
     if (currentUser) {
       try {
         const token = await currentUser.getIdToken();
@@ -170,6 +189,11 @@ export default function TranscriptionEditor() {
           },
           body: JSON.stringify({ content: newContent })
         });
+        
+        // Also emit changes to other clients
+        if (socketRef.current) {
+          socketRef.current.emit('edit_doc', { doc_id: docId, content: newContent });
+        }
       } catch (err) {
         console.error("Error updating document:", err);
         setError(`Error saving changes: ${err.message}`);
@@ -218,6 +242,7 @@ export default function TranscriptionEditor() {
         value={content}
         onChange={handleContentChange}
         style={{ height: '600px', background: '#fff' }}
+        ref={editorRef}
       />
       
       {audioFilename && !audioTrashed && (

@@ -23,6 +23,27 @@ except Exception as e:
 bucket = storage.bucket()
 db = firestore.client()
 
+def ensure_path_exists(firebase_path):
+    """
+    Ensure folder structure exists in Firebase Storage
+    
+    Args:
+        firebase_path: Path in Firebase where file will be stored
+    """
+    # Extract user ID and folder type from path
+    parts = firebase_path.split('/')
+    if len(parts) >= 3 and parts[0] == 'users':
+        user_id = parts[1]
+        folder_type = parts[2]
+        
+        # Create an empty marker to ensure folder exists
+        marker_path = f"users/{user_id}/{folder_type}/.folder_marker"
+        marker_blob = bucket.blob(marker_path)
+        
+        if not marker_blob.exists():
+            marker_blob.upload_from_string('', content_type='application/octet-stream')
+            logger.info(f"Created {folder_type} folder for user {user_id}")
+
 def upload_file_by_path(local_path, firebase_path):
     """
     Uploads a file from a local path to Firebase Storage with security rules.
@@ -54,6 +75,9 @@ def upload_file_by_path(local_path, firebase_path):
     file_size = os.path.getsize(local_path)
     logger.info(f"Uploading file: {local_path}, Size: {file_size} bytes")
     
+    # Ensure the destination folder exists in Firebase
+    ensure_path_exists(firebase_path)
+    
     blob = bucket.blob(firebase_path)
     
     try:
@@ -76,6 +100,19 @@ def upload_file_by_path(local_path, firebase_path):
     }
     # Update the blob with new metadata
     blob.patch()
+    
+    # Store additional metadata in Firestore
+    filename = os.path.basename(firebase_path)
+    doc_ref = db.collection('files').document(filename.replace('/', '_'))
+    doc_ref.set({
+        'filename': filename,
+        'storagePath': firebase_path,
+        'ownerId': user_id,
+        'contentType': 'audio/mpeg',
+        'uploadTime': firestore.SERVER_TIMESTAMP,
+        'status': 'active',  # File starts in active state
+        'originalPath': local_path
+    }, merge=True)
     
     logger.info(f"File uploaded successfully to {firebase_path} with owner: {user_id}")
     return blob
@@ -107,15 +144,27 @@ def delete_file_by_path(firebase_path):
     
     Args:
         firebase_path: Path in Firebase
+        
+    Returns:
+        bool: True if deleted, False otherwise
     """
     blob = bucket.blob(firebase_path)
     
     # Check if blob exists before deleting
     if blob.exists():
         blob.delete()
+        
+        # Also delete from Firestore
+        filename = os.path.basename(firebase_path)
+        doc_ref = db.collection('files').document(filename.replace('/', '_'))
+        if doc_ref.get().exists:
+            doc_ref.delete()
+            
         logger.info(f"File deleted: {firebase_path}")
+        return True
     else:
         logger.warning(f"File not found for deletion: {firebase_path}")
+        return False
 
 def move_file(firebase_source_path, firebase_dest_path):
     """
@@ -124,13 +173,37 @@ def move_file(firebase_source_path, firebase_dest_path):
     Args:
         firebase_source_path: Source path
         firebase_dest_path: Destination path
+        
+    Returns:
+        bool: True if moved successfully, False otherwise
     """
     source_blob = bucket.blob(firebase_source_path)
     
     # Check if source exists
     if not source_blob.exists():
         logger.warning(f"Source file not found: {firebase_source_path}")
+        
+        # Check if destination already exists (might have been moved already)
+        dest_blob = bucket.blob(firebase_dest_path)
+        if dest_blob.exists():
+            logger.info(f"Destination already exists: {firebase_dest_path}, treating as success")
+            
+            # Update Firestore record
+            filename = os.path.basename(firebase_dest_path)
+            doc_ref = db.collection('files').document(filename.replace('/', '_'))
+            if doc_ref.get().exists:
+                status = 'active' if 'uploads' in firebase_dest_path else 'trashed'
+                doc_ref.update({
+                    'storagePath': firebase_dest_path,
+                    'status': status
+                })
+                
+            return True
+            
         return False
+    
+    # Ensure destination folder exists
+    ensure_path_exists(firebase_dest_path)
     
     # Copy with metadata preservation
     source_blob.reload()  # Ensure we have the latest blob data
@@ -144,6 +217,18 @@ def move_file(firebase_source_path, firebase_dest_path):
     
     # Delete source
     source_blob.delete()
+    
+    # Update Firestore record
+    filename = os.path.basename(firebase_dest_path)
+    doc_ref = db.collection('files').document(filename.replace('/', '_'))
+    if doc_ref.get().exists:
+        status = 'active' if 'uploads' in firebase_dest_path else 'trashed'
+        doc_ref.update({
+            'storagePath': firebase_dest_path,
+            'status': status,
+            'lastModified': firestore.SERVER_TIMESTAMP
+        })
+    
     logger.info(f"File moved: {firebase_source_path} -> {firebase_dest_path}")
     return True
 
