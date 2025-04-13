@@ -12,9 +12,8 @@ function Home() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [transcripts, setTranscripts] = useState([]);
   const [docs, setDocs] = useState([]); // make sure docs is an array
+  const [folders, setFolders] = useState([]);
   const { currentUser } = useAuth();
-  const toast = useRef(null);
-
   const toast = useRef(null);
 
   useEffect(() => {
@@ -48,6 +47,25 @@ function Home() {
       }
     }
     fetchDocs();
+
+    async function fetchFolders() {
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          const res = await fetch('/api/folders', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          const data = await res.json();
+          setFolders(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error("Error fetching folders:", err);
+          setFolders([]);
+        }
+      }
+    }
+    fetchFolders();
 
     return () => {
       socket.disconnect();
@@ -112,6 +130,67 @@ function Home() {
     }
   };
 
+  const handleCreateFolder = async () => {
+    const folderName = prompt("Enter the name of the folder:");
+    if (!folderName) return;
+
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ folderName })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.current?.show({ severity: 'success', summary: 'Folder Created', detail: data.message, life: 3000 });
+        // Re-fetch folders after successful creation
+        await fetchFolders();
+      } else {
+        const errData = await res.json();
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: errData.error || 'Failed to create folder', life: 3000 });
+      }
+    } catch (err) {
+      console.error("Error creating folder:", err);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to create folder', life: 3000 });
+    }
+  };
+
+  const fetchFolders = async () => {
+    if (currentUser) {
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch('/api/folders', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setFolders(Array.isArray(data) ? data : []);
+        } else {
+          console.error("Error fetching folders:", res.statusText);
+          setFolders([]);
+        }
+      } catch (err) {
+        console.error("Error fetching folders:", err);
+        setFolders([]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchFolders();
+  }, [currentUser]);
+
+  const handleFolderClick = (folderName) => {
+    window.location.href = `/folders/${folderName}`;
+  };
+
   return (
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
@@ -133,6 +212,23 @@ function Home() {
       <p className="message">{uploadMessage}</p>
 
       <hr className="divider" />
+      <div>
+        <button onClick={handleCreateFolder} className="action-link edit-link">Create Folder</button>
+      </div>
+      <hr className="divider" />
+      <div>
+        <h3>Folders:</h3>
+        <div className="docs-grid">
+          {folders.map(folder => (
+            <div key={folder} className="doc-card" onClick={() => handleFolderClick(folder)}>
+              <h4 className="doc-title">{folder}</h4>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <hr style={{ border: '1px solid black', margin: '1rem 0' }} />
+
       <div>
         <h3>Docs in Session:</h3>
         <div className="docs-grid">

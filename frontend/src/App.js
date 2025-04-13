@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import DocEditor from './util/DocEditor';
 import TranscriptionEditor from './util/TranscriptionEditor';
 import Navbar from './components/Navbar/Navbar';
+import FolderDocs from './pages/FolderDocs';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -60,6 +61,12 @@ function AppContent() {
           <Route path="/transcription/:docId" element={
             <ProtectedRoute>
               <TranscriptionEditor />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/folders/:folderName" element={
+            <ProtectedRoute>
+              <FolderDocs />
             </ProtectedRoute>
           } />
         </Routes>
