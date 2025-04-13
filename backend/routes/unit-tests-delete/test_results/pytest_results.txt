@@ -1,0 +1,6 @@
+=== PYTEST HARD DELETE TEST ===
+Status: SUCCESS
+Status Code: 200
+Document Removed: True
+Current Working Directory: backend\routes\unit-tests-delete
+Absolute Path: backend\routes\unit-tests-delete\test_results\pytest_results.txt
