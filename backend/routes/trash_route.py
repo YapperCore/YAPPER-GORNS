@@ -2,10 +2,10 @@
 import os
 import logging
 from flask import jsonify, request, Blueprint
-from config import UPLOAD_FOLDER, TRASH_FOLDER
-from services.storage import save_doc_store, doc_store
-from services.firebase_service import move_file, delete_file, get_file_url
-from auth import verify_firebase_token, is_admin
+from backend.config import UPLOAD_FOLDER, TRASH_FOLDER
+from backend.services.storage import save_doc_store, doc_store
+from backend.services.firebase_service import move_file, delete_file, get_file_url
+from backend.auth import verify_firebase_token, is_admin
 
 logger = logging.getLogger(__name__)
 

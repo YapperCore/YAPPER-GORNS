@@ -89,6 +89,19 @@
       "originalFilename": "OSR_us_000_0010_8k.wav",
       "audioTrashed": false,
       "deleted": false
+    },
+    "8de68f8c-a9a2-489b-afbc-e15e6efb810e": {
+      "id": "8de68f8c-a9a2-489b-afbc-e15e6efb810e",
+      "name": "Doc37",
+      "content": "<p>The birch canoes slid on the smooth planks. Glue the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of study work faced us.</p>",
+      "audioFilename": "118ad8e4-056e-44df-956c-88c4270c2eb7_OSR_us_000_0010_8k (1).wav",
+      "originalFilename": "OSR_us_000_0010_8k (1).wav",
+      "audioTrashed": false,
+      "deleted": false,
+      "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
+      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/118ad8e4-056e-44df-956c-88c4270c2eb7_OSR_us_000_0010_8k%20%281%29.wav?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250413%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250413T030546Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=628d1c1549f95b28a7e9eed365008a77acf7056ac7eb502969807dbe9a21987d203515d91b6204668fc254dd863ce495c72718d9d850042c6fa07ba66c647c125126f9034ca2977b865ca24833523ee7f291cd753ead6635b94dece8d70ae8715b7fd9b4597aa3fc473df25a5a2c0c1605e25d8ec9fb3ac2080cd6f8589340758f262b8123de97fdcc8e91cd85334611e541cc432e16041ce9805047e613ebe927ec4fc08824c7053cf11ef3aa2e11f71d8bb847049c81a32edfde37cd8c7237f609260332bf039529e91693ac4204855f54ea36abed317075222df2436432ca6615ae18ab15b67dd7ace05aa4babd1fddce4046aaf833f36f467c0e4e59547b",
+      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/118ad8e4-056e-44df-956c-88c4270c2eb7_OSR_us_000_0010_8k (1).wav",
+      "localPath": "C:\\Users\\michaelelder\\Programming\\Gorns\\yapper\\backend\\uploads\\118ad8e4-056e-44df-956c-88c4270c2eb7_OSR_us_000_0010_8k (1).wav"
     }
   },
   "counter": 36
