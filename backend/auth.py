@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import auth
 from flask import request, jsonify
 from functools import wraps
-from config import ADMIN_UIDS
+from backend.config import ADMIN_UIDS
 
 def verify_firebase_token(fn):
     @wraps(fn)

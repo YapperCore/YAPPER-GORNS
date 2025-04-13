@@ -5,7 +5,7 @@ import datetime
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, storage, firestore, auth
-from firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
+from backend.firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
 
 # Configure logging
 logger = logging.getLogger(__name__)
