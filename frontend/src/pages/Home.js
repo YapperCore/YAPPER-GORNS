@@ -3,14 +3,17 @@ import io from 'socket.io-client';
 import '../static/Home.css';
 import Confirmable from '../util/confirmable';
 import { Toast } from 'primereact/toast';
-import 'primereact/resources/themes/saga-blue/theme.css';  
-import 'primereact/resources/primereact.min.css';          
+import 'primereact/resources/themes/saga-blue/theme.css';
+import 'primereact/resources/primereact.min.css';
+import { useAuth } from '../context/AuthContext';
 
 function Home() {
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [setTranscripts] = useState([]);
-  const [docs, setDocs] = useState([]);
+  const [transcripts, setTranscripts] = useState([]);
+  const [docs, setDocs] = useState([]); // make sure docs is an array
+  const { currentUser } = useAuth();
+  const toast = useRef(null);
 
   const toast = useRef(null);
 
@@ -26,48 +29,69 @@ function Home() {
       setTranscripts(prev => [...prev, "Transcription complete."]);
     });
 
-    fetch('/api/docs')
-      .then(r => r.json())
-      .then(d => setDocs(d))
-      .catch(err => console.error("Error docs:", err));
+    async function fetchDocs() {
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          const res = await fetch('/api/docs', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          const d = await res.json();
+          // Ensure that docs is an array. If not, log an error and default to [].
+          setDocs(Array.isArray(d) ? d : []);
+        } catch (err) {
+          console.error("Error fetching docs:", err);
+          setDocs([]);
+        }
+      }
+    }
+    fetchDocs();
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [currentUser]);
 
   const handleFileChange = e => {
     setFile(e.target.files[0]);
   };
 
   const handleUpload = async () => {
-    if(!file){
+    if (!file) {
       setUploadMessage("No file selected!");
       return;
     }
     try {
       const formData = new FormData();
       formData.append('audio', file);
+      const token = await currentUser.getIdToken();
       const res = await fetch('/upload-audio', {
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         body: formData
       });
-      if(res.ok){
+      if (res.ok) {
         const data = await res.json();
         setUploadMessage(data.message || "Upload succeeded");
-        if(data.doc_id){
+        if (data.doc_id) {
           window.open(`/transcription/${data.doc_id}`, '_blank');
         }
-        const dres = await fetch('/api/docs');
-        if(dres.ok){
-          const docData = await dres.json();
-          setDocs(docData);
+        const docsRes = await fetch('/api/docs', { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        if (docsRes.ok) {
+          const docData = await docsRes.json();
+          setDocs(Array.isArray(docData) ? docData : []);
         }
       } else {
-        const eData = await res.json();
-        setUploadMessage(eData.error || "Upload failed");
+        const errData = await res.json();
+        setUploadMessage(errData.error || "Upload failed");
       }
-    } catch(err){
+    } catch (err) {
       console.error("Upload error:", err);
       setUploadMessage("Upload failed");
     }
@@ -75,8 +99,11 @@ function Home() {
 
   const handleDelete = async (id) => {
     try {
-      const url = `/api/docs/${id}`;
-      const res = await fetch(url, { method: 'DELETE' });
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/docs/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (res.ok) {
         setDocs(prev => prev.filter(d => d.id !== id));
       }
@@ -91,12 +118,12 @@ function Home() {
 
       <h2>Home - Upload Audio ={'>'} Create Doc</h2>
       <div className="upload-section">
-        <input 
-          type="file" 
+        <input
+          type="file"
           onChange={handleFileChange}
           className="file-input"
         />
-        <button 
+        <button
           onClick={handleUpload}
           className="upload-button"
         >
@@ -118,25 +145,25 @@ function Home() {
                   {doc.audioTrashed && ' [TRASHED]'}
                 </p>
               )}
-              
+
               <div className="doc-actions">
-                <a 
-                  href={`/transcription/${doc.id}`} 
+                <a
+                  href={`/transcription/${doc.id}`}
                   rel="noreferrer"
                   className="action-link transcription-link"
                 >
                   View Doc
                 </a>
-                <a 
-                  href={`/docs/edit/${doc.id}`} 
+                <a
+                  href={`/docs/edit/${doc.id}`}
                   rel="noreferrer"
                   className="action-link edit-link"
                 >
                   Edit Doc
                 </a>
-                <Confirmable 
-                  onDelete={() => handleDelete(doc.id)} 
-                  toast={toast} 
+                <Confirmable
+                  onDelete={() => handleDelete(doc.id)}
+                  toast={toast}
                 />
               </div>
             </div>
