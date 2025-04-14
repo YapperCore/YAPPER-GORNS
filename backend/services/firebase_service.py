@@ -57,11 +57,99 @@ def is_admin(user_id):
     """Check if user is an admin"""
     return user_id in ADMIN_USER_IDS
 
-def is_owner_or_admin(user_id, owner_id):
-    """Check if user is an admin or the owner of the resource"""
+def extract_owner_from_path(path):
+    """
+    Extract owner user ID from a Firebase path
+    
+    Args:
+        path: Storage path like "users/{uid}/uploads/filename"
+        
+    Returns:
+        str or None: Owner user ID if found, None otherwise
+    """
+    parts = path.split('/')
+    if len(parts) >= 2 and parts[0] == 'users':
+        return parts[1]
+    return None
+
+def is_owner_or_admin(user_id, resource_path_or_owner_id):
+    """
+    Check if user is an admin or the owner of the resource
+    
+    Args:
+        user_id: User ID requesting access
+        resource_path_or_owner_id: Either a resource path or direct owner ID
+        
+    Returns:
+        bool: True if user is owner or admin
+    """
     if not user_id:
         return False
-    return user_id == owner_id or is_admin(user_id)
+        
+    # If already admin, grant access
+    if is_admin(user_id):
+        return True
+    
+    # If direct owner ID is provided
+    if '/' not in str(resource_path_or_owner_id):
+        return user_id == resource_path_or_owner_id
+        
+    # Extract owner from path
+    path_owner = extract_owner_from_path(resource_path_or_owner_id)
+    if path_owner:
+        return user_id == path_owner
+        
+    return False
+
+def ensure_folder_exists(user_id, folder_type='uploads'):
+    """
+    Ensure the user's folder exists in Firebase Storage
+    
+    Args:
+        user_id: The user ID
+        folder_type: The type of folder (uploads, trash, etc.)
+        
+    Returns:
+        bool: True if folder exists or was created
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+    
+    try:
+        # Create an empty placeholder object to ensure folder exists
+        folder_path = f"users/{user_id}/{folder_type}/.folder_marker"
+        blob = bucket.blob(folder_path)
+        
+        if not blob.exists():
+            blob.upload_from_string('', content_type='application/octet-stream')
+            logger.info(f"Created {folder_type} folder for user {user_id}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error ensuring {folder_type} folder exists: {e}")
+        return False
+
+def check_blob_exists(storage_path):
+    """
+    Check if a blob exists at the given path
+    
+    Args:
+        storage_path: Storage path to check
+        
+    Returns:
+        bool: True if blob exists, False otherwise
+    """
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
+        
+    try:
+        blob = bucket.blob(storage_path)
+        return blob.exists()
+    except Exception as e:
+        logger.error(f"Error checking blob existence: {e}")
+        return False
 
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
     """
@@ -81,6 +169,9 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         return {"success": False, "error": "Firebase not initialized"}
         
     try:
+        # Ensure user has uploads folder
+        ensure_folder_exists(user_id, 'uploads')
+        
         # Generate a unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         unique_id = str(uuid.uuid4())
@@ -122,7 +213,8 @@ def upload_file(file_data, original_filename, user_id, content_type='application
             'uploadTime': firestore.SERVER_TIMESTAMP,
             'url': signed_url,
             'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
-            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()  # Use string as backup
+            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat(),  # Use string as backup
+            'status': 'active'  # Track file status (active vs trashed)
         })
         
         logger.info(f"File uploaded successfully: {storage_path}")
@@ -154,31 +246,30 @@ def get_file_url(storage_path, requesting_user_id=None):
         return None
         
     try:
+        # If no user ID provided, skip permission check (internal use)
+        if not requesting_user_id:
+            blob = bucket.blob(storage_path)
+            if blob.exists():
+                signed_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=datetime.timedelta(hours=1),
+                    method="GET"
+                )
+                return signed_url
+            return None
+            
+        # Check if path belongs to user (simple path check for efficiency)
+        path_owner = extract_owner_from_path(storage_path)
+        if path_owner and requesting_user_id != path_owner and not is_admin(requesting_user_id):
+            logger.warning(f"Access denied: User {requesting_user_id} is not owner of {storage_path}")
+            return None
+            
         # Check file existence
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found: {storage_path}")
             return None
-            
-        # If no user ID provided, skip permission check
-        if not requesting_user_id:
-            # Generate secure, time-limited URL
-            signed_url = blob.generate_signed_url(
-                version="v4",
-                expiration=datetime.timedelta(hours=1),
-                method="GET"
-            )
-            return signed_url
-            
-        # Get and validate owner from metadata
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
         
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Access denied: User {requesting_user_id} is not owner or admin for {storage_path}")
-            return None
-            
         # Generate secure, time-limited URL
         signed_url = blob.generate_signed_url(
             version="v4",
@@ -207,30 +298,29 @@ def delete_file(storage_path, requesting_user_id):
         return False
         
     try:
-        # Check file existence
+        # Check file existence first
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found for deletion: {storage_path}")
             return False
             
-        # Get and validate owner from metadata
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
-        
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Delete denied: User {requesting_user_id} is not owner or admin for {storage_path}")
-            return False
+        # Check if path belongs to user (simple path check)
+        path_owner = extract_owner_from_path(storage_path)
+        if path_owner and (path_owner == requesting_user_id or is_admin(requesting_user_id)):
+            # Delete from Storage
+            blob.delete()
             
-        # Delete from Storage
-        blob.delete()
-        
-        # Delete metadata from Firestore
-        doc_id = storage_path.split('/')[-1].replace('/', '_')
-        db.collection('files').document(doc_id).delete()
-        
-        logger.info(f"File deleted: {storage_path}")
-        return True
+            # Delete metadata from Firestore
+            doc_id = storage_path.split('/')[-1].replace('/', '_')
+            doc_ref = db.collection('files').document(doc_id)
+            if doc_ref.get().exists:
+                doc_ref.delete()
+            
+            logger.info(f"File deleted: {storage_path}")
+            return True
+        else:
+            logger.warning(f"Delete denied: User {requesting_user_id} is not owner of {storage_path}")
+            return False
     except Exception as e:
         logger.error(f"Error deleting file: {e}")
         return False
@@ -256,37 +346,74 @@ def move_file(source_path, dest_path, requesting_user_id):
         source_blob = bucket.blob(source_path)
         if not source_blob.exists():
             logger.warning(f"Source file not found: {source_path}")
+            
+            # Double-check if dest_path already exists (might have been moved already)
+            dest_blob = bucket.blob(dest_path)
+            if dest_blob.exists():
+                logger.info(f"Destination already exists: {dest_path}, treating as success")
+                
+                # Update Firestore status if applicable
+                filename = dest_path.split('/')[-1].replace('/', '_')
+                doc_ref = db.collection('files').document(filename)
+                doc = doc_ref.get()
+                if doc.exists:
+                    status = 'active' if 'uploads' in dest_path else 'trashed'
+                    doc_ref.update({
+                        'storagePath': dest_path,
+                        'status': status
+                    })
+                
+                return True
+            
             return False
             
-        # Get and validate owner from metadata
-        metadata = source_blob.metadata or {}
-        owner_id = metadata.get('ownerId', '')
+        # Check if source path belongs to requesting user
+        source_owner = extract_owner_from_path(source_path)
+        dest_owner = extract_owner_from_path(dest_path)
         
-        # Check if user has permission (owner or admin)
-        if not is_owner_or_admin(requesting_user_id, owner_id):
-            logger.warning(f"Move denied: User {requesting_user_id} is not owner or admin for {source_path}")
+        # Validate source and destination owners match and match requesting user
+        if source_owner and dest_owner and source_owner == dest_owner:
+            if source_owner == requesting_user_id or is_admin(requesting_user_id):
+                # Ensure destination folder exists
+                folder_type = 'uploads' if 'uploads' in dest_path else 'trash'
+                ensure_folder_exists(dest_owner, folder_type)
+                
+                # Copy source to destination
+                bucket.copy_blob(source_blob, bucket, dest_path)
+                
+                # Get metadata to preserve
+                source_blob.reload()
+                metadata = source_blob.metadata or {}
+                content_type = source_blob.content_type
+                
+                # Apply metadata to destination
+                dest_blob = bucket.blob(dest_path)
+                dest_blob.metadata = metadata
+                dest_blob.content_type = content_type
+                dest_blob.patch()
+                
+                # Delete source blob only after successful copy
+                source_blob.delete()
+                
+                # Update Firestore metadata
+                filename = dest_path.split('/')[-1].replace('/', '_')
+                doc_ref = db.collection('files').document(filename)
+                doc = doc_ref.get()
+                if doc.exists:
+                    status = 'active' if 'uploads' in dest_path else 'trashed'
+                    doc_ref.update({
+                        'storagePath': dest_path,
+                        'status': status
+                    })
+                
+                logger.info(f"File moved: {source_path} -> {dest_path}")
+                return True
+            else:
+                logger.warning(f"Move denied: User {requesting_user_id} doesn't match owner {source_owner}")
+                return False
+        else:
+            logger.warning(f"Move denied: Source owner {source_owner} and destination owner {dest_owner} don't match")
             return False
-            
-        # Create destination blob with same metadata
-        dest_blob = bucket.blob(dest_path)
-        
-        # Copy source to destination
-        source_blob.reload()  # Ensure we have the latest blob data
-        
-        # Copy the blob
-        bucket.copy_blob(source_blob, bucket, dest_path)
-        
-        # Ensure metadata is preserved on destination blob
-        dest_blob = bucket.blob(dest_path)
-        dest_blob.metadata = source_blob.metadata
-        dest_blob.content_type = source_blob.content_type
-        dest_blob.patch()
-        
-        # Delete source blob
-        source_blob.delete()
-        
-        logger.info(f"File moved: {source_path} -> {dest_path}")
-        return True
     except Exception as e:
         logger.error(f"Error moving file: {e}")
         return False
@@ -312,6 +439,10 @@ def list_user_files(user_id, folder_path="uploads"):
         
         files = []
         for blob in blobs:
+            # Skip folder markers
+            if blob.name.endswith('.folder_marker'):
+                continue
+                
             # Extract filename from path
             filename = blob.name.split('/')[-1]
             
