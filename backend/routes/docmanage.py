@@ -1,32 +1,3 @@
-<<<<<<< HEAD
-import os
-import uuid
-import json
-import logging
-from flask import request, jsonify # type: ignore
-from config import UPLOAD_FOLDER, TRASH_FOLDER
-from services.storage import save_doc_store, doc_store
-
-# Set up logger
-logger = logging.getLogger(__name__)
-
-def list_docs():
-    """Return only non-deleted documents."""
-    if not doc_store:
-        return jsonify([]), 200
-    active_docs = [d for d in doc_store.values() if not d.get("deleted", False)]
-    return jsonify(active_docs), 200
-
-def get_doc(doc_id):
-    """Retrieve a specific document by ID."""
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-        return jsonify({"error": "Doc not found"}), 404
-    return jsonify(d), 200
-
-def create_doc():
-    """Create a new document."""
-=======
 # backend/routes/docmanage.py
 import os
 import uuid
@@ -67,7 +38,6 @@ def get_doc(doc_id):
 @verify_firebase_token
 def create_doc():
     """Create a new document with ownership information"""
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
     data = request.json or {}
     doc_id = str(uuid.uuid4())
     name = data.get("name", f"Doc{len(doc_store) + 1}")
@@ -80,25 +50,14 @@ def create_doc():
         "audioFilename": None,
         "originalFilename": None,
         "audioTrashed": False,
-<<<<<<< HEAD
-        "deleted": False
-=======
         "deleted": False,
         "owner": request.uid
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
     }
 
     doc_store[doc_id] = doc_obj
     save_doc_store()
     return jsonify(doc_obj), 201
 
-<<<<<<< HEAD
-def update_doc(doc_id):
-    """Update an existing document."""
-    data = request.json or {}
-    doc = doc_store.get(doc_id)
-    if not doc or doc.get("deleted"):
-=======
 @docmanage_bp.route('/api/docs/<doc_id>', methods=['PUT'])
 @verify_firebase_token
 def update_doc(doc_id):
@@ -106,7 +65,6 @@ def update_doc(doc_id):
     data = request.json or {}
     doc = doc_store.get(doc_id)
     if not doc or doc.get("deleted") or (doc.get("owner") != request.uid and not is_admin(request.uid)):
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
         return jsonify({"error": "Doc not found"}), 404
 
     doc["name"] = data.get("name", doc.get("name"))
@@ -115,36 +73,16 @@ def update_doc(doc_id):
     save_doc_store()
     return jsonify(doc), 200
 
-<<<<<<< HEAD
-def delete_doc(doc_id):
-    """Soft delete a document and move its audio file to trash if applicable."""
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-=======
 @docmanage_bp.route('/api/docs/<doc_id>', methods=['DELETE'])
 @verify_firebase_token
 def delete_doc(doc_id):
     """Soft delete a document and mark its file as trashed"""
     d = doc_store.get(doc_id)
     if not d or d.get("deleted") or (d.get("owner") != request.uid and not is_admin(request.uid)):
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
         return jsonify({"message": "Doc not found"}), 404
 
     d["deleted"] = True
     filename = d.get("audioFilename")
-<<<<<<< HEAD
-
-    if filename and not d.get("audioTrashed"):
-        src_path = os.path.join(UPLOAD_FOLDER, filename)
-        dst_path = os.path.join(TRASH_FOLDER, filename)
-        if os.path.exists(src_path):
-            os.rename(src_path, dst_path)
-            d["audioTrashed"] = True
-            logger.info(f"Moved file to trash: {src_path}")
-
-    save_doc_store()
-    return jsonify({"message": "Doc deleted"}), 200
-=======
     
     if filename and not d.get("audioTrashed"):
         # Move the file to trash in Firebase with permission check
@@ -203,4 +141,3 @@ def delete_doc(doc_id):
 def register_docmanage_routes(app):
     """Register document management routes with Flask app"""
     app.register_blueprint(docmanage_bp)
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie

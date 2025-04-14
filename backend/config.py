@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-import os
-
-# Configuration settings
-UPLOAD_FOLDER = 'uploads'
-TRASH_FOLDER = 'trash'
-DOC_STORE_FILE = 'doc_store.json'
-
-# Flask & SocketIO settings
-CORS_ALLOWED_ORIGINS = "*"
-
-# Ensure necessary directories exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(TRASH_FOLDER, exist_ok=True)
-=======
 # backend/config.py
 import os
 import sys
@@ -124,4 +109,3 @@ def create_directories():
 
 # Create directories
 UPLOAD_FOLDER, TRASH_FOLDER = create_directories()
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie

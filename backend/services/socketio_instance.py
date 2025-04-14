@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-from flask_socketio import SocketIO, join_room,emit # type: ignore
-from config import CORS_ALLOWED_ORIGINS
-from services.storage import save_doc_store, doc_store
-
-
-
-socketio = SocketIO(cors_allowed_origins=CORS_ALLOWED_ORIGINS)
-
-=======
 # backend/services/socketio_instance.py
 from flask_socketio import SocketIO, join_room, emit, disconnect
 from services.storage import save_doc_store, doc_store
@@ -25,20 +15,10 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info("Client disconnected from socket")
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
 
 @socketio.on('join_doc')
 def handle_join_doc_evt(data):
     doc_id = data.get('doc_id')
-<<<<<<< HEAD
-    join_room(doc_id)
-    doc = doc_store.get(doc_id)
-    if doc and not doc.get("deleted"):
-        emit('doc_content_update', {
-            'doc_id': doc_id,
-            'content': doc['content']
-        }, room=doc_id)
-=======
     if not doc_id:
         logger.warning("Join doc event without doc_id")
         return
@@ -56,30 +36,20 @@ def handle_join_doc_evt(data):
         }, room=doc_id)
     else:
         logger.warning(f"Doc {doc_id} not found or deleted")
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
 
 @socketio.on('edit_doc')
 def handle_edit_doc_evt(data):
     doc_id = data.get('doc_id')
     new_content = data.get('content')
-<<<<<<< HEAD
-=======
     
     if not doc_id or new_content is None:
         logger.warning("Invalid edit_doc event data")
         return
         
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
     doc = doc_store.get(doc_id)
     if doc and not doc.get("deleted"):
         doc['content'] = new_content
         save_doc_store()
-<<<<<<< HEAD
-    emit('doc_content_update', {
-        'doc_id': doc_id,
-        'content': new_content
-    }, room=doc_id, include_self=False)
-=======
         
         # Broadcast to all clients except sender
         emit('doc_content_update', {
@@ -162,4 +132,3 @@ def emit_transcription_error(doc_id, error_message):
         logger.error(f"Emitted transcription error for doc {doc_id}: {error_message}")
     except Exception as e:
         logger.error(f"Error emitting transcription error: {e}")
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie

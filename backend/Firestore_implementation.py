@@ -1,13 +1,5 @@
 import firebase_admin
 from firebase_admin import credentials, storage, firestore
-<<<<<<< HEAD
-
-
-
-
-cred = credentials.Certificate("C:/CS3398SWE/yapper/Accesskey.json")
-firebase_admin.initialize_app(cred, { 'storageBucket' : 'yapper-1958d.firebasestorage.app' })
-=======
 import logging
 import datetime
 import os
@@ -27,23 +19,10 @@ except ValueError:
     logger.info("Firebase already initialized")
 except Exception as e:
     logger.error(f"Error initializing Firebase: {e}")
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
 
 bucket = storage.bucket()
 db = firestore.client()
 
-<<<<<<< HEAD
-
-def upload_file(audio_file):
-    """Uploads file to Firebase Storage without OAuth timeout issues."""
-    blob = storage.bucket().blob(f"uploads/{audio_file.filename}")
-    blob.upload_from_file(audio_file.stream, content_type=audio_file.content_type)
-    blob.make_public()
-    return blob.public_url
-
-    
-
-=======
 def ensure_path_exists(firebase_path):
     """
     Ensure folder structure exists in Firebase Storage
@@ -252,22 +231,16 @@ def move_file(firebase_source_path, firebase_dest_path):
     
     logger.info(f"File moved: {firebase_source_path} -> {firebase_dest_path}")
     return True
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
 
 def save_to_firestore(doc_id, file_url, chunk_buffer, final=False):
     """
     Stores transcription chunks in Firestore.
     
-<<<<<<< HEAD
-    - If `final` is False, appends transcription chunks incrementally.
-    - If `final` is True, marks transcription as complete.
-=======
     Args:
         doc_id: Document ID
         file_url: File URL
         chunk_buffer: Transcription chunks
         final: Is this the final update
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
     """
     doc_ref = db.collection("transcriptions").document(doc_id)
     
@@ -286,11 +259,6 @@ def save_to_firestore(doc_id, file_url, chunk_buffer, final=False):
     doc_ref.set({
         "file_url": file_url,
         "transcription_chunks": existing_chunks,
-<<<<<<< HEAD
-        "status": "completed" if final else "in_progress"
-    }, merge=True)
-=======
         "status": "completed" if final else "in_progress",
         "updated_at": firestore.SERVER_TIMESTAMP
     }, merge=True)
->>>>>>> origin/SCRUM-80-sync-new-buttons-functionalitie
