@@ -16,7 +16,7 @@ frontend/build
 
 # Log files
 *.log
-
+backend/routes/unit-tests/
 # Package files
 *.jar
 
