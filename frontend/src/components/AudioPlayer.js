@@ -9,56 +9,116 @@ export default function AudioPlayer({ filename }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [audioLoaded, setAudioLoaded] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
 
+  // Fetch audio URL only once when component mounts or filename changes
   useEffect(() => {
-    // If there's a filename, fetch the raw audio from /local-audio/<filename> as a Blob
-    async function fetchLocalAudio() {
+    let isMounted = true;
+    let objectUrl = null;
+
+    async function fetchAudioUrl() {
       if (!filename || !currentUser) return;
+      
       try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`/local-audio/${filename}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
         if (!res.ok) {
-          console.error("Failed to fetch local audio, status:", res.status);
+          console.error("Failed to fetch audio, status:", res.status);
           return;
         }
-        const blob = await res.blob();
-        // Create an object URL for the blob so <audio> can play it
-        const objectUrl = URL.createObjectURL(blob);
-        if (audioRef.current) {
-          audioRef.current.src = objectUrl;
-          audioRef.current.load();
+        
+        // Handle different response types
+        const contentType = res.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          // Handle JSON response with URL
+          const data = await res.json();
+          if (data.url && isMounted) {
+            setAudioUrl(data.url);
+          }
+        } else {
+          // Handle direct blob response
+          const blob = await res.blob();
+          objectUrl = URL.createObjectURL(blob);
+          if (isMounted) {
+            setAudioUrl(objectUrl);
+          }
         }
       } catch (err) {
-        console.error("Error fetching local audio:", err);
+        console.error("Error fetching audio:", err);
       }
     }
-    fetchLocalAudio();
+    
+    fetchAudioUrl();
+    
+    // Cleanup function to revoke object URL and prevent memory leaks
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [filename, currentUser]);
 
-  // Listen for time updates
+  // Set audio source when URL is available
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      // Set the source
+      audioRef.current.src = audioUrl;
+      
+      // Load the audio but don't autoplay
+      audioRef.current.load();
+    }
+  }, [audioUrl]);
+
+  // Set up event listeners
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedData = () => setDuration(audio.duration);
+    const handleLoadedData = () => {
+      setDuration(audio.duration);
+      setAudioLoaded(true);
+    };
+    const handleEnded = () => setIsPlaying(false);
+    const handleError = (e) => console.error("Audio error:", e);
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadeddata', handleLoadedData);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadeddata', handleLoadedData);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
   const handlePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !audioLoaded) return;
+    
     if (audioRef.current.paused) {
-      audioRef.current.play();
-      setIsPlaying(true);
+      // Only attempt to play if audio is fully loaded
+      const playPromise = audioRef.current.play();
+      
+      // Handle the play promise to catch any errors
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Play error:", error);
+            setIsPlaying(false);
+          });
+      }
     } else {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -72,7 +132,8 @@ export default function AudioPlayer({ filename }) {
   };
 
   const handleProgressChange = (e) => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !audioLoaded) return;
+    
     const newTime = (e.target.value / 100) * duration;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
@@ -86,8 +147,12 @@ export default function AudioPlayer({ filename }) {
 
   return (
     <div className="audio-player">
-      <audio ref={audioRef} controls={false} />
-      <button onClick={handlePlayPause}>
+      <audio ref={audioRef} controls={false} preload="metadata" />
+      <button 
+        onClick={handlePlayPause} 
+        disabled={!audioLoaded}
+        className={!audioLoaded ? "button-disabled" : ""}
+      >
         {isPlaying ? '⏸️' : '▶️'}
       </button>
       <input
@@ -96,7 +161,8 @@ export default function AudioPlayer({ filename }) {
         max="100"
         value={(currentTime / duration) * 100 || 0}
         onChange={handleProgressChange}
-        className="progress-bar"
+        disabled={!audioLoaded}
+        className={`progress-bar ${!audioLoaded ? "slider-disabled" : ""}`}
       />
       <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
       <input
@@ -104,10 +170,11 @@ export default function AudioPlayer({ filename }) {
         min="0"
         max="1"
         step="0.01"
+        defaultValue="1"
         onChange={handleVolumeChange}
-        className="volume-bar"
+        disabled={!audioLoaded}
+        className={`volume-bar ${!audioLoaded ? "slider-disabled" : ""}`}
       />
     </div>
   );
 }
-
