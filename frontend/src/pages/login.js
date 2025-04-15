@@ -1,84 +1,96 @@
-import React, { useRef, useState } from "react";
-import { Form, Button, Card, Alert, InputGroup, Container } from "react-bootstrap";
+// frontend/src/pages/login.js
+import React, { useRef, useState, useEffect } from "react";
+import { Card, Alert, InputGroup, Container } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
 
 export default function Login() {
     const emailRef = useRef();
     const passwordRef = useRef();
-    const { login, currentUser } = useAuth();  // Use login instead of signup
+    const { login, currentUser } = useAuth();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // Use useNavigate to redirect
+    const navigate = useNavigate();
+
+    // If user is already logged in, redirect to home
+    useEffect(() => {
+        if (currentUser) {
+            navigate("/home");
+        }
+    }, [currentUser, navigate]);
 
     async function handleSubmit(e) {
         e.preventDefault();
         
-        console.log("Login form submitted");
-        console.log("Email entered:", emailRef.current.value);
-        console.log("Password entered:", passwordRef.current.value);
-        
         try {
             setError("");
             setLoading(true);
-            console.log("Attempting to log in user...");
             
             const result = await login(emailRef.current.value, passwordRef.current.value);
-            
-            console.log("Login successful, result:", result);
+            console.log("Login successful");
             
             // Redirect to home page after successful login
-             navigate ("/home", { replace: true }); // Use navigate to redirect to home page
-            console.log("Redirecting to home page...");
+            navigate("/home", { replace: true });
         } catch (error) {
-
             console.error("Login failed:", error);
-            setError("Failed to log in");
+            setError(`Failed to log in: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
     return (
-        <Container className="d-flex justify-content-center align-items-center vh-100">
-        <div className="w-100" style={{ maxWidth: "400px" }}>
-            <Card className="shadow-lg">
-                <Card.Body>
-                    <h2 className="text-center mb-4">Log In</h2>
-                    {currentUser && currentUser.email}
-                    {error && <Alert variant="danger">{error}</Alert>}
-                    <Form onSubmit={handleSubmit}>
-                        
-                        {/* Email Field with Icon */}
-                        <Form.Group id="email" className="mb-3">
-                            <Form.Label>Email</Form.Label>
-                            <InputGroup>
-                                <InputGroup.Text>📧</InputGroup.Text>
-                                <Form.Control type="email" ref={emailRef} required placeholder="Enter your email" />
-                            </InputGroup>
-                        </Form.Group>
+        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+            <div className="w-100" style={{ maxWidth: "400px" }}>
+                <Card className="shadow">
+                    <Card.Body>
+                        <h2 className="text-center mb-4">Log In</h2>
+                        {error && <Alert variant="danger">{error}</Alert>}
+                        <form onSubmit={handleSubmit}>
+                            <div className="mb-3">
+                                <label htmlFor="email">Email</label>
+                                <InputGroup>
+                                    <InputGroup.Text>📧</InputGroup.Text>
+                                    <input 
+                                        type="email" 
+                                        id="email"
+                                        ref={emailRef} 
+                                        required 
+                                        placeholder="Enter your email" 
+                                        className="form-control"
+                                    />
+                                </InputGroup>
+                            </div>
 
-                        {/* Password Field with Icon */}
-                        <Form.Group id="password" className="mb-3">
-                            <Form.Label>Password</Form.Label>
-                            <InputGroup>
-                                <InputGroup.Text>🔒</InputGroup.Text>
-                                <Form.Control type="password" ref={passwordRef} required placeholder="Enter your password" />
-                            </InputGroup>
-                        </Form.Group>
+                            <div className="mb-3">
+                                <label htmlFor="password">Password</label>
+                                <InputGroup>
+                                    <InputGroup.Text>🔒</InputGroup.Text>
+                                    <input 
+                                        type="password" 
+                                        id="password"
+                                        ref={passwordRef} 
+                                        required 
+                                        placeholder="Enter your password" 
+                                        className="form-control"
+                                    />
+                                </InputGroup>
+                            </div>
 
-                        {/* Submit Button */}
-                        <Button disabled={loading} className="w-100" variant="primary" type="submit">
-                            Log In
-                        </Button>
-                    </Form>
-                </Card.Body>
-            </Card>
-            <div className="text-center mt-3">
-                Need an account? <a href="/signup">Sign Up</a>
+                            <button 
+                                disabled={loading} 
+                                className="w-100 btn btn-primary" 
+                                type="submit"
+                            >
+                                {loading ? "Logging in..." : "Log In"}
+                            </button>
+                        </form>
+                    </Card.Body>
+                </Card>
+                <div className="text-center mt-3">
+                    Need an account? <a href="/signup">Sign Up</a>
+                </div>
             </div>
-        </div>
-    </Container>
-);
+        </Container>
+    );
 }
