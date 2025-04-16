@@ -30,6 +30,7 @@ function AppContent() {
   const { currentUser } = useAuth();
   
   return (
+    <AuthProvider>
     <Router>
       <div className="App">
         <Navbar />
@@ -62,10 +63,16 @@ function AppContent() {
               <TranscriptionEditor />
             </ProtectedRoute>
           } />
->>>>>>>>> Temporary merge branch 2
+
+          <Route path="/folders/:folderName" element={
+            <ProtectedRoute>
+              <FolderDocs />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 
@@ -78,4 +85,3 @@ function App() {
 }
 
 export default App;
->>>>>>>>> Temporary merge branch 2
