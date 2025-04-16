@@ -130,3 +130,16 @@
     background: #689f38;
     border: 1px solid #689f38;
   }
+
+  .orange-button {
+    background-color: orange;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .orange-button:hover {
+    background-color: darkorange;
+  }
