@@ -6,6 +6,8 @@ import { Toast } from 'primereact/toast';
 import 'primereact/resources/themes/saga-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { useAuth } from '../context/AuthContext';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -15,6 +17,9 @@ function Home() {
   const [folders, setFolders] = useState([]);
   const { currentUser } = useAuth();
   const toast = useRef(null);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState("");
+  const [docToMove, setDocToMove] = useState(null);
 
   useEffect(() => {
     const socket = io();
@@ -58,7 +63,7 @@ function Home() {
             }
           });
           const data = await res.json();
-          setFolders(Array.isArray(data) ? data : []);
+          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []); // Extract the 'dotFiles' key
         } catch (err) {
           console.error("Error fetching folders:", err);
           setFolders([]);
@@ -171,7 +176,7 @@ function Home() {
         });
         if (res.ok) {
           const data = await res.json();
-          setFolders(Array.isArray(data) ? data : []);
+          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []); // Extract the 'dotFiles' key
         } else {
           console.error("Error fetching folders:", res.statusText);
           setFolders([]);
@@ -189,6 +194,57 @@ function Home() {
 
   const handleFolderClick = (folderName) => {
     window.location.href = `/folders/${folderName}`;
+  };
+
+  const handleOpenMoveModal = (docId) => {
+    setDocToMove(docId);
+    setShowMoveModal(true);
+  };
+
+  const handleCloseMoveModal = () => {
+    setShowMoveModal(false);
+    setSelectedFolder("");
+    setDocToMove(null);
+  };
+
+  const handleMoveToFolder = async () => {
+    if (!selectedFolder) {
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Please select a folder.', life: 3000 });
+      return;
+    }
+
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/folders/${selectedFolder}/add/${docToMove}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.current?.show({ severity: 'success', summary: 'Document Moved', detail: data.message, life: 3000 });
+        setShowMoveModal(false);
+        setSelectedFolder("");
+        setDocToMove(null);
+
+        // Re-fetch documents after successful move
+        const docsRes = await fetch('/api/docs', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (docsRes.ok) {
+          const docData = await docsRes.json();
+          setDocs(Array.isArray(docData) ? docData : []);
+        }
+      } else {
+        const errData = await res.json();
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: errData.error || 'Failed to move document', life: 3000 });
+      }
+    } catch (err) {
+      console.error("Error moving document:", err);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to move document', life: 3000 });
+    }
   };
 
   return (
@@ -261,13 +317,51 @@ function Home() {
                   onDelete={() => handleDelete(doc.id)}
                   toast={toast}
                 />
+                <button
+                  onClick={() => handleOpenMoveModal(doc.id)}
+                  className="action-link move-link orange-button"
+                >
+                  Move to Folder
+                </button>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <hr className="divider" />
+      <Dialog
+        header="Move Document to Folder"
+        visible={showMoveModal}
+        style={{ width: '30vw' }}
+        onHide={handleCloseMoveModal}
+        footer={
+          <div>
+            <button
+              className="p-button p-component p-button-text"
+              onClick={handleCloseMoveModal}
+            >
+              Cancel
+            </button>
+            <button
+              className="p-button p-component p-button-primary"
+              onClick={handleMoveToFolder}
+            >
+              Move
+            </button>
+          </div>
+        }
+      >
+        <div>
+          <Dropdown
+            value={selectedFolder}
+            options={folders.map(folder => ({ label: folder, value: folder }))}
+            onChange={(e) => setSelectedFolder(e.value)}
+            placeholder="Select a folder"
+            style={{ width: '100%' }}
+          />
+        </div>
+      </Dialog>
+
     </div>
   );
 }

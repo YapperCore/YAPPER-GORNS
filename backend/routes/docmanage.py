@@ -15,13 +15,13 @@ docmanage_bp = Blueprint('docmanage', __name__)
 @docmanage_bp.route('/api/docs', methods=['GET'])
 @verify_firebase_token
 def list_docs():
-    """Return only non-deleted documents for the authenticated user"""
+    """Return only non-deleted documents for the authenticated user that are not in any folder."""
     if not doc_store:
         return jsonify([]), 200
-        
+
     active_docs = [
-        d for d in doc_store.values() 
-        if not d.get("deleted", False) and (d.get("owner") == request.uid or is_admin(request.uid))
+        d for d in doc_store.values()
+        if not d.get("deleted", False) and not d.get("folderName") and (d.get("owner") == request.uid or is_admin(request.uid))
     ]
     return jsonify(active_docs), 200
 
@@ -114,7 +114,7 @@ def delete_doc(doc_id):
             try:
                 local_upload_path = os.path.join(UPLOAD_FOLDER, filename)
                 local_trash_path = os.path.join(TRASH_FOLDER, filename)
-                if os.path.exists(local_upload_path):
+                if (os.path.exists(local_upload_path)):
                     os.makedirs(os.path.dirname(local_trash_path), exist_ok=True)
                     os.rename(local_upload_path, local_trash_path)
                     local_moved = True

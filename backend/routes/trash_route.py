@@ -18,26 +18,32 @@ def get_trash_files():
     try:
         # Get trashed files from Firebase first
         firebase_files = list_user_files(request.uid, "trash")
-        firebase_filenames = [file['filename'] for file in firebase_files]
-        
+        firebase_filenames = [file['filename'].split('/')[-1] for file in firebase_files]
+
         # Also get trashed files from doc_store for this user to ensure we catch everything
         doc_store_trashed = [
             doc["audioFilename"] for doc in doc_store.values() 
             if doc.get("audioTrashed") and doc.get("audioFilename") and (doc.get("owner") == request.uid or is_admin(request.uid))
         ]
-        
+
         # Combine both sources (use set to avoid duplicates)
         all_files = list(set(firebase_filenames + doc_store_trashed))
-        
+
+        # Filter out files that no longer exist in Firebase or locally
+        valid_files = [
+            file for file in all_files
+            if file in firebase_filenames or os.path.exists(os.path.join(TRASH_FOLDER, file))
+        ]
+
         # Update doc_store to ensure consistency
         for doc in doc_store.values():
-            if doc.get("audioFilename") in all_files and not doc.get("audioTrashed"):
+            if doc.get("audioFilename") in valid_files and not doc.get("audioTrashed"):
                 # File is in trash but not marked as trashed in doc_store
                 doc["audioTrashed"] = True
                 logger.info(f"Updated doc_store to mark {doc.get('audioFilename')} as trashed")
-                
+
         save_doc_store()
-        return jsonify({"files": all_files}), 200
+        return jsonify({"files": valid_files}), 200
     except Exception as e:
         logger.error(f"Error fetching trash files: {e}")
         return jsonify({"error": "Failed to fetch trash files"}), 500

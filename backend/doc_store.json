@@ -97,11 +97,39 @@
       "audioFilename": "80c4c554-67d1-4919-949a-15b4d254e9f1_OSR_us_000_0010_8k.mp3",
       "originalFilename": "OSR_us_000_0010_8k.mp3",
       "audioTrashed": false,
-      "deleted": false,
+      "deleted": true,
       "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
       "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/80c4c554-67d1-4919-949a-15b4d254e9f1_OSR_us_000_0010_8k.mp3?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250413%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250413T201425Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=a0e9dcbddb590922445e71e16bcd390a878f0e7ee3bba5e5ad1dbf4cdeb91b653cd874c4c1f592647952d5674f0c8b7e1aef4ed2d5125aa9c02ad67366aa9367a0e02d57bc1f8b212b7fadbfe0613c478576cb7294239888412e89a20cf8fb5a8092815677b65134b6597ae04134c9c5bae669b272fadd516ae718ee9198068afcfb69579409e5077accf25d5b0665537212d2a87d26a816b23081bcc6337054fe5217564102b6557bc984dab3ad11d2c32c4b40d09c029c45d49a5dcdb52a2d2764c710582964e28e353e4a3a274e9eacdf3125449a5871ea5064370922a2148d938060b64d31b460a8f6c843d2877f474e0627f4ae9aba6dcbad5fa33ccd58",
       "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/80c4c554-67d1-4919-949a-15b4d254e9f1_OSR_us_000_0010_8k.mp3",
       "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\80c4c554-67d1-4919-949a-15b4d254e9f1_OSR_us_000_0010_8k.mp3"
+    },
+    "3e53eea7-4cdb-485f-9164-cf31654d7d9f": {
+      "id": "3e53eea7-4cdb-485f-9164-cf31654d7d9f",
+      "name": "Doc37",
+      "content": "<p>The birch canoes slid on the smooth planks. Glue the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of study work faced us.</p>",
+      "audioFilename": "c5e7a248-6c26-430b-bf98-10f81cd926f1_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
+      "audioTrashed": false,
+      "deleted": false,
+      "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
+      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/c5e7a248-6c26-430b-bf98-10f81cd926f1_OSR_us_000_0010_8k.wav?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250416%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250416T031032Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=b7c169d0484f6cc7794b0a17be366cca28d654ccd4eb22642d82015a1832c9e3b76e5dbe9d5f5d318d667a76bc2968d29f3a87803d43ef003dd6a5c19564b9cfc9b69ff6054e4df7ef5a0686862ac89d203ca0b38f8243852502d6a332a95ef5e6354a81cc140e045d6a1036238f839d6f59402e80d76527a4209c17b6372d9b15e47fcc0305eba6668bca75410bab15671a0ec683686df5c693af507e25c7b7b310aaaaac3cdf615aa9c68400541db37dd812a625b062153badd8301dfc3bfae0ec3b71bb938887fed5c69a90e12ebb58d6a35b1dabc6e06baddb53ceccfe1b75af89cf921559a42b75ce82bdfa5259816d25c84f3f83467173e99478bf5e97",
+      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/c5e7a248-6c26-430b-bf98-10f81cd926f1_OSR_us_000_0010_8k.wav",
+      "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\c5e7a248-6c26-430b-bf98-10f81cd926f1_OSR_us_000_0010_8k.wav",
+      "folderName": ".test1"
+    },
+    "b75baad2-c893-452b-91ee-f274c7ed3702": {
+      "id": "b75baad2-c893-452b-91ee-f274c7ed3702",
+      "name": "Doc37",
+      "content": "<p>The birch canoes slid on the smooth planks. Glue the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of study work faced us.</p>",
+      "audioFilename": "af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
+      "audioTrashed": false,
+      "deleted": false,
+      "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
+      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250416%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250416T031611Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=4bf154f0fa0ecf540827332c32b4f681bd524a59d8e403bb3b9859a825c292dfc31ecafb30e8e46891395b1427edfe231b1ac2005cc4032e315a82c5124979110b237dce7f5ec490e30beb71a6e32d128b00f3308d85f78c1684ef6434e335470e5f498bc3eecd3c17d6a332186ef84c7648eec64b432a94ef52681e8bcc3ccf5afed560e5f19ad9b0fc3668a10726b591b4329aeaf1bbc3474e96ab7de841658b6cd130515d1b7d7f999774b788089a078ab9ac5a0700d369e0979f4e1555585bfa030565662c2ddf083416584cb93824484e7fda05f2d542b05a94dcd1a039bbcf672e7ecf639233aa87d113077274cba8c521c26733c9ad85978f5b857df0",
+      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
+      "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
+      "folderName": null
     }
   },
   "counter": 36
