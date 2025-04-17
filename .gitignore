@@ -6,16 +6,17 @@
 # Node artifact files
 node_modules/
 dist/
-
+backend/uploads/
 # Compiled Java class files
 *.class
-
+frontend/build/
+frontend/build
 # Compiled Python bytecode
 *.py[cod]
 
 # Log files
 *.log
-
+backend/routes/unit-tests/
 # Package files
 *.jar
 
@@ -58,14 +59,15 @@ Thumbs.db
 
 # production
 /build
-
+frontend/node_modules
 # misc
 .DS_Store
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
+Accesskey.json
+backend/Accesskey.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -74,14 +76,15 @@ yarn-error.log*
 /backend/trash
 /frontend/src/components/TrashBucket/TrashBucket.test.js
 /s2t-small-librispeech-asr
-backend/doc_store.json
 notes.txt
 *.sh
 OUTPUT_TEST/
 
 INPUT_AUDIO_TEST/
-backend/doc_store.json
 Accesskey.json
 
 frontend/src/__tests__
-backend/doc_store.json
+frontend/src/components/Accesskey.json
+backend/Accesskey.json
+
+/backend/doc_store.json
