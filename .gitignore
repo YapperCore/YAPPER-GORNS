@@ -19,7 +19,8 @@ node_modules/
 frontend/build/
 # Package files
 *.jar
-
+unit-tests/
+unit-testing/
 # Maven
 target/
 dist/
