@@ -1,0 +1,381 @@
+// frontend/src/util/TranscriptionEditor.js
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import io from 'socket.io-client';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import AudioPlayer from '../components/AudioPlayer';
+import { useAuth } from '../context/AuthContext';
+import { Toast } from 'primereact/toast';
+import { ProgressBar } from 'primereact/progressbar';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { Button } from 'primereact/button';
+
+export default function TranscriptionEditor() {
+  const { docId } = useParams();
+  const { currentUser } = useAuth();
+  const [content, setContent] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
+  const [audioFilename, setAudioFilename] = useState('');
+  const [audioTrashed, setAudioTrashed] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [processedChunks, setProcessedChunks] = useState([]);
+  const [transcriptionConfig, setTranscriptionConfig] = useState({ mode: 'local-cpu' });
+  const [prompt, setPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const socketRef = useRef(null);
+  const toastRef = useRef(null);
+  const editorRef = useRef(null);
+  
+  // Fetch doc info and user settings
+  useEffect(() => {
+    async function fetchData() {
+      if (!currentUser) return;
+      
+      try {
+        setLoading(true);
+        setError('');
+        
+        const token = await currentUser.getIdToken();
+        
+        // Fetch doc info
+        const docRes = await fetch(`/api/docs/${docId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (docRes.ok) {
+          const doc = await docRes.json();
+          setContent(doc.content || '');
+          setAudioFilename(doc.audioFilename || '');
+          setAudioTrashed(!!doc.audioTrashed);
+          
+          // Get transcription prompt if it exists
+          setPrompt(doc.transcription_prompt || '');
+          
+          // Check if transcription is already complete
+          if (doc.content && doc.content.trim().length > 0) {
+            if (doc.content.includes("Transcription complete") || 
+                doc.content.length > 100) {
+              setIsComplete(true);
+              setProgress(100);
+            }
+          }
+        }
+        
+        // Fetch user settings to check transcription mode
+        const settingsRes = await fetch('/api/user-settings', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (settingsRes.ok) {
+          const settings = await settingsRes.json();
+          if (settings.transcriptionConfig) {
+            setTranscriptionConfig(settings.transcriptionConfig);
+            
+            // Show prompt input if using Replicate
+            setShowPromptInput(settings.transcriptionConfig.mode === 'replicate');
+          }
+        }
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setError(`Error loading data: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [docId, currentUser]);
+  
+  // Socket.IO for real-time updates
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    // Use the current host for socket connection to avoid hard-coded IP
+    const socketHost = window.location.origin;
+    const socket = io(socketHost, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling']
+    });
+    
+    socketRef.current = socket;
+    
+    const handleConnect = () => {
+      console.log("Socket connected");
+      socket.emit('join_doc', { doc_id: docId });
+    };
+    
+    const handleConnectError = (err) => {
+      console.error("Socket connection error:", err);
+      setError(`Socket connection error: ${err.message}`);
+    };
+    
+    const handleDisconnect = (reason) => {
+      console.log("Socket disconnected:", reason);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('disconnect', handleDisconnect);
+
+    const handlePartialBatch = data => {
+      if (data.doc_id === docId) {
+        // Update progress directly from server data if available
+        if (data.progress !== undefined) {
+          setProgress(data.progress);
+        }
+        
+        // Add new chunks to processed chunks list for tracking
+        if (data.chunks && data.chunks.length > 0) {
+          setProcessedChunks(prev => [...prev, ...data.chunks]);
+          
+          // Get the text from the chunks
+          const chunk_text = data.chunks.map(c => c.text).join(' ');
+          
+          // Append to content
+          setContent(prev => {
+            // Handle the first chunk
+            if (!prev) return chunk_text;
+            
+            const last_char = prev.slice(-1);
+            const first_char = chunk_text.charAt(0);
+            
+            // No space before punctuation
+            if (first_char.match(/[.,;:!?'"]/)) {
+              return prev + chunk_text;
+            } 
+            // Add space between words
+            else if (last_char.match(/\w/) && first_char.match(/\w/)) {
+              return prev + ' ' + chunk_text;
+            } 
+            // Default append
+            else {
+              return prev + chunk_text;
+            }
+          });
+        }
+      }
+    };
+
+    const handleFinal = data => {
+      if (data.doc_id === docId && data.done) {
+        setIsComplete(true);
+        setProgress(100);
+        
+        // Update with final content if provided
+        if (data.content) {
+          setContent(data.content);
+        }
+        
+        toastRef.current?.show({
+          severity: 'success',
+          summary: 'Transcription Complete',
+          detail: 'The audio file has been fully transcribed',
+          life: 3000
+        });
+      }
+    };
+
+    const handleDocUpdate = update => {
+      if (update.doc_id === docId) {
+        setContent(update.content);
+      }
+    };
+
+    const handleTranscriptionError = data => {
+      if (data.doc_id === docId) {
+        setError(`Transcription error: ${data.error}`);
+        toastRef.current?.show({
+          severity: 'error',
+          summary: 'Transcription Error',
+          detail: data.error,
+          life: 5000
+        });
+      }
+    };
+
+    socket.on('partial_transcript_batch', handlePartialBatch);
+    socket.on('final_transcript', handleFinal);
+    socket.on('doc_content_update', handleDocUpdate);
+    socket.on('transcription_error', handleTranscriptionError);
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('partial_transcript_batch', handlePartialBatch);
+      socket.off('final_transcript', handleFinal);
+      socket.off('doc_content_update', handleDocUpdate);
+      socket.off('transcription_error', handleTranscriptionError);
+      socket.disconnect();
+    };
+  }, [docId, currentUser]);
+
+  const handleContentChange = async (newContent) => {
+    setContent(newContent);
+    
+    // Save changes to the server
+    if (currentUser) {
+      try {
+        const token = await currentUser.getIdToken();
+        await fetch(`/api/docs/${docId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ content: newContent })
+        });
+        
+        // Also emit changes to other clients if socket is connected
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.emit('edit_doc', { doc_id: docId, content: newContent });
+        }
+      } catch (err) {
+        console.error("Error updating document:", err);
+        setError(`Error saving changes: ${err.message}`);
+      }
+    }
+  };
+  
+  const savePrompt = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const token = await currentUser.getIdToken();
+      await fetch(`/api/docs/${docId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ transcription_prompt: prompt })
+      });
+      
+      toastRef.current?.show({
+        severity: 'success',
+        summary: 'Prompt Saved',
+        detail: 'Transcription prompt has been saved',
+        life: 3000
+      });
+    } catch (err) {
+      console.error("Error saving prompt:", err);
+      setError(`Error saving prompt: ${err.message}`);
+    }
+  };
+  
+  const startTranscription = async () => {
+    if (!currentUser) return;
+    
+    try {
+      // Save the prompt first
+      await savePrompt();
+      
+      // Clear content and reset progress
+      setContent('');
+      setProgress(0);
+      setIsComplete(false);
+      
+      // Tell server to start transcription
+      const token = await currentUser.getIdToken();
+      await fetch(`/api/transcribe/${docId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ transcription_prompt: prompt })
+      });
+      
+      toastRef.current?.show({
+        severity: 'info',
+        summary: 'Transcription Started',
+        detail: 'Transcription has been started. Please wait...',
+        life: 3000
+      });
+    } catch (err) {
+      console.error("Error starting transcription:", err);
+      setError(`Error starting transcription: ${err.message}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <h2>Loading Transcription...</h2>
+        <div style={{ width: '60%', margin: '0 auto' }}>
+          <ProgressBar value={50} indeterminate={true} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '1rem' }}>
+      <Toast ref={toastRef} position="top-right" />
+      
+      <h2>Transcription for Document</h2>
+      {error && (
+        <div style={{ color: 'red', background: '#ffeeee', padding: '0.5rem', borderRadius: '4px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+      
+      {audioFilename && (
+        <p>
+          Audio: {audioFilename} 
+          {audioTrashed && " (in TRASH)"}
+        </p>
+      )}
+      
+      {/* Prompt input for Replicate mode */}
+      {showPromptInput && (
+        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
+          <h3>Transcription Prompt</h3>
+          <p>Enter a prompt to guide the transcription (optional):</p>
+          <InputTextarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={3}
+            style={{ width: '100%', marginBottom: '0.5rem' }}
+            placeholder="e.g., Please transcribe this audio file. Pay special attention to technical terms."
+          />
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button label="Save Prompt" icon="pi pi-save" onClick={savePrompt} />
+            <Button label="Start Transcription" icon="pi pi-play" onClick={startTranscription} />
+          </div>
+          <small style={{ marginTop: '0.5rem', display: 'block', color: '#666' }}>
+            For Replicate API transcription, you can use a custom prompt to guide the model.
+          </small>
+        </div>
+      )}
+      
+      {!isComplete && (
+        <div style={{ marginBottom: '1rem' }}>
+          <p>Transcription in progress... {progress}% complete</p>
+          <ProgressBar value={progress} />
+        </div>
+      )}
+
+      <ReactQuill
+        theme="snow"
+        value={content}
+        onChange={handleContentChange}
+        style={{ height: '600px', background: '#fff' }}
+        ref={editorRef}
+      />
+      
+      {audioFilename && !audioTrashed && (
+        <div style={{ marginTop: '1rem' }}>
+          <AudioPlayer filename={audioFilename} />
+        </div>
+      )}
+      
+      <div style={{ marginTop: '1rem' }}>
+        <Link to="/home">Back to Home</Link>
+      </div>
+    </div>
+  );
+}

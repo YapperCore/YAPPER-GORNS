@@ -1,81 +1,158 @@
+// src/components/AudioPlayer.js
 import React, { useRef, useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import './AudioPlayer.css';
 
-const AudioPlayer = ({ filename }) => {
+export default function AudioPlayer({ filename }) {
+  const { currentUser } = useAuth();
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [audioUrl, setAudioUrl] = useState('');
+  const [audioLoaded, setAudioLoaded] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
 
+  // Fetch audio URL only once when component mounts or filename changes
   useEffect(() => {
-    const fetchAudioUrl = async () => {
+    let isMounted = true;
+    let objectUrl = null;
+
+    async function fetchAudioUrl() {
+      if (!filename || !currentUser) return;
+      
       try {
-        const response = await fetch(`/uploads/${filename}`);
-        if (response.ok) {
-          const url = URL.createObjectURL(await response.blob());
-          setAudioUrl(url);
-        } else {
-          console.error('Failed to fetch audio file');
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`/local-audio/${filename}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+          console.error("Failed to fetch audio, status:", res.status);
+          return;
         }
-      } catch (error) {
-        console.error('Error fetching audio file:', error);
+        
+        // Handle different response types
+        const contentType = res.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          // Handle JSON response with URL
+          const data = await res.json();
+          if (data.url && isMounted) {
+            setAudioUrl(data.url);
+          }
+        } else {
+          // Handle direct blob response
+          const blob = await res.blob();
+          objectUrl = URL.createObjectURL(blob);
+          if (isMounted) {
+            setAudioUrl(objectUrl);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching audio:", err);
+      }
+    }
+    
+    fetchAudioUrl();
+    
+    // Cleanup function to revoke object URL and prevent memory leaks
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
       }
     };
+  }, [filename, currentUser]);
 
-    fetchAudioUrl();
-  }, [filename]);
+  // Set audio source when URL is available
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      // Set the source
+      audioRef.current.src = audioUrl;
+      
+      // Load the audio but don't autoplay
+      audioRef.current.load();
+    }
+  }, [audioUrl]);
 
+  // Set up event listeners
   useEffect(() => {
     const audio = audioRef.current;
+    if (!audio) return;
 
-    const updateProgress = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const setAudioData = () => {
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedData = () => {
       setDuration(audio.duration);
+      setAudioLoaded(true);
     };
+    const handleEnded = () => setIsPlaying(false);
+    const handleError = (e) => console.error("Audio error:", e);
 
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadeddata', handleLoadedData);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadeddata', handleLoadedData);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
   const handlePlayPause = () => {
+    if (!audioRef.current || !audioLoaded) return;
+    
     if (audioRef.current.paused) {
-      audioRef.current.play();
-      setIsPlaying(true);
+      // Only attempt to play if audio is fully loaded
+      const playPromise = audioRef.current.play();
+      
+      // Handle the play promise to catch any errors
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Play error:", error);
+            setIsPlaying(false);
+          });
+      }
     } else {
       audioRef.current.pause();
       setIsPlaying(false);
     }
   };
 
-  const handleVolumeChange = (event) => {
-    audioRef.current.volume = event.target.value;
+  const handleVolumeChange = (e) => {
+    if (audioRef.current) {
+      audioRef.current.volume = e.target.value;
+    }
   };
 
-  const handleProgressChange = (event) => {
-    const newTime = (event.target.value / 100) * duration;
+  const handleProgressChange = (e) => {
+    if (!audioRef.current || !audioLoaded) return;
+    
+    const newTime = (e.target.value / 100) * duration;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
   };
 
   const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   return (
     <div className="audio-player">
-      <audio ref={audioRef} src={audioUrl} controls={false} />
-      <button onClick={handlePlayPause}>
+      <audio ref={audioRef} controls={false} preload="metadata" />
+      <button 
+        onClick={handlePlayPause} 
+        disabled={!audioLoaded}
+        className={!audioLoaded ? "button-disabled" : ""}
+      >
         {isPlaying ? '⏸️' : '▶️'}
       </button>
       <input
@@ -84,12 +161,20 @@ const AudioPlayer = ({ filename }) => {
         max="100"
         value={(currentTime / duration) * 100 || 0}
         onChange={handleProgressChange}
-        className="progress-bar"
+        disabled={!audioLoaded}
+        className={`progress-bar ${!audioLoaded ? "slider-disabled" : ""}`}
       />
       <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-      <input type="range" min="0" max="1" step="0.01" onChange={handleVolumeChange} className="volume-bar"/>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        defaultValue="1"
+        onChange={handleVolumeChange}
+        disabled={!audioLoaded}
+        className={`volume-bar ${!audioLoaded ? "slider-disabled" : ""}`}
+      />
     </div>
   );
-};
-
-export default AudioPlayer;
+}

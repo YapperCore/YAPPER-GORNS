@@ -1,313 +1,175 @@
+# backend/app.py
+#!/usr/bin/env python
+"""
+Cross-platform compatible Flask application for Yapper with Whisper transcription,
+Firebase integration, and SocketIO for real-time updates.
+"""
+
 import os
-import uuid
-import json
-import eventlet
-from flask import Flask, request, jsonify, send_from_directory
-from flask_socketio import SocketIO, emit, join_room
-from pydub import AudioSegment
-from transcribe import chunked_transcribe_audio
+import logging
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from flask_socketio import SocketIO
 
-os.environ['EVENTLET_NO_GREENDNS'] = '1'
-eventlet.monkey_patch()
+# --- Platform Detection ---
+import platform
+IS_WINDOWS = platform.system() == "Windows"
+IS_WSL = "microsoft" in platform.uname().release.lower() if hasattr(platform, 'uname') else False
+PLATFORM_NAME = f"{platform.system()} {'(WSL)' if IS_WSL else ''}"
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+# --- Windows Patch ---
+if IS_WINDOWS:
+    import ctypes.util
+    _original_find_library = ctypes.util.find_library
+    def patched_find_library(name):
+        ret = _original_find_library(name)
+        if ret is None and name == "c":
+            return "msvcrt"
+        return ret
+    ctypes.util.find_library = patched_find_library
 
-UPLOAD_FOLDER = 'uploads'
-TRASH_FOLDER = 'trash'
-DOC_STORE_FILE = 'doc_store.json'
+# --- Config and Services ---
+from config import UPLOAD_FOLDER, TRASH_FOLDER, DOC_STORE_FILE
+from services.storage import load_doc_store
+from services.socketio_instance import socketio
+from services.firebase_service import initialize_firebase
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(TRASH_FOLDER, exist_ok=True)
+# --- Routes ---
+from routes.docmanage import register_docmanage_routes
+from routes.document import register_document_routes
+from routes.trash_route import register_trash_routes
+from routes.folders import folders_bp
+from routes.settings_route import register_settings_routes
 
-# Our doc store now supports soft-deletion.
-# Each doc is stored as:
-# {
-#   "id": <doc id>,
-#   "name": <doc name>,
-#   "content": <text content>,
-#   "audioFilename": <unique filename used on disk>,
-#   "originalFilename": <original file name>,
-#   "audioTrashed": <bool>,
-#   "deleted": <bool>     # false for active docs; true for soft-deleted docs
-# }
-doc_store = {}
-doc_counter = 0
+# --- Auth ---
+from auth import verify_firebase_token, is_admin
 
-def load_doc_store():
-    global doc_store, doc_counter
-    if os.path.exists(DOC_STORE_FILE):
-        try:
-            with open(DOC_STORE_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                doc_store.update(data.get('docs', {}))
-                doc_counter = data.get('counter', 0)
-        except:
-            pass
+# --- Logging Setup ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(tempfile.gettempdir(), 'yapper.log'))
+    ]
+)
+logger = logging.getLogger(__name__)
 
-def save_doc_store():
-    global doc_store, doc_counter
-    data = {
-        'docs': doc_store,
-        'counter': doc_counter
-    }
-    try:
-        with open(DOC_STORE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except:
-        pass
+# Log platform information
+logger.info(f"Starting on platform: {PLATFORM_NAME}")
+logger.info(f"Python version: {platform.python_version()}")
 
-load_doc_store()
+# --- Ensure Directories Exist ---
+def ensure_directories():
+    """Create necessary directories for uploads, trash, and secure storage"""
+    Path(UPLOAD_FOLDER).mkdir(exist_ok=True, parents=True)
+    Path(TRASH_FOLDER).mkdir(exist_ok=True, parents=True)
+    Path(os.path.join(os.getcwd(), 'secure_storage')).mkdir(exist_ok=True, parents=True)
+    logger.info(f"Upload folder: {UPLOAD_FOLDER}")
+    logger.info(f"Trash folder: {TRASH_FOLDER}")
+    logger.info(f"Doc store file: {DOC_STORE_FILE}")
+    logger.info(f"Secure storage: {os.path.join(os.getcwd(), 'secure_storage')}")
 
-@app.route('/')
-def index():
-    return "Backend with doc store (soft-delete), chunk transcription, and trash integration."
+# --- App Initialization ---
+def create_app():
+    """Create and configure the Flask application"""
+    app = Flask(__name__)
+    CORS(app, supports_credentials=True)
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'yapper_secret_key')
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
 
-@app.route('/uploads/<filename>', methods=['GET'])
-def get_audio_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    # Initialize Firebase
+    initialize_firebase()
+    
+    # Initialize directories and load doc store
+    ensure_directories()
+    load_doc_store()
 
-########################################
-# UPLOAD AUDIO => CREATE DOC => TRANSCRIBE
-########################################
-@app.route('/upload-audio', methods=['POST'])
-def upload_audio():
-    global doc_counter
-    if 'audio' not in request.files:
-        return jsonify({"error": "No audio file found"}), 400
+    # Register routes
+    register_basic_routes(app)
+    register_docmanage_routes(app)
+    register_document_routes(app)
+    register_trash_routes(app)
+    register_settings_routes(app)  # Add this line
+    app.register_blueprint(folders_bp)
 
-    audio_file = request.files['audio']
-    original_filename = audio_file.filename
-    unique_name = f"{uuid.uuid4()}_{original_filename}"
-    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    # Attach SocketIO to Flask app
+    socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # Register error handlers
+    register_error_handlers(app)
+    
+    return app
 
-    if os.path.exists(save_path):
-        return jsonify({"error": "File already exists"}), 400
-
-    try:
-        audio_file.save(save_path)
-        app.logger.info(f"Saved file to: {save_path}")
-        # Convert audio to desired format (e.g., WAV)
-        converted_path = convert_audio_to_wav(save_path)
-    except Exception as e:
-        app.logger.error(f"Error saving file: {e}")
-        return jsonify({"error": "File saving failed"}), 500
-
-    doc_counter += 1
-    doc_id = str(uuid.uuid4())
-    doc_name = f"Doc{doc_counter}"
-    doc_obj = {
-        "id": doc_id,
-        "name": doc_name,
-        "content": "",
-        "audioFilename": os.path.basename(converted_path),
-        "originalFilename": original_filename,
-        "audioTrashed": False,
-        "deleted": False
-    }
-    doc_store[doc_id] = doc_obj
-    save_doc_store()
-
-    socketio.start_background_task(background_transcription, converted_path, doc_id)
-
-    return jsonify({
-        "message": "File received and doc created",
-        "filename": os.path.basename(converted_path),
-        "doc_id": doc_id
-    }), 200
-
-def convert_audio_to_wav(file_path):
-    audio = AudioSegment.from_file(file_path)
-    wav_path = file_path.rsplit('.', 1)[0] + '.wav'
-    audio.export(wav_path, format='wav')
-    return wav_path
-
-def background_transcription(file_path, doc_id):
-    try:
-        chunk_buffer = []
-        for i, total, text in chunked_transcribe_audio(file_path):
-            chunk_buffer.append({
-                'chunk_index': i,
-                'total_chunks': total,
-                'text': text
-            })
-            if len(chunk_buffer) >= 5:
-                socketio.emit('partial_transcript_batch', {
-                    'doc_id': doc_id,
-                    'chunks': chunk_buffer
-                })
-                socketio.sleep(0.1)
-                append_to_doc(doc_id, chunk_buffer)
-                chunk_buffer = []
-        if chunk_buffer:
-            socketio.emit('partial_transcript_batch', {
-                'doc_id': doc_id,
-                'chunks': chunk_buffer
-            })
-            socketio.sleep(0.1)
-            append_to_doc(doc_id, chunk_buffer)
-
-        socketio.emit('final_transcript', {
-            'doc_id': doc_id,
-            'done': True
+# --- Basic Routes ---
+def register_basic_routes(app):
+    """Register basic application routes"""
+    @app.route('/')
+    def index():
+        return jsonify({
+            "service": "Yapper Backend API",
+            "status": "running",
+            "platform": PLATFORM_NAME,
+            "version": "1.0.0"
         })
-    except Exception as e:
-        app.logger.error(f"Error during transcription: {e}")
 
-def append_to_doc(doc_id, chunk_list):
-    doc = doc_store.get(doc_id)
-    if not doc:
-        return
-    combined_text = doc["content"]
-    for chunk in chunk_list:
-        combined_text += " " + chunk["text"]
-    doc["content"] = combined_text
-    save_doc_store()
+    @app.route('/healthcheck')
+    def healthcheck():
+        return jsonify({
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            "platform": PLATFORM_NAME
+        }), 200
 
-########################################
-# DOC MANAGEMENT ROUTES
-########################################
-@app.route('/api/docs', methods=['GET'])
-def list_docs():
-    # Return only docs that are not marked as deleted.
-    active_docs = [d for d in doc_store.values() if not d.get("deleted", False)]
-    return jsonify(active_docs), 200
+    @app.route('/auth/check', methods=['GET'])
+    @verify_firebase_token
+    def check_auth():
+        return jsonify({
+            "authenticated": True,
+            "uid": request.uid,
+            "is_admin": is_admin(request.uid)
+        })
 
-@app.route('/api/docs/<doc_id>', methods=['GET'])
-def get_doc(doc_id):
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-        return jsonify({"error": "Doc not found"}), 404
-    return jsonify(d), 200
+# --- Error Handlers ---
+def register_error_handlers(app):
+    """Register application error handlers"""
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({"error": "Bad request"}), 400
 
-@app.route('/api/docs', methods=['POST'])
-def create_doc():
-    global doc_counter
-    data = request.json or {}
-    doc_counter += 1
-    doc_id = str(uuid.uuid4())
-    name = data.get('name', f"Doc{doc_counter}")
-    content = data.get('content', '')
-    doc_obj = {
-        "id": doc_id,
-        "name": name,
-        "content": content,
-        "audioFilename": None,
-        "originalFilename": None,
-        "audioTrashed": False,
-        "deleted": False
-    }
-    doc_store[doc_id] = doc_obj
-    save_doc_store()
-    return jsonify(doc_obj), 201
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify({"error": "Unauthorized"}), 401
 
-@app.route('/api/docs/<doc_id>', methods=['PUT'])
-def update_doc(doc_id):
-    data = request.json or {}
-    doc = doc_store.get(doc_id)
-    if not doc or doc.get("deleted"):
-        return jsonify({"error": "Doc not found"}), 404
-    doc["name"] = data.get("name", doc["name"])
-    doc["content"] = data.get("content", doc["content"])
-    save_doc_store()
-    return jsonify(doc), 200
+    @app.errorhandler(403)
+    def forbidden(error):
+        return jsonify({"error": "Forbidden"}), 403
 
-@app.route('/api/docs/<doc_id>', methods=['DELETE'])
-def delete_doc(doc_id):
-    d = doc_store.get(doc_id)
-    if not d or d.get("deleted"):
-        return jsonify({"message": "Doc not found"}), 404
-    d["deleted"] = True
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Not found"}), 404
 
-    filename = d.get("audioFilename")
-    if filename and not d.get("audioTrashed"):
-        src_path = os.path.join(UPLOAD_FOLDER, filename)
-        dst_path = os.path.join(TRASH_FOLDER, filename)
-        if os.path.exists(src_path):
-            os.rename(src_path, dst_path)
-            d["audioTrashed"] = True
-            app.logger.info(f"Moved file to trash: {src_path}")
-    save_doc_store()
-    return jsonify({"message": "Doc deleted"}), 200
+    @app.errorhandler(500)
+    def internal_server(error):
+        return jsonify({"error": "Internal server error"}), 500
 
-########################################
-# TRASH & FILE MANAGEMENT ROUTES
-########################################
-@app.route('/trash-files', methods=['GET'])
-def get_trash_files():
-    try:
-        files = os.listdir(TRASH_FOLDER)
-        return jsonify({"files": files}), 200
-    except Exception as e:
-        app.logger.error(f"Error fetching trash files: {e}")
-        return jsonify({"error": "Failed to fetch trash files"}), 500
-
-@app.route('/restore_file/<filename>', methods=['GET'])
-def restore_file(filename):
-    trash_path = os.path.join(TRASH_FOLDER, filename)
-    upload_path = os.path.join(UPLOAD_FOLDER, filename)
-    if os.path.exists(trash_path):
-        os.rename(trash_path, upload_path)
-        mark_doc_audio_trashed(filename, False)
-        # Also, if a doc referenced this file and was marked as deleted,
-        # we can restore it (set deleted = False) so it shows in docs.
-        for doc in doc_store.values():
-            if doc.get("audioFilename") == filename:
-                doc["deleted"] = False
-                doc["audioTrashed"] = False
-        save_doc_store()
-        app.logger.info(f"Restored file: {filename}")
-        return jsonify({"message": "File restored"}), 200
-    else:
-        return jsonify({"message": "File not found in trash"}), 404
-
-@app.route('/upload-files', methods=['GET'])
-def get_upload_files():
-    try:
-        files = os.listdir(UPLOAD_FOLDER)
-        return jsonify({"files": files}), 200
-    except Exception as e:
-        app.logger.error(f"Error listing uploads: {e}")
-        return jsonify({"error": "Error listing uploads"}), 500
-
-def mark_doc_audio_trashed(filename, is_trashed):
-    global doc_store
-    changed = False
-    for doc in doc_store.values():
-        if doc.get("audioFilename") == filename:
-            doc["audioTrashed"] = is_trashed
-            changed = True
-    if changed:
-        save_doc_store()
-
-########################################
-# SOCKET.IO FOR DOC EDITING
-########################################
-@socketio.on('join_doc')
-def handle_join_doc_evt(data):
-    doc_id = data.get('doc_id')
-    join_room(doc_id)
-    doc = doc_store.get(doc_id)
-    if doc and not doc.get("deleted"):
-        emit('doc_content_update', {
-            'doc_id': doc_id,
-            'content': doc['content']
-        }, room=doc_id)
-
-@socketio.on('edit_doc')
-def handle_edit_doc_evt(data):
-    doc_id = data.get('doc_id')
-    new_content = data.get('content')
-    doc = doc_store.get(doc_id)
-    if doc and not doc.get("deleted"):
-        doc['content'] = new_content
-        save_doc_store()
-    emit('doc_content_update', {
-        'doc_id': doc_id,
-        'content': new_content
-    }, room=doc_id, include_self=False)
-
+# --- Application Entry Point ---
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
+    
+    logger.info(f"Starting Yapper backend on {PLATFORM_NAME}")
+    logger.info(f"Port: {port}, Debug mode: {debug_mode}")
+    
+    app = create_app()
+    
+    if debug_mode:
+        # Use Flask's development server with debug mode
+        socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
+    else:
+        # Use socketio's production-ready server
+        print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")
+        socketio.run(app, host='0.0.0.0', port=port)
