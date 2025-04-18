@@ -1,4 +1,3 @@
-// frontend/src/pages/Home.js
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import '../static/Home.css';
@@ -118,8 +117,11 @@ function Home() {
       const formData = new FormData();
       formData.append('audio', file);
 
-      if (transcriptionConfig.mode === 'replicate' && transcriptionPrompt) {
-        formData.append('transcription_prompt', transcriptionPrompt);
+      // If using Replicate, make sure we have a prompt (default or custom)
+      if (transcriptionConfig.mode === 'replicate') {
+        const finalPrompt = transcriptionPrompt.trim() ||
+          "Please transcribe this audio file accurately, preserving all speech content. This is a speech-to-text transcription task.";
+        formData.append('transcription_prompt', finalPrompt);
       }
 
       const token = await currentUser.getIdToken();
@@ -189,7 +191,7 @@ function Home() {
       if (res.ok) {
         const data = await res.json();
         toast.current?.show({ severity: 'success', summary: 'Folder Created', detail: data.message, life: 3000 });
-        await fetchFolders();
+        await fetchFolders(); // Re-fetch folders after creating a new one
       } else {
         const errData = await res.json();
         toast.current?.show({ severity: 'error', summary: 'Error', detail: errData.error || 'Failed to create folder', life: 3000 });
@@ -200,28 +202,30 @@ function Home() {
     }
   };
 
-  const fetchFolders = async () => {
-    if (currentUser) {
-      try {
-        const token = await currentUser.getIdToken();
-        const res = await fetch('/api/folders', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
-        } else {
-          console.error("Error fetching folders:", res.statusText);
-          setFolders([]);
-        }
-      } catch (err) {
-        console.error("Error fetching folders:", err);
-        setFolders([]);
-      }
-    }
-  };
+   // Define fetchFolders here to be accessible by handleCreateFolder and useEffect
+   const fetchFolders = async () => {
+     if (currentUser) {
+       try {
+         const token = await currentUser.getIdToken();
+         const res = await fetch('/api/folders', {
+           headers: {
+             Authorization: `Bearer ${token}`
+           }
+         });
+         if (res.ok) {
+           const data = await res.json();
+           setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
+         } else {
+           console.error("Error fetching folders:", res.statusText);
+           setFolders([]);
+         }
+       } catch (err) {
+         console.error("Error fetching folders:", err);
+         setFolders([]);
+       }
+     }
+   };
+
 
   const handleFolderClick = (folderName) => {
     window.location.href = `/folders/${folderName}`;
@@ -260,6 +264,7 @@ function Home() {
         setSelectedFolder("");
         setDocToMove(null);
 
+        // Re-fetch docs after moving to potentially update its status or location info if needed
         const docsRes = await fetch('/api/docs', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -284,32 +289,54 @@ function Home() {
       <h2>Home - Upload Audio =&gt; Create Doc</h2>
       <div className="upload-section">
         {showPromptInput && (
-          <div className="prompt-input" style={{ marginBottom: '10px' }}>
-            <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
+          <div className="prompt-input" style={{
+            float: 'right',
+            width: '30%',
+            padding: '10px',
+            background: '#f7f7f7',
+            borderRadius: '5px',
+            marginBottom: '10px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <p style={{ marginBottom: '5px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+              Replicate API Prompt:
+            </p>
             <textarea
-              placeholder="e.g., Please transcribe this audio accurately, paying attention to technical terms."
+              placeholder="Enter transcription prompt for Replicate API (defaults to standard speech-to-text prompt if empty)"
               value={transcriptionPrompt}
               onChange={(e) => setTranscriptionPrompt(e.target.value)}
-              style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-              rows={2}
+              style={{
+                width: '100%',
+                height: '80px',
+                marginBottom: '5px',
+                padding: '8px',
+                fontSize: '0.9rem'
+              }}
+              rows={3}
             />
+            <small style={{ display: 'block', color: '#666', fontSize: '0.8rem' }}>
+              This prompt will guide the AI model in transcribing your audio.
+            </small>
           </div>
         )}
-        <input
-          type="file"
-          onChange={handleFileChange}
-          className="file-input"
-        />
-        <button
-          onClick={handleUpload}
-          className="upload-button"
-        >
-          Submit
-        </button>
-      </div>
-      <p className="message">{uploadMessage}</p>
 
-      <hr className="divider" />
+        <div style={{ width: showPromptInput ? '65%' : '100%' }}>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="file-input"
+          />
+          <button
+            onClick={handleUpload}
+            className="upload-button"
+          >
+            Submit
+          </button>
+          <p className="message" style={{ clear: 'both' }}>{uploadMessage}</p>
+        </div>
+      </div>
+
+      <hr className="divider" style={{ clear: 'both' }} />
       <div>
         <button onClick={handleCreateFolder} className="action-link edit-link">Create Folder</button>
       </div>
@@ -341,6 +368,7 @@ function Home() {
               )}
 
               <div className="doc-actions">
+                {/* Corrected line: Added opening <a> tag */}
                 <a
                   href={`/transcription/${doc.id}`}
                   rel="noreferrer"
@@ -348,6 +376,7 @@ function Home() {
                 >
                   View Doc
                 </a>
+                {/* Corrected line: Added opening <a> tag */}
                 <a
                   href={`/docs/edit/${doc.id}`}
                   rel="noreferrer"
@@ -408,4 +437,3 @@ function Home() {
 }
 
 export default Home;
-

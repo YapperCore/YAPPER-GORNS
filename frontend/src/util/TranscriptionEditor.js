@@ -8,7 +8,6 @@ import AudioPlayer from '../components/AudioPlayer';
 import { useAuth } from '../context/AuthContext';
 import { Toast } from 'primereact/toast';
 import { ProgressBar } from 'primereact/progressbar';
-import { InputTextarea } from 'primereact/inputtextarea';
 import { Button } from 'primereact/button';
 
 export default function TranscriptionEditor() {
@@ -24,13 +23,14 @@ export default function TranscriptionEditor() {
   const [apiStatus, setApiStatus] = useState('');
   const [processedChunks, setProcessedChunks] = useState([]);
   const [transcriptionConfig, setTranscriptionConfig] = useState({ mode: 'local-cpu' });
-  const [prompt, setPrompt] = useState('');
-  const [showPromptInput, setShowPromptInput] = useState(false);
-  const [waitingForPrompt, setWaitingForPrompt] = useState(false);
   const [isApiProcessing, setIsApiProcessing] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [lastPollTime, setLastPollTime] = useState(0);
   const socketRef = useRef(null);
   const toastRef = useRef(null);
   const editorRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const pollTimerRef = useRef(null);
   
   // Fetch doc info and user settings
   useEffect(() => {
@@ -54,26 +54,19 @@ export default function TranscriptionEditor() {
           setAudioFilename(doc.audioFilename || '');
           setAudioTrashed(!!doc.audioTrashed);
           
-          // Get transcription prompt if it exists
-          setPrompt(doc.transcription_prompt || '');
-          
-          // Check if this doc is awaiting a prompt (for Replicate)
-          if (doc.awaiting_prompt) {
-            setWaitingForPrompt(true);
-            toastRef.current?.show({
-              severity: 'info',
-              summary: 'Input Needed',
-              detail: 'Please provide a transcription prompt to continue',
-              life: 5000
-            });
-          }
-          
           // Check if transcription is already complete
-          if (doc.content && doc.content.trim().length > 0) {
-            if (doc.content.includes("Transcription complete") || 
-                doc.content.length > 100) {
+          if (doc.transcription_status === "completed") {
+            setIsComplete(true);
+            setProgress(100);
+            setApiStatus('Transcription completed');
+          } else if (doc.content && doc.content.trim().length > 0) {
+            if (doc.content.includes("Error:")) {
+              setError(doc.content);
+              setApiStatus(`Error: ${doc.content}`);
+            } else if (doc.content.length > 100) {
               setIsComplete(true);
               setProgress(100);
+              setApiStatus('Transcription completed');
             }
           }
         }
@@ -88,17 +81,16 @@ export default function TranscriptionEditor() {
           if (settings.transcriptionConfig) {
             setTranscriptionConfig(settings.transcriptionConfig);
             
-            // Show prompt input if using Replicate
-            const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
-            setShowPromptInput(usingReplicate);
-            
-            if (usingReplicate && !doc?.content) {
-              toastRef.current?.show({
-                severity: 'info',
-                summary: 'Using Replicate API',
-                detail: 'Transcription will be processed in the cloud. This may take a moment to initialize.',
-                life: 5000
-              });
+            // If using Replicate, show notification
+            if (settings.transcriptionConfig.mode === 'replicate') {
+              setApiStatus('Waiting for Replicate API transcription (this may take 30-60 seconds). Please be patient...');
+              setIsApiProcessing(true);
+              
+              // Initial poll for document status
+              pollDocumentStatus();
+              
+              // Set up regular polling as backup
+              pollTimerRef.current = setInterval(pollDocumentStatus, 10000);
             }
           }
         }
@@ -111,153 +103,260 @@ export default function TranscriptionEditor() {
     }
     
     fetchData();
+    
+    // Clean up all timers on unmount
+    return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
   }, [docId, currentUser]);
+  
+  // Poll document status as a fallback mechanism
+  const pollDocumentStatus = async () => {
+    if (!currentUser || Date.now() - lastPollTime < 5000) return;
+    
+    try {
+      setLastPollTime(Date.now());
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`/api/docs/${docId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const doc = await response.json();
+        
+        // Only update if there's actual content
+        if (doc.content && doc.content !== content) {
+          console.log("Polling found updated content:", doc.content);
+          setContent(doc.content);
+          
+          if (doc.transcription_status === "completed") {
+            setIsComplete(true);
+            setProgress(100);
+            setIsApiProcessing(false);
+            setApiStatus('Transcription completed successfully via polling');
+            
+            // Stop polling once we've got the completed document
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            
+            toastRef.current?.show({
+              severity: 'success',
+              summary: 'Transcription Complete',
+              detail: 'The audio file has been fully transcribed',
+              life: 3000
+            });
+          } else if (doc.content.includes("Error:")) {
+            setError(doc.content);
+            setIsApiProcessing(false);
+            setApiStatus(`Error detected: ${doc.content}`);
+            
+            // Stop polling if there's an error
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error polling document status:", err);
+    }
+  };
   
   // Socket.IO for real-time updates
   useEffect(() => {
     if (!currentUser) return;
     
-    // Use the current host for socket connection to avoid hard-coded IP
-    const socketHost = window.location.origin;
-    const socket = io(socketHost, {
-      path: '/socket.io',
-      transports: ['websocket', 'polling']
-    });
-    
-    socketRef.current = socket;
-    
-    const handleConnect = () => {
-      console.log("Socket connected");
-      setApiStatus("Socket connected successfully");
-      socket.emit('join_doc', { doc_id: docId });
-    };
-    
-    const handleConnectError = (err) => {
-      console.error("Socket connection error:", err);
-      setError(`Socket connection error: ${err.message}`);
-      setApiStatus(`Connection error: ${err.message}`);
-    };
-    
-    const handleDisconnect = (reason) => {
-      console.log("Socket disconnected:", reason);
-      setApiStatus(`Socket disconnected: ${reason}`);
+    const setupSocket = () => {
+      // Use the current host for socket connection to avoid hard-coded IP
+      const socketHost = window.location.origin;
+      const socket = io(socketHost, {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000
+      });
       
-      // Try to reconnect
-      setTimeout(() => {
-        socket.connect();
-      }, 3000);
-    };
-
-    socket.on('connect', handleConnect);
-    socket.on('connect_error', handleConnectError);
-    socket.on('disconnect', handleDisconnect);
-
-    const handlePartialBatch = data => {
-      if (data.doc_id === docId) {
-        // Mark that API is processing
-        setIsApiProcessing(true);
+      socketRef.current = socket;
+      
+      const handleConnect = () => {
+        console.log("Socket connected successfully");
+        setReconnectAttempts(0);
+        setApiStatus(prev => prev + " | Socket connected");
+        socket.emit('join_doc', { doc_id: docId });
+      };
+      
+      const handleConnectError = (err) => {
+        console.error("Socket connection error:", err);
+        setError(`Socket connection error: ${err.message}`);
+        setApiStatus(prev => `${prev} | Connection issue: ${err.message}`);
         
-        // Update progress directly from server data if available
-        if (data.progress !== undefined) {
-          setProgress(data.progress);
+        // If we're using Replicate, don't let socket errors disrupt the experience
+        // since we'll fall back to polling
+        if (transcriptionConfig.mode === 'replicate') {
+          if (reconnectAttempts < 5) {
+            setReconnectAttempts(prev => prev + 1);
+            
+            // Try to reconnect after a delay
+            reconnectTimerRef.current = setTimeout(() => {
+              console.log("Attempting to reconnect socket...");
+              if (socketRef.current) {
+                socketRef.current.connect();
+              }
+            }, 3000);
+          }
         }
+      };
+      
+      const handleDisconnect = (reason) => {
+        console.log("Socket disconnected:", reason);
+        setApiStatus(prev => `${prev} | Socket disconnected: ${reason}`);
         
-        // Add new chunks to processed chunks list for tracking
-        if (data.chunks && data.chunks.length > 0) {
-          setProcessedChunks(prev => [...prev, ...data.chunks]);
-          
-          // Get the text from the chunks
-          const chunk_text = data.chunks.map(c => c.text).join(' ');
-          
-          // Append to content
-          setContent(prev => {
-            // If this is Replicate API (which sends full content), replace entirely
-            if (transcriptionConfig.mode === 'replicate') {
-              return chunk_text;
+        // Try to reconnect if using Replicate, as connection might be broken during long processing
+        if (transcriptionConfig.mode === 'replicate' && !isComplete) {
+          reconnectTimerRef.current = setTimeout(() => {
+            console.log("Attempting to reconnect after disconnect...");
+            if (socketRef.current) {
+              socketRef.current.connect();
             }
+          }, 3000);
+        }
+      };
+
+      socket.on('connect', handleConnect);
+      socket.on('connect_error', handleConnectError);
+      socket.on('disconnect', handleDisconnect);
+
+      const handlePartialBatch = data => {
+        console.log("Received partial transcript batch:", data);
+        if (data.doc_id === docId) {
+          // Mark that API is processing
+          setIsApiProcessing(true);
+          
+          // Update progress directly from server data if available
+          if (data.progress !== undefined) {
+            setProgress(data.progress);
+          }
+          
+          // Add new chunks to processed chunks list for tracking
+          if (data.chunks && data.chunks.length > 0) {
+            setProcessedChunks(prev => [...prev, ...data.chunks]);
             
-            // For other modes, append to existing content
-            if (!prev) return chunk_text;
+            // Get the text from the chunks
+            const chunk_text = data.chunks.map(c => c.text).join(' ');
             
-            const last_char = prev.slice(-1);
-            const first_char = chunk_text.charAt(0);
-            
-            // No space before punctuation
-            if (first_char.match(/[.,;:!?'"]/)) {
-              return prev + chunk_text;
-            } 
-            // Add space between words
-            else if (last_char.match(/\w/) && first_char.match(/\w/)) {
-              return prev + ' ' + chunk_text;
-            } 
-            // Default append
-            else {
-              return prev + chunk_text;
-            }
+            // Append to content
+            setContent(prev => {
+              // If this is Replicate API (which sends full content), replace entirely
+              if (data.is_replicate) {
+                return chunk_text;
+              }
+              
+              // For other modes, append to existing content
+              if (!prev) return chunk_text;
+              
+              const last_char = prev.slice(-1);
+              const first_char = chunk_text.charAt(0);
+              
+              // No space before punctuation
+              if (first_char.match(/[.,;:!?'"]/)) {
+                return prev + chunk_text;
+              } 
+              // Add space between words
+              else if (last_char.match(/\w/) && first_char.match(/\w/)) {
+                return prev + ' ' + chunk_text;
+              } 
+              // Default append
+              else {
+                return prev + chunk_text;
+              }
+            });
+          }
+        }
+      };
+
+      const handleFinal = data => {
+        console.log("Received final transcript:", data);
+        if (data.doc_id === docId && data.done) {
+          setIsComplete(true);
+          setProgress(100);
+          setIsApiProcessing(false);
+          
+          // Update with final content if provided
+          if (data.content) {
+            setContent(data.content);
+          }
+          
+          // Clear all timers as we're done
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+          
+          toastRef.current?.show({
+            severity: 'success',
+            summary: 'Transcription Complete',
+            detail: 'The audio file has been fully transcribed',
+            life: 3000
+          });
+          
+          setApiStatus("Transcription completed successfully");
+        }
+      };
+
+      const handleDocUpdate = update => {
+        console.log("Received doc update:", update);
+        if (update.doc_id === docId) {
+          setContent(update.content);
+        }
+      };
+
+      const handleTranscriptionStatus = status => {
+        console.log("Received transcription status:", status);
+        if (status.doc_id === docId) {
+          setApiStatus(status.status);
+        }
+      };
+
+      const handleTranscriptionError = data => {
+        console.log("Received transcription error:", data);
+        if (data.doc_id === docId) {
+          setIsApiProcessing(false);
+          setError(`Transcription error: ${data.error}`);
+          setApiStatus(`Error: ${data.error}`);
+          
+          // Stop polling on error
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          
+          toastRef.current?.show({
+            severity: 'error',
+            summary: 'Transcription Error',
+            detail: data.error,
+            life: 5000
           });
         }
-      }
-    };
+      };
 
-    const handleFinal = data => {
-      if (data.doc_id === docId && data.done) {
-        setIsComplete(true);
-        setProgress(100);
-        setIsApiProcessing(false);
-        
-        // Update with final content if provided
-        if (data.content) {
-          setContent(data.content);
-        }
-        
-        toastRef.current?.show({
-          severity: 'success',
-          summary: 'Transcription Complete',
-          detail: 'The audio file has been fully transcribed',
-          life: 3000
-        });
-        
-        setApiStatus("Transcription completed successfully");
-      }
-    };
+      socket.on('partial_transcript_batch', handlePartialBatch);
+      socket.on('final_transcript', handleFinal);
+      socket.on('doc_content_update', handleDocUpdate);
+      socket.on('transcription_status', handleTranscriptionStatus);
+      socket.on('transcription_error', handleTranscriptionError);
 
-    const handleDocUpdate = update => {
-      if (update.doc_id === docId) {
-        setContent(update.content);
-      }
+      return () => {
+        socket.off('connect', handleConnect);
+        socket.off('connect_error', handleConnectError);
+        socket.off('disconnect', handleDisconnect);
+        socket.off('partial_transcript_batch', handlePartialBatch);
+        socket.off('final_transcript', handleFinal);
+        socket.off('doc_content_update', handleDocUpdate);
+        socket.off('transcription_status', handleTranscriptionStatus);
+        socket.off('transcription_error', handleTranscriptionError);
+        socket.disconnect();
+      };
     };
-
-    const handleTranscriptionError = data => {
-      if (data.doc_id === docId) {
-        setIsApiProcessing(false);
-        setError(`Transcription error: ${data.error}`);
-        setApiStatus(`Error: ${data.error}`);
-        
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Transcription Error',
-          detail: data.error,
-          life: 5000
-        });
-      }
-    };
-
-    socket.on('partial_transcript_batch', handlePartialBatch);
-    socket.on('final_transcript', handleFinal);
-    socket.on('doc_content_update', handleDocUpdate);
-    socket.on('transcription_error', handleTranscriptionError);
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('connect_error', handleConnectError);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('partial_transcript_batch', handlePartialBatch);
-      socket.off('final_transcript', handleFinal);
-      socket.off('doc_content_update', handleDocUpdate);
-      socket.off('transcription_error', handleTranscriptionError);
-      socket.disconnect();
-    };
-  }, [docId, currentUser, transcriptionConfig.mode]);
+    
+    const cleanup = setupSocket();
+    
+    return cleanup;
+  }, [docId, currentUser, reconnectAttempts, transcriptionConfig.mode, isComplete]);
 
   const handleContentChange = async (newContent) => {
     setContent(newContent);
@@ -285,95 +384,6 @@ export default function TranscriptionEditor() {
       }
     }
   };
-  
-  const savePrompt = async () => {
-    if (!currentUser) return;
-    
-    try {
-      const token = await currentUser.getIdToken();
-      await fetch(`/api/docs/${docId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transcription_prompt: prompt })
-      });
-      
-      toastRef.current?.show({
-        severity: 'success',
-        summary: 'Prompt Saved',
-        detail: 'Transcription prompt has been saved',
-        life: 3000
-      });
-    } catch (err) {
-      console.error("Error saving prompt:", err);
-      setError(`Error saving prompt: ${err.message}`);
-    }
-  };
-  
-  const submitPrompt = async () => {
-    if (!currentUser || !prompt.trim()) return;
-    
-    try {
-      // Save the prompt first
-      await savePrompt();
-      
-      // Clear content and reset progress
-      setContent('');
-      setProgress(0);
-      setIsComplete(false);
-      setWaitingForPrompt(false);
-      setIsApiProcessing(true);
-      setApiStatus("Starting transcription with Replicate API...");
-      
-      // Tell server to start transcription
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`/api/transcribe/${docId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transcription_prompt: prompt })
-      });
-      
-      if (response.ok) {
-        toastRef.current?.show({
-          severity: 'info',
-          summary: 'Transcription Started',
-          detail: 'The Replicate API is processing your audio. This may take a moment...',
-          life: 5000
-        });
-        
-        setApiStatus("Transcription job submitted to Replicate. Waiting for processing...");
-      } else {
-        const data = await response.json();
-        setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
-        setIsApiProcessing(false);
-        setApiStatus(`Error: ${data.error || 'Unknown error'}`);
-        
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to start transcription: ${data.error || 'Unknown error'}`,
-          life: 5000
-        });
-      }
-    } catch (err) {
-      console.error("Error starting transcription:", err);
-      setError(`Error starting transcription: ${err.message}`);
-      setIsApiProcessing(false);
-      setApiStatus(`Error: ${err.message}`);
-      
-      toastRef.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: `Error starting transcription: ${err.message}`,
-        life: 5000
-      });
-    }
-  };
 
   const startTranscription = async () => {
     if (!currentUser) return;
@@ -394,7 +404,7 @@ export default function TranscriptionEditor() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ transcription_prompt: prompt })
+        body: JSON.stringify({})
       });
       
       if (response.ok) {
@@ -402,10 +412,16 @@ export default function TranscriptionEditor() {
           severity: 'info',
           summary: 'Transcription Started',
           detail: transcriptionConfig.mode === 'replicate' ? 
-            'The Replicate API is processing your audio. This may take a moment...' :
+            'The Replicate API is processing your audio. This may take 30-60 seconds...' :
             'Transcription has been started. Please wait...',
           life: 5000
         });
+        
+        // Start polling as a backup
+        if (transcriptionConfig.mode === 'replicate') {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          pollTimerRef.current = setInterval(pollDocumentStatus, 10000);
+        }
       } else {
         const data = await response.json();
         setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
@@ -450,48 +466,32 @@ export default function TranscriptionEditor() {
       )}
       
       {/* API Status Indicator */}
-      {apiStatus && (
-        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e8f4fd', borderRadius: '4px', color: '#0c5460' }}>
-          <strong>Status:</strong> {apiStatus}
-        </div>
-      )}
-      
-      {/* Replicate Loading Animation when processing */}
-      {transcriptionConfig.mode === 'replicate' && isApiProcessing && (
-        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd', textAlign: 'center' }}>
-          <h3>Processing with Replicate API</h3>
-          <div style={{ margin: '1rem 0' }}>
-            <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
+      {transcriptionConfig.mode === 'replicate' && (
+        <div style={{ 
+          float: 'right', 
+          width: '25%', 
+          marginBottom: '1rem', 
+          padding: '0.5rem', 
+          background: '#e8f4fd', 
+          borderRadius: '4px', 
+          color: '#0c5460',
+          fontSize: '0.9rem'
+        }}>
+          <strong>Using Replicate API</strong>
+          <p>Transcription may take 30-60 seconds. Please be patient while the cloud service processes your audio.</p>
+          {isApiProcessing && !isComplete && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <ProgressBar mode="indeterminate" style={{ height: '4px' }} />
+            </div>
+          )}
+          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
+            Status: {apiStatus || 'Waiting for processing...'}
           </div>
-          <p>The AI model is processing your audio. This may take a moment if the model needs to start up.</p>
-          <p><small>Please wait while we process your transcription...</small></p>
-        </div>
-      )}
-      
-      {/* Prompt input for Replicate mode */}
-      {showPromptInput && (waitingForPrompt || !content) && (
-        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
-          <h3>Transcription Prompt</h3>
-          <p>Enter a prompt to guide the transcription:</p>
-          <InputTextarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            style={{ width: '100%', marginBottom: '0.5rem' }}
-            placeholder="e.g., Please transcribe this audio file. Pay special attention to technical terms."
-          />
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Button label="Save Prompt" icon="pi pi-save" onClick={savePrompt} />
-            <Button label="Start Transcription" icon="pi pi-play" onClick={submitPrompt} />
-          </div>
-          <small style={{ marginTop: '0.5rem', display: 'block', color: '#666' }}>
-            For Replicate API transcription, you can use a custom prompt to guide the model.
-          </small>
         </div>
       )}
       
       {!isComplete && !isApiProcessing && transcriptionConfig.mode !== 'replicate' && (
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ width: '70%', marginBottom: '1rem' }}>
           <p>Transcription in progress... {progress}% complete</p>
           <ProgressBar value={progress} />
         </div>
@@ -501,7 +501,7 @@ export default function TranscriptionEditor() {
         theme="snow"
         value={content}
         onChange={handleContentChange}
-        style={{ height: '600px', background: '#fff' }}
+        style={{ height: '600px', background: '#fff', width: '70%', clear: transcriptionConfig.mode === 'replicate' ? 'right' : 'none' }}
         ref={editorRef}
       />
       
