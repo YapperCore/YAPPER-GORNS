@@ -96,11 +96,13 @@ def upload_audio():
     save_path_str = str(save_path)
     
     try:
+        # Test file system permissions
         temp_path = save_path.with_suffix('.tmp')
         with open(temp_path, 'wb') as f:
             f.write(b'Test')
         temp_path.unlink()
         
+        # Save the file
         audio_file.save(save_path_str)
         
         if not save_path.exists() or save_path.stat().st_size == 0:
@@ -108,119 +110,78 @@ def upload_audio():
         
         uid = request.uid
         firebase_path = f"users/{uid}/uploads/{unique_name}"
+        file_url = None
         
+        # Try to upload to Firebase
         try:
             blob = upload_file_by_path(save_path_str, firebase_path)
             file_url = get_signed_url(firebase_path)
             logger.info(f"Uploaded to Firebase: {firebase_path}")
-            
-            doc_counter += 1
-            doc_id = str(uuid.uuid4())
-            doc_name = f"Doc{doc_counter}"
-            
-            # Get transcription prompt if provided
-            transcription_prompt = request.form.get("transcription_prompt", "")
-            
-            doc_obj = {
-                "id": doc_id,
-                "name": doc_name,
-                "content": "",
-                "audioFilename": unique_name,
-                "originalFilename": original_filename,
-                "audioTrashed": False,
-                "deleted": False,
-                "owner": uid,
-                "firebaseUrl": file_url,
-                "firebasePath": firebase_path,
-                "localPath": save_path_str,
-                "transcription_prompt": transcription_prompt
-            }
-            
-            # Get user's transcription config
-            config = get_user_transcription_config(uid)
-            
-            # Check if this is a Replicate transcription
-            if config.get("mode") == "replicate":
-                # For replicate, set flag to await prompt if not already provided
-                if not transcription_prompt:
-                    doc_obj["awaiting_prompt"] = True
-                    logger.info("Using Replicate API - transcription will start after prompt is provided")
-                    
-                    doc_store[doc_id] = doc_obj
-                    save_doc_store()
-                    
-                    return jsonify({
-                        "message": "File received and doc created. Transcription will begin after prompt is provided.",
-                        "filename": unique_name,
-                        "doc_id": doc_id,
-                        "requires_prompt": True
-                    }), 200
-            
-            # For non-Replicate methods or if prompt already provided
-            doc_store[doc_id] = doc_obj
-            save_doc_store()
-            
-            socketio.start_background_task(background_transcription, save_path_str, doc_id)
-            
-            return jsonify({
-                "message": "File received, uploaded to Firebase, and doc created",
-                "filename": unique_name,
-                "doc_id": doc_id
-            }), 200
-            
+            firebase_upload_success = True
         except Exception as firebase_err:
             logger.error(f"Error uploading to Firebase: {firebase_err}")
+            firebase_upload_success = False
+        
+        # Get transcription prompt if provided
+        transcription_prompt = request.form.get("transcription_prompt", "")
+        
+        # Create new document
+        doc_counter += 1
+        doc_id = str(uuid.uuid4())
+        doc_name = f"Doc{doc_counter}"
+        
+        # Get user's transcription config
+        config = get_user_transcription_config(uid)
+        using_replicate = config.get("mode") == "replicate"
+        
+        # Create document object
+        doc_obj = {
+            "id": doc_id,
+            "name": doc_name,
+            "content": "",
+            "audioFilename": unique_name,
+            "originalFilename": original_filename,
+            "audioTrashed": False,
+            "deleted": False,
+            "owner": uid,
+            "firebaseUrl": file_url,
+            "firebasePath": firebase_path if firebase_upload_success else None,
+            "localPath": save_path_str,
+            "transcription_prompt": transcription_prompt,
+            "transcription_config": config,
+            "transcription_status": "pending",
+            "is_replicate": using_replicate
+        }
+        
+        # For Replicate, check if we need to wait for prompt
+        if using_replicate and not transcription_prompt:
+            doc_obj["awaiting_prompt"] = True
+            logger.info("Using Replicate API - transcription will start after prompt is provided")
             
-            doc_counter += 1
-            doc_id = str(uuid.uuid4())
-            doc_name = f"Doc{doc_counter}"
-            
-            transcription_prompt = request.form.get("transcription_prompt", "")
-            
-            doc_obj = {
-                "id": doc_id,
-                "name": doc_name,
-                "content": "",
-                "audioFilename": unique_name,
-                "originalFilename": original_filename,
-                "audioTrashed": False,
-                "deleted": False,
-                "owner": uid,
-                "firebaseUrl": None,
-                "localPath": save_path_str,
-                "transcription_prompt": transcription_prompt
-            }
-            
-            # Check if this is a Replicate transcription
-            config = get_user_transcription_config(uid)
-            if config.get("mode") == "replicate":
-                # For replicate, set flag to await prompt if not already provided
-                if not transcription_prompt:
-                    doc_obj["awaiting_prompt"] = True
-                    
-                    doc_store[doc_id] = doc_obj
-                    save_doc_store()
-                    
-                    return jsonify({
-                        "message": "File received and doc created. Transcription will begin after prompt is provided.",
-                        "filename": unique_name,
-                        "doc_id": doc_id,
-                        "requires_prompt": True,
-                        "warning": "Firebase upload failed, using local file only"
-                    }), 200
-            
-            # For non-Replicate methods or if prompt already provided
             doc_store[doc_id] = doc_obj
             save_doc_store()
             
-            socketio.start_background_task(background_transcription, save_path_str, doc_id)
-            
             return jsonify({
-                "message": "File received and doc created (Firebase upload failed but will still transcribe)",
+                "message": "File received and doc created. Transcription will begin after prompt is provided.",
                 "filename": unique_name,
                 "doc_id": doc_id,
-                "warning": "Firebase upload failed, using local file only"
+                "requires_prompt": True,
+                "warning": None if firebase_upload_success else "Firebase upload failed, using local file only"
             }), 200
+        
+        # For other methods or if prompt already provided
+        doc_store[doc_id] = doc_obj
+        save_doc_store()
+        
+        # Start transcription in background
+        socketio.start_background_task(background_transcription, save_path_str, doc_id)
+        
+        return jsonify({
+            "message": "File received and transcription started",
+            "filename": unique_name,
+            "doc_id": doc_id,
+            "warning": None if firebase_upload_success else "Firebase upload failed, using local file only"
+        }), 200
             
     except Exception as e:
         logger.error(f"Error uploading file: {e}")
@@ -246,11 +207,17 @@ def start_transcription(doc_id):
         data = request.json or {}
         prompt = data.get("transcription_prompt", "")
         
+        # Update document with prompt
         doc["transcription_prompt"] = prompt
         if "awaiting_prompt" in doc:
-            doc["awaiting_prompt"] = False  # Mark that prompt is now provided
+            doc["awaiting_prompt"] = False
+            
+        # Reset transcription status
+        doc["transcription_status"] = "starting"
+        doc["content"] = ""
         save_doc_store()
         
+        # Get audio file path
         filename = doc.get("audioFilename")
         if not filename:
             return jsonify({"error": "No audio file associated with this document"}), 400
@@ -258,6 +225,7 @@ def start_transcription(doc_id):
         if doc.get("audioTrashed"):
             return jsonify({"error": "Audio file is in trash"}), 400
             
+        # Determine file path (local or Firebase)
         file_path = ""
         if "localPath" in doc and os.path.exists(doc["localPath"]):
             file_path = doc["localPath"]
@@ -266,53 +234,72 @@ def start_transcription(doc_id):
             
         if not os.path.exists(file_path):
             return jsonify({"error": "Audio file not found on server"}), 404
-            
-        doc["content"] = ""
-        save_doc_store()
         
+        # Start transcription in background
         socketio.start_background_task(background_transcription, file_path, doc_id)
         
-        return jsonify({"message": "Transcription started"}), 200
+        return jsonify({
+            "message": "Transcription started",
+            "doc_id": doc_id,
+            "status": "processing"
+        }), 200
     except Exception as e:
         logger.error(f"Error starting transcription: {e}")
         return jsonify({"error": f"Error starting transcription: {str(e)}"}), 500
+
+# backend/routes/document.py - background_transcription function
 
 def background_transcription(file_path, doc_id):
     try:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found for transcription: {file_path}")
-            
+
         logger.info(f"Starting transcription for file: {file_path}")
-        
+
         all_text = ""
         processed_chunks = 0
         total_chunks = 0
-        
+
         doc = doc_store.get(doc_id)
         if not doc:
             raise ValueError(f"Document {doc_id} not found")
-        
+
         user_id = doc.get("owner")
         prompt = doc.get("transcription_prompt", "")
-            
+
         doc["content"] = ""
         save_doc_store()
-        
+
         config = get_user_transcription_config(user_id)
         using_replicate = config.get("mode") == "replicate"
-        
+
+        # Update document with configuration for socket handling
+        doc["is_replicate"] = using_replicate
+        doc["transcription_config"] = config
+        doc["transcription_status"] = "starting"
+        save_doc_store()
+
+        if using_replicate:
+            # For Replicate, emit a status message that we're waiting for the model
+            socketio.emit('transcription_status', {
+                'doc_id': doc_id,
+                'status': 'Contacting Replicate API. This may take a moment if the model needs to warm up...'
+            })
+
         for i, total, text in chunked_transcribe_audio(file_path, user_id, prompt):
             if total > total_chunks:
                 total_chunks = total
-                
+
             processed_chunks += 1
             chunk_text = text.strip()
-            
+
             if using_replicate:
+                # For Replicate, replace entire content with what comes back from API
                 all_text = chunk_text
                 doc["content"] = all_text
+                doc["transcription_status"] = "completed"
                 save_doc_store()
-                
+
                 socketio.emit('partial_transcript_batch', {
                     'doc_id': doc_id,
                     'chunks': [{
@@ -320,13 +307,15 @@ def background_transcription(file_path, doc_id):
                         'total_chunks': total,
                         'text': chunk_text
                     }],
-                    'progress': 100
+                    'progress': 100,
+                    'is_replicate': True
                 })
             else:
+                # For Whisper local method, append chunks
                 if all_text:
                     last_char = all_text[-1] if all_text else ""
                     first_char = chunk_text[0] if chunk_text else ""
-                    
+
                     if first_char in ".,;:!?\"'":
                         all_text += chunk_text
                     elif last_char.isalnum() and first_char.isalnum():
@@ -335,12 +324,13 @@ def background_transcription(file_path, doc_id):
                         all_text += chunk_text
                 else:
                     all_text = chunk_text
-                
+
                 doc["content"] = all_text
+                doc["transcription_status"] = "in_progress"
                 save_doc_store()
-                
+
                 progress = round((processed_chunks / total_chunks) * 100) if total_chunks > 0 else 0
-                
+
                 socketio.emit('partial_transcript_batch', {
                     'doc_id': doc_id,
                     'chunks': [{
@@ -348,36 +338,44 @@ def background_transcription(file_path, doc_id):
                         'total_chunks': total,
                         'text': chunk_text
                     }],
-                    'progress': progress
+                    'progress': progress,
+                    'is_replicate': False
                 })
-                
+
                 socketio.sleep(0.05)
-        
+
+        # Clean up final text
         final_text = all_text.strip()
         final_text = re.sub(r'\s+', ' ', final_text)
         final_text = re.sub(r'\s+([.,;:!?])', r'\1', final_text)
-        
+
         doc["content"] = final_text
+        doc["transcription_status"] = "completed"
         save_doc_store()
-        
+
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
             'done': True,
             'content': final_text
         })
-        
+
         logger.info(f"Transcription completed for file: {file_path}")
-        
+
     except Exception as e:
         logger.error(f"Error during transcription: {e}")
         import traceback
         logger.error(f"Transcription error details: {traceback.format_exc()}")
-        
+
+        # Update document status
+        if doc_id in doc_store:
+            doc_store[doc_id]["transcription_status"] = "error"
+            doc_store[doc_id]["transcription_error"] = str(e)
+            save_doc_store()
+
         socketio.emit('transcription_error', {
             'doc_id': doc_id,
             'error': str(e)
         })
-
 def register_document_routes(app):
     app.register_blueprint(document_bp)
     logger.info("Document routes registered successfully")

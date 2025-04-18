@@ -26,11 +26,15 @@ WHISPER_MODEL = "small"  # can be tiny, base, small, medium, or large
 
 # Import transcribe_replicate only if available
 try:
-    from transcribe_replicate import transcribe_audio_with_replicate
+    from transcribe_replicate import transcribe_audio_with_replicate, alternative_transcribe_with_replicate
 except ImportError:
     logger.warning("Replicate transcription module not available")
     
     def transcribe_audio_with_replicate(audio_path, user_id, prompt=None):
+        logger.error("Replicate transcription module is not installed")
+        return "Error: Replicate transcription module is not available"
+    
+    def alternative_transcribe_with_replicate(audio_path, user_id, prompt=None):
         logger.error("Replicate transcription module is not installed")
         return "Error: Replicate transcription module is not available"
 
@@ -129,7 +133,7 @@ def transcribe_audio(audio_path, user_id=None, prompt=None):
                 return "Error: Replicate package not installed. Please install with 'pip install replicate'"
                 
             logger.info("Using Replicate API for transcription")
-            return transcribe_audio_with_replicate(safe_path, user_id, prompt)
+            return alternative_transcribe_with_replicate(safe_path, user_id, prompt)
         
         elif config.get("mode") == "local-gpu" and CUDA_AVAILABLE:
             # Use local GPU
@@ -206,7 +210,9 @@ def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=3
                 return
                 
             logger.info("Using Replicate API for transcription (full file)")
-            transcription = transcribe_audio_with_replicate(safe_path, user_id, prompt)
+            
+            # Use the alternative_transcribe_with_replicate which has better polling
+            transcription = alternative_transcribe_with_replicate(safe_path, user_id, prompt)
             
             # If the transcription doesn't start with "Error:", consider it successful
             if transcription and not transcription.startswith("Error:"):
@@ -247,7 +253,7 @@ def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=3
         logger.info(f"Loading audio file: {safe_path}")
         audio = whisper.load_audio(safe_path)
         audio_duration = len(audio) / whisper.audio.SAMPLE_RATE
-        total_chunks = max(1, int(audio_duration / chunk_size))
+        total_chunks = max(1, int(audio_duration / chunk_size) + (1 if audio_duration % chunk_size > 0 else 0))
         
         logger.info(f"Audio duration: {audio_duration:.2f}s, total chunks: {total_chunks}")
         

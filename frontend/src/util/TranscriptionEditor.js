@@ -1,3 +1,4 @@
+// frontend/src/util/TranscriptionEditor.js 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import io from 'socket.io-client';
@@ -20,11 +21,13 @@ export default function TranscriptionEditor() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [apiStatus, setApiStatus] = useState('');
   const [processedChunks, setProcessedChunks] = useState([]);
   const [transcriptionConfig, setTranscriptionConfig] = useState({ mode: 'local-cpu' });
   const [prompt, setPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [waitingForPrompt, setWaitingForPrompt] = useState(false);
+  const [isApiProcessing, setIsApiProcessing] = useState(false);
   const socketRef = useRef(null);
   const toastRef = useRef(null);
   const editorRef = useRef(null);
@@ -57,6 +60,12 @@ export default function TranscriptionEditor() {
           // Check if this doc is awaiting a prompt (for Replicate)
           if (doc.awaiting_prompt) {
             setWaitingForPrompt(true);
+            toastRef.current?.show({
+              severity: 'info',
+              summary: 'Input Needed',
+              detail: 'Please provide a transcription prompt to continue',
+              life: 5000
+            });
           }
           
           // Check if transcription is already complete
@@ -80,7 +89,17 @@ export default function TranscriptionEditor() {
             setTranscriptionConfig(settings.transcriptionConfig);
             
             // Show prompt input if using Replicate
-            setShowPromptInput(settings.transcriptionConfig.mode === 'replicate');
+            const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
+            setShowPromptInput(usingReplicate);
+            
+            if (usingReplicate && !doc?.content) {
+              toastRef.current?.show({
+                severity: 'info',
+                summary: 'Using Replicate API',
+                detail: 'Transcription will be processed in the cloud. This may take a moment to initialize.',
+                life: 5000
+              });
+            }
           }
         }
       } catch (err) {
@@ -109,16 +128,24 @@ export default function TranscriptionEditor() {
     
     const handleConnect = () => {
       console.log("Socket connected");
+      setApiStatus("Socket connected successfully");
       socket.emit('join_doc', { doc_id: docId });
     };
     
     const handleConnectError = (err) => {
       console.error("Socket connection error:", err);
       setError(`Socket connection error: ${err.message}`);
+      setApiStatus(`Connection error: ${err.message}`);
     };
     
     const handleDisconnect = (reason) => {
       console.log("Socket disconnected:", reason);
+      setApiStatus(`Socket disconnected: ${reason}`);
+      
+      // Try to reconnect
+      setTimeout(() => {
+        socket.connect();
+      }, 3000);
     };
 
     socket.on('connect', handleConnect);
@@ -127,6 +154,9 @@ export default function TranscriptionEditor() {
 
     const handlePartialBatch = data => {
       if (data.doc_id === docId) {
+        // Mark that API is processing
+        setIsApiProcessing(true);
+        
         // Update progress directly from server data if available
         if (data.progress !== undefined) {
           setProgress(data.progress);
@@ -141,7 +171,12 @@ export default function TranscriptionEditor() {
           
           // Append to content
           setContent(prev => {
-            // Handle the first chunk
+            // If this is Replicate API (which sends full content), replace entirely
+            if (transcriptionConfig.mode === 'replicate') {
+              return chunk_text;
+            }
+            
+            // For other modes, append to existing content
             if (!prev) return chunk_text;
             
             const last_char = prev.slice(-1);
@@ -168,6 +203,7 @@ export default function TranscriptionEditor() {
       if (data.doc_id === docId && data.done) {
         setIsComplete(true);
         setProgress(100);
+        setIsApiProcessing(false);
         
         // Update with final content if provided
         if (data.content) {
@@ -180,6 +216,8 @@ export default function TranscriptionEditor() {
           detail: 'The audio file has been fully transcribed',
           life: 3000
         });
+        
+        setApiStatus("Transcription completed successfully");
       }
     };
 
@@ -191,7 +229,10 @@ export default function TranscriptionEditor() {
 
     const handleTranscriptionError = data => {
       if (data.doc_id === docId) {
+        setIsApiProcessing(false);
         setError(`Transcription error: ${data.error}`);
+        setApiStatus(`Error: ${data.error}`);
+        
         toastRef.current?.show({
           severity: 'error',
           summary: 'Transcription Error',
@@ -216,7 +257,7 @@ export default function TranscriptionEditor() {
       socket.off('transcription_error', handleTranscriptionError);
       socket.disconnect();
     };
-  }, [docId, currentUser]);
+  }, [docId, currentUser, transcriptionConfig.mode]);
 
   const handleContentChange = async (newContent) => {
     setContent(newContent);
@@ -283,6 +324,8 @@ export default function TranscriptionEditor() {
       setProgress(0);
       setIsComplete(false);
       setWaitingForPrompt(false);
+      setIsApiProcessing(true);
+      setApiStatus("Starting transcription with Replicate API...");
       
       // Tell server to start transcription
       const token = await currentUser.getIdToken();
@@ -299,12 +342,17 @@ export default function TranscriptionEditor() {
         toastRef.current?.show({
           severity: 'info',
           summary: 'Transcription Started',
-          detail: 'Transcription has been started. Please wait...',
-          life: 3000
+          detail: 'The Replicate API is processing your audio. This may take a moment...',
+          life: 5000
         });
+        
+        setApiStatus("Transcription job submitted to Replicate. Waiting for processing...");
       } else {
         const data = await response.json();
         setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
+        setIsApiProcessing(false);
+        setApiStatus(`Error: ${data.error || 'Unknown error'}`);
+        
         toastRef.current?.show({
           severity: 'error',
           summary: 'Error',
@@ -315,6 +363,9 @@ export default function TranscriptionEditor() {
     } catch (err) {
       console.error("Error starting transcription:", err);
       setError(`Error starting transcription: ${err.message}`);
+      setIsApiProcessing(false);
+      setApiStatus(`Error: ${err.message}`);
+      
       toastRef.current?.show({
         severity: 'error',
         summary: 'Error',
@@ -332,6 +383,8 @@ export default function TranscriptionEditor() {
       setContent('');
       setProgress(0);
       setIsComplete(false);
+      setIsApiProcessing(true);
+      setApiStatus("Starting transcription...");
       
       // Tell server to start transcription
       const token = await currentUser.getIdToken();
@@ -348,24 +401,30 @@ export default function TranscriptionEditor() {
         toastRef.current?.show({
           severity: 'info',
           summary: 'Transcription Started',
-          detail: 'Transcription has been started. Please wait...',
-          life: 3000
+          detail: transcriptionConfig.mode === 'replicate' ? 
+            'The Replicate API is processing your audio. This may take a moment...' :
+            'Transcription has been started. Please wait...',
+          life: 5000
         });
       } else {
         const data = await response.json();
         setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
+        setIsApiProcessing(false);
+        setApiStatus(`Error: ${data.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error("Error starting transcription:", err);
       setError(`Error starting transcription: ${err.message}`);
+      setIsApiProcessing(false);
+      setApiStatus(`Error: ${err.message}`);
     }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <div style={{ padding: '2rem', textAlign: 'center', background: '#f5f5f5', minHeight: '100vh' }}>
         <h2>Loading Transcription...</h2>
-        <div style={{ width: '60%', margin: '0 auto' }}>
+        <div style={{ width: '60%', margin: '2rem auto' }}>
           <ProgressBar value={50} indeterminate={true} />
         </div>
       </div>
@@ -390,6 +449,25 @@ export default function TranscriptionEditor() {
         </p>
       )}
       
+      {/* API Status Indicator */}
+      {apiStatus && (
+        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e8f4fd', borderRadius: '4px', color: '#0c5460' }}>
+          <strong>Status:</strong> {apiStatus}
+        </div>
+      )}
+      
+      {/* Replicate Loading Animation when processing */}
+      {transcriptionConfig.mode === 'replicate' && isApiProcessing && (
+        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd', textAlign: 'center' }}>
+          <h3>Processing with Replicate API</h3>
+          <div style={{ margin: '1rem 0' }}>
+            <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
+          </div>
+          <p>The AI model is processing your audio. This may take a moment if the model needs to start up.</p>
+          <p><small>Please wait while we process your transcription...</small></p>
+        </div>
+      )}
+      
       {/* Prompt input for Replicate mode */}
       {showPromptInput && (waitingForPrompt || !content) && (
         <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
@@ -412,7 +490,7 @@ export default function TranscriptionEditor() {
         </div>
       )}
       
-      {!isComplete && (
+      {!isComplete && !isApiProcessing && transcriptionConfig.mode !== 'replicate' && (
         <div style={{ marginBottom: '1rem' }}>
           <p>Transcription in progress... {progress}% complete</p>
           <ProgressBar value={progress} />
@@ -435,6 +513,16 @@ export default function TranscriptionEditor() {
       
       <div style={{ marginTop: '1rem' }}>
         <Link to="/home">Back to Home</Link>
+        {content && isComplete && (
+          <div style={{ float: 'right' }}>
+            <Button 
+              label="Restart Transcription" 
+              icon="pi pi-refresh" 
+              className="p-button-secondary"
+              onClick={startTranscription} 
+            />
+          </div>
+        )}
       </div>
     </div>
   );
