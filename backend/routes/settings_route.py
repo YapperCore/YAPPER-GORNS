@@ -4,6 +4,7 @@ import platform
 import multiprocessing
 import logging
 import json
+import requests
 from flask import jsonify, request, Blueprint
 from firebase_admin import firestore
 from auth import verify_firebase_token
@@ -138,6 +139,76 @@ def save_user_settings():
     except Exception as e:
         logger.error(f"Error saving user settings: {e}")
         return jsonify({"error": "Failed to save user settings", "details": str(e)}), 500
+
+@settings_bp.route('/api/test-replicate-api', methods=['POST'])
+@verify_firebase_token
+def test_replicate_api():
+    """Test if the Replicate API key is valid"""
+    try:
+        # Get user ID from the token verification middleware
+        user_id = request.uid
+        
+        # Get data from request body or use stored key
+        data = request.json or {}
+        api_key = data.get('apiKey')
+        
+        # If no API key in request, try to get from stored key
+        if not api_key:
+            secure_dir = os.path.join(os.getcwd(), 'secure_storage')
+            key_path = os.path.join(secure_dir, f"{user_id}_replicate_key.json")
+            if os.path.exists(key_path):
+                try:
+                    with open(key_path, 'r') as f:
+                        key_data = json.load(f)
+                        api_key = key_data.get('api_key')
+                except Exception as e:
+                    logger.error(f"Error reading stored API key: {e}")
+            
+            if not api_key:
+                return jsonify({
+                    "success": False,
+                    "message": "No API key provided"
+                }), 400
+        
+        # Test the Replicate API
+        headers = {
+            "Authorization": f"Token {api_key}"
+        }
+        
+        # Attempt to call the account API to check if the key is valid
+        test_response = requests.get(
+            "https://api.replicate.com/v1/account",
+            headers=headers
+        )
+        
+        if test_response.status_code == 200:
+            # API key is valid
+            return jsonify({
+                "success": True,
+                "message": "API key verified successfully",
+                "user": test_response.json()
+            }), 200
+        else:
+            # API key is invalid or another error occurred
+            error_message = "Unknown error"
+            try:
+                error_data = test_response.json()
+                error_message = error_data.get('detail') or str(error_data)
+            except:
+                error_message = test_response.text or f"Status code: {test_response.status_code}"
+                
+            return jsonify({
+                "success": False,
+                "message": f"API key verification failed: {error_message}",
+                "status": test_response.status_code
+            }), 200
+    
+    except Exception as e:
+        logger.error(f"Error testing Replicate API: {e}")
+        return jsonify({
+            "success": False,
+            "message": f"Error testing Replicate API: {str(e)}"
+        }), 500
 
 def register_settings_routes(app):
     """Register settings routes with Flask app"""

@@ -3,7 +3,8 @@ import os
 import logging
 import json
 import time
-import requests
+import base64
+import replicate
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ def get_replicate_api_key(user_id):
 
 def transcribe_audio_with_replicate(audio_path, user_id, prompt=None):
     try:
+        # Get API key
         api_key = get_replicate_api_key(user_id)
         if not api_key:
             logger.error("No Replicate API key found")
@@ -33,122 +35,135 @@ def transcribe_audio_with_replicate(audio_path, user_id, prompt=None):
             logger.error(f"Audio file not found: {audio_path}")
             return "Error: Audio file not found"
         
-        headers = {
-            "Authorization": f"Token {api_key}",
-            "Content-Type": "application/json"
-        }
+        # Set environment variable for replicate client
+        os.environ["REPLICATE_API_TOKEN"] = api_key
         
-        file_upload_url = upload_file_to_replicate(audio_path, api_key)
-        if not file_upload_url:
-            return "Error: Failed to upload audio file to Replicate"
-        
-        api_url = "https://api.replicate.com/v1/predictions"
-        
+        # Default prompt if none is provided
         if not prompt or prompt.strip() == "":
-            prompt = "Please transcribe this audio file. Provide only the transcription text without any additional comments."
+            prompt = "Please transcribe this audio file accurately. Provide only the transcription text."
         
-        data = {
-            "version": "0ca8160f7aaf85703a6aac282d6c79aa64d3541b239fa4c5c1688b10cb1faef1",
-            "input": {
-                "audio": file_upload_url,
-                "prompt": prompt,
-                "generate_audio": False
-            }
-        }
+        logger.info(f"Beginning transcription with Replicate API for file: {audio_path} with prompt: {prompt}")
         
-        logger.info(f"Sending request to Replicate API with prompt: {prompt}")
-        response = requests.post(api_url, json=data, headers=headers)
-        
-        if response.status_code != 201:
-            logger.error(f"Replicate API error: {response.text}")
-            return f"Error: Replicate API returned status code {response.status_code}: {response.text}"
-        
-        prediction = response.json()
-        prediction_id = prediction.get("id")
-        
-        if not prediction_id:
-            logger.error("No prediction ID in response")
-            return "Error: No prediction ID in response"
-        
-        status_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
-        max_attempts = 120
-        attempts = 0
-        
-        logger.info(f"Polling prediction status: {prediction_id}")
-        while attempts < max_attempts:
-            status_response = requests.get(status_url, headers=headers)
-            
-            if status_response.status_code != 200:
-                logger.error(f"Status check error: {status_response.text}")
-                return f"Error: Status check failed with code {status_response.status_code}"
-            
-            status_data = status_response.json()
-            status = status_data.get("status")
-            
-            if status == "succeeded":
-                output = status_data.get("output", {})
-                transcription = output.get("text", "")
-                logger.info(f"Transcription completed successfully: {len(transcription)} chars")
-                return transcription
-            
-            elif status == "failed":
-                error = status_data.get("error", "Unknown error")
-                logger.error(f"Prediction failed: {error}")
-                return f"Error: Transcription failed - {error}"
-            
-            elif status == "canceled":
-                logger.error("Prediction was canceled")
-                return "Error: Transcription was canceled"
-            
-            time.sleep(5)
-            attempts += 1
-        
-        return "Error: Transcription timed out"
+        # Open the file for reading in binary mode
+        with open(audio_path, "rb") as file_obj:
+            try:
+                # Set up input for the model
+                input_data = {
+                    "audio": file_obj,
+                    "prompt": prompt,
+                    "system_prompt": "You are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.",
+                    "voice_type": "Chelsie",
+                    "generate_audio": False,
+                    "use_audio_in_video": False
+                }
+                
+                # Run the model
+                output = replicate.run(
+                    "lucataco/qwen2.5-omni-7b:0ca8160f7aaf85703a6aac282d6c79aa64d3541b239fa4c5c1688b10cb1faef1",
+                    input=input_data
+                )
+                
+                # The output should be a dictionary with a 'text' key
+                if isinstance(output, dict) and 'text' in output:
+                    transcription = output['text']
+                    logger.info(f"Transcription completed successfully: {len(transcription)} chars")
+                    return transcription
+                else:
+                    logger.error(f"Unexpected output format from Replicate API: {output}")
+                    return f"Error: Unexpected output format from Replicate API: {output}"
+                    
+            except Exception as e:
+                logger.error(f"Error during Replicate API run: {e}")
+                return f"Error: {str(e)}"
     
     except Exception as e:
         logger.error(f"Error during Replicate transcription: {e}")
         return f"Error: {str(e)}"
 
-def upload_file_to_replicate(file_path, api_key):
+def alternative_transcribe_with_replicate(audio_path, user_id, prompt=None):
+    """Alternative implementation using predictions.create and polling"""
     try:
-        headers = {
-            "Authorization": f"Token {api_key}"
-        }
+        # Get API key
+        api_key = get_replicate_api_key(user_id)
+        if not api_key:
+            logger.error("No Replicate API key found")
+            return "Error: No Replicate API key found. Please check your settings."
         
-        logger.info(f"Getting upload URL for file: {file_path}")
-        upload_response = requests.post(
-            "https://api.replicate.com/v1/uploads",
-            headers=headers
-        )
+        if not os.path.exists(audio_path):
+            logger.error(f"Audio file not found: {audio_path}")
+            return "Error: Audio file not found"
         
-        if upload_response.status_code != 201:
-            logger.error(f"Failed to get upload URL: {upload_response.text}")
-            return None
+        # Set environment variable for replicate client
+        os.environ["REPLICATE_API_TOKEN"] = api_key
         
-        upload_data = upload_response.json()
-        upload_url = upload_data.get("upload_url")
-        get_url = upload_data.get("serving_url")
+        # Default prompt if none is provided
+        if not prompt or prompt.strip() == "":
+            prompt = "Please transcribe this audio file accurately. Provide only the transcription text."
         
-        if not upload_url or not get_url:
-            logger.error("Missing upload_url or serving_url in response")
-            return None
+        logger.info(f"Beginning transcription with Replicate API (alternative method) for file: {audio_path}")
         
-        logger.info(f"Uploading file to: {upload_url}")
-        with open(file_path, "rb") as f:
-            file_data = f.read()
-            upload_result = requests.put(
-                upload_url,
-                data=file_data,
-                headers={"Content-Type": "application/octet-stream"}
-            )
+        # Convert file to base64 (for smaller files)
+        with open(audio_path, "rb") as f:
+            file_content = f.read()
+            if len(file_content) > 10 * 1024 * 1024:  # 10MB limit for demonstration
+                logger.error("File too large for base64 encoding method")
+                return "Error: File too large for this transcription method"
+                
+            encoded_content = base64.b64encode(file_content).decode('utf-8')
+            data_uri = f"data:audio/wav;base64,{encoded_content}"
             
-        if upload_result.status_code not in [200, 201]:
-            logger.error(f"Failed to upload file: {upload_result.text}")
-            return None
-        
-        logger.info(f"File uploaded successfully, serving URL: {get_url}")
-        return get_url
+            try:
+                # Create prediction
+                prediction = replicate.predictions.create(
+                    version="0ca8160f7aaf85703a6aac282d6c79aa64d3541b239fa4c5c1688b10cb1faef1",
+                    input={
+                        "audio": data_uri,
+                        "prompt": prompt,
+                        "system_prompt": "You are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.",
+                        "voice_type": "Chelsie",
+                        "generate_audio": False,
+                        "use_audio_in_video": False
+                    }
+                )
+                
+                logger.info(f"Prediction created with ID: {prediction.id}")
+                
+                # Poll for completion
+                max_attempts = 120
+                attempts = 0
+                
+                while attempts < max_attempts:
+                    prediction.reload()
+                    status = prediction.status
+                    
+                    if status == "succeeded":
+                        output = prediction.output
+                        if isinstance(output, dict) and 'text' in output:
+                            transcription = output['text']
+                            logger.info(f"Transcription completed successfully: {len(transcription)} chars")
+                            return transcription
+                        else:
+                            logger.error(f"Unexpected output format: {output}")
+                            return f"Error: Unexpected output format: {output}"
+                    
+                    elif status == "failed":
+                        error = prediction.error or "Unknown error"
+                        logger.error(f"Prediction failed: {error}")
+                        return f"Error: Transcription failed - {error}"
+                    
+                    elif status == "canceled":
+                        logger.error("Prediction was canceled")
+                        return "Error: Transcription was canceled"
+                    
+                    time.sleep(5)
+                    attempts += 1
+                
+                return "Error: Transcription timed out"
+                
+            except Exception as e:
+                logger.error(f"Error during prediction creation/polling: {e}")
+                return f"Error: {str(e)}"
     
     except Exception as e:
-        logger.error(f"Error uploading file to Replicate: {e}")
-        return None
+        logger.error(f"Error during alternative Replicate transcription: {e}")
+        return f"Error: {str(e)}"

@@ -5,8 +5,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Initialize with threading mode - will be attached to app later
-socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
+# Allow any origin for development or set specific origins for production
+cors_allowed_origins = "*"  # For development
+# For production you might want to restrict this:
+# cors_allowed_origins = ["https://yourdomain.com"]
+
+# Initialize with proper configuration
+socketio = SocketIO(
+    cors_allowed_origins=cors_allowed_origins, 
+    async_mode='threading',
+    ping_timeout=60,  # Increase ping timeout
+    ping_interval=25,  # Optimize ping interval
+    logger=True,      # Enable logging
+    engineio_logger=True  # Enable more detailed engine logging
+)
 
 @socketio.on('connect')
 def handle_connect():

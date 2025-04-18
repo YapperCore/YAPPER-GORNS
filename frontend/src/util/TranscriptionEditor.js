@@ -1,4 +1,3 @@
-// frontend/src/util/TranscriptionEditor.js
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import io from 'socket.io-client';
@@ -25,6 +24,7 @@ export default function TranscriptionEditor() {
   const [transcriptionConfig, setTranscriptionConfig] = useState({ mode: 'local-cpu' });
   const [prompt, setPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
+  const [waitingForPrompt, setWaitingForPrompt] = useState(false);
   const socketRef = useRef(null);
   const toastRef = useRef(null);
   const editorRef = useRef(null);
@@ -53,6 +53,11 @@ export default function TranscriptionEditor() {
           
           // Get transcription prompt if it exists
           setPrompt(doc.transcription_prompt || '');
+          
+          // Check if this doc is awaiting a prompt (for Replicate)
+          if (doc.awaiting_prompt) {
+            setWaitingForPrompt(true);
+          }
           
           // Check if transcription is already complete
           if (doc.content && doc.content.trim().length > 0) {
@@ -266,8 +271,8 @@ export default function TranscriptionEditor() {
     }
   };
   
-  const startTranscription = async () => {
-    if (!currentUser) return;
+  const submitPrompt = async () => {
+    if (!currentUser || !prompt.trim()) return;
     
     try {
       // Save the prompt first
@@ -277,10 +282,11 @@ export default function TranscriptionEditor() {
       setContent('');
       setProgress(0);
       setIsComplete(false);
+      setWaitingForPrompt(false);
       
       // Tell server to start transcription
       const token = await currentUser.getIdToken();
-      await fetch(`/api/transcribe/${docId}`, {
+      const response = await fetch(`/api/transcribe/${docId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -289,12 +295,66 @@ export default function TranscriptionEditor() {
         body: JSON.stringify({ transcription_prompt: prompt })
       });
       
+      if (response.ok) {
+        toastRef.current?.show({
+          severity: 'info',
+          summary: 'Transcription Started',
+          detail: 'Transcription has been started. Please wait...',
+          life: 3000
+        });
+      } else {
+        const data = await response.json();
+        setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
+        toastRef.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to start transcription: ${data.error || 'Unknown error'}`,
+          life: 5000
+        });
+      }
+    } catch (err) {
+      console.error("Error starting transcription:", err);
+      setError(`Error starting transcription: ${err.message}`);
       toastRef.current?.show({
-        severity: 'info',
-        summary: 'Transcription Started',
-        detail: 'Transcription has been started. Please wait...',
-        life: 3000
+        severity: 'error',
+        summary: 'Error',
+        detail: `Error starting transcription: ${err.message}`,
+        life: 5000
       });
+    }
+  };
+
+  const startTranscription = async () => {
+    if (!currentUser) return;
+    
+    try {
+      // Clear content and reset progress
+      setContent('');
+      setProgress(0);
+      setIsComplete(false);
+      
+      // Tell server to start transcription
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`/api/transcribe/${docId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ transcription_prompt: prompt })
+      });
+      
+      if (response.ok) {
+        toastRef.current?.show({
+          severity: 'info',
+          summary: 'Transcription Started',
+          detail: 'Transcription has been started. Please wait...',
+          life: 3000
+        });
+      } else {
+        const data = await response.json();
+        setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
+      }
     } catch (err) {
       console.error("Error starting transcription:", err);
       setError(`Error starting transcription: ${err.message}`);
@@ -331,10 +391,10 @@ export default function TranscriptionEditor() {
       )}
       
       {/* Prompt input for Replicate mode */}
-      {showPromptInput && (
+      {showPromptInput && (waitingForPrompt || !content) && (
         <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
           <h3>Transcription Prompt</h3>
-          <p>Enter a prompt to guide the transcription (optional):</p>
+          <p>Enter a prompt to guide the transcription:</p>
           <InputTextarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -344,7 +404,7 @@ export default function TranscriptionEditor() {
           />
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Button label="Save Prompt" icon="pi pi-save" onClick={savePrompt} />
-            <Button label="Start Transcription" icon="pi pi-play" onClick={startTranscription} />
+            <Button label="Start Transcription" icon="pi pi-play" onClick={submitPrompt} />
           </div>
           <small style={{ marginTop: '0.5rem', display: 'block', color: '#666' }}>
             For Replicate API transcription, you can use a custom prompt to guide the model.

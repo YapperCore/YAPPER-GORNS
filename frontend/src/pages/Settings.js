@@ -1,4 +1,3 @@
-// frontend/src/pages/Settings.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Toast } from 'primereact/toast';
@@ -29,6 +28,7 @@ export default function Settings() {
   
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [apiKeyTesting, setApiKeyTesting] = useState(false);
   const toastRef = useRef(null);
   
   // Fetch system information and current settings
@@ -102,6 +102,11 @@ export default function Settings() {
         
         // Hide success message after 3 seconds
         setTimeout(() => setSaveSuccess(false), 3000);
+        
+        // If Replicate is selected, test the API key
+        if (transcriptionConfig.mode === 'replicate' && transcriptionConfig.replicateApiKey) {
+          testReplicateApiKey(transcriptionConfig.replicateApiKey);
+        }
       } else {
         toastRef.current?.show({
           severity: 'error',
@@ -121,6 +126,61 @@ export default function Settings() {
     }
   };
   
+  const testReplicateApiKey = async (apiKey) => {
+    if (!currentUser || !apiKey) return;
+    
+    try {
+      setApiKeyTesting(true);
+      
+      const token = await currentUser.getIdToken();
+      const testResponse = await fetch('/api/test-replicate-api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ apiKey })
+      });
+      
+      if (testResponse.ok) {
+        const testResult = await testResponse.json();
+        
+        if (testResult.success) {
+          toastRef.current?.show({
+            severity: 'success',
+            summary: 'Replicate API Key Verified',
+            detail: 'Your Replicate API key is valid and working correctly',
+            life: 5000
+          });
+        } else {
+          toastRef.current?.show({
+            severity: 'error',
+            summary: 'API Key Validation Failed',
+            detail: testResult.message || 'Could not verify Replicate API key',
+            life: 5000
+          });
+        }
+      } else {
+        toastRef.current?.show({
+          severity: 'error',
+          summary: 'API Test Failed',
+          detail: 'Failed to test Replicate API key. Please try again.',
+          life: 5000
+        });
+      }
+    } catch (error) {
+      console.error("Error testing Replicate API:", error);
+      toastRef.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to test Replicate API key: ' + error.message,
+        life: 5000
+      });
+    } finally {
+      setApiKeyTesting(false);
+    }
+  };
+  
   const handleModeChange = (mode) => {
     setTranscriptionConfig(prev => ({
       ...prev,
@@ -134,6 +194,9 @@ export default function Settings() {
   
   const handleApiKeySubmit = () => {
     setShowApiKeyDialog(false);
+    if (transcriptionConfig.replicateApiKey) {
+      testReplicateApiKey(transcriptionConfig.replicateApiKey);
+    }
   };
   
   const renderSystemInfo = () => {
@@ -266,9 +329,17 @@ export default function Settings() {
                 icon="pi pi-key" 
                 onClick={() => setShowApiKeyDialog(true)}
                 className="p-button-info"
+                disabled={apiKeyTesting}
+              />
+              <Button 
+                icon="pi pi-check-circle" 
+                onClick={() => testReplicateApiKey(transcriptionConfig.replicateApiKey)}
+                className="p-button-success"
+                disabled={!transcriptionConfig.replicateApiKey || apiKeyTesting}
+                tooltip="Test API Key"
               />
             </div>
-            <small className="p-text-secondary">Your API key is stored securely and used only for transcription requests.</small>
+            <small className="p-text-secondary">Your API key is stored securely and used only for transcription requests. It typically starts with "r8_" and looks like r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</small>
           </div>
         </div>
       )}
@@ -301,6 +372,7 @@ export default function Settings() {
           icon="pi pi-save" 
           onClick={handleSaveSettings} 
           className="p-button-primary save-button"
+          loading={apiKeyTesting}
         />
         {saveSuccess && <span className="save-success">✓ Settings saved successfully!</span>}
       </div>
@@ -329,7 +401,7 @@ export default function Settings() {
             placeholder="Enter your Replicate API key"
           />
           <small className="p-text-secondary">
-            You can find your API key in your Replicate account settings.
+            You can find your API key in your Replicate account settings at <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer">replicate.com/account/api-tokens</a>.
             It starts with "r8_" and looks like r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           </small>
         </div>

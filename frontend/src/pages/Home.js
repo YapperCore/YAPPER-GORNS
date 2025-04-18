@@ -1,3 +1,4 @@
+// frontend/src/pages/Home.js
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import '../static/Home.css';
@@ -13,13 +14,16 @@ function Home() {
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [transcripts, setTranscripts] = useState([]);
-  const [docs, setDocs] = useState([]); // make sure docs is an array
+  const [docs, setDocs] = useState([]);
   const [folders, setFolders] = useState([]);
-  const { currentUser } = useAuth();
-  const toast = useRef(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState(null);
+  const [transcriptionConfig, setTranscriptionConfig] = useState({});
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const { currentUser } = useAuth();
+  const toast = useRef(null);
 
   useEffect(() => {
     const socket = io();
@@ -43,7 +47,6 @@ function Home() {
             }
           });
           const d = await res.json();
-          // Ensure that docs is an array. If not, log an error and default to [].
           setDocs(Array.isArray(d) ? d : []);
         } catch (err) {
           console.error("Error fetching docs:", err);
@@ -63,7 +66,7 @@ function Home() {
             }
           });
           const data = await res.json();
-          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []); // Extract the 'dotFiles' key
+          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
         } catch (err) {
           console.error("Error fetching folders:", err);
           setFolders([]);
@@ -71,6 +74,31 @@ function Home() {
       }
     }
     fetchFolders();
+
+    async function fetchSettings() {
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          const res = await fetch('/api/user-settings', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          if (res.ok) {
+            const settings = await res.json();
+            if (settings.transcriptionConfig) {
+              setTranscriptionConfig(settings.transcriptionConfig);
+              setShowPromptInput(settings.transcriptionConfig.mode === 'replicate');
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching settings:", err);
+        }
+      }
+    }
+
+    fetchSettings();
 
     return () => {
       socket.disconnect();
@@ -89,6 +117,11 @@ function Home() {
     try {
       const formData = new FormData();
       formData.append('audio', file);
+
+      if (transcriptionConfig.mode === 'replicate' && transcriptionPrompt) {
+        formData.append('transcription_prompt', transcriptionPrompt);
+      }
+
       const token = await currentUser.getIdToken();
       const res = await fetch('/upload-audio', {
         method: 'POST',
@@ -97,14 +130,17 @@ function Home() {
         },
         body: formData
       });
+
       if (res.ok) {
         const data = await res.json();
         setUploadMessage(data.message || "Upload succeeded");
+
         if (data.doc_id) {
           window.open(`/transcription/${data.doc_id}`, '_blank');
         }
-        const docsRes = await fetch('/api/docs', { 
-          headers: { Authorization: `Bearer ${token}` } 
+
+        const docsRes = await fetch('/api/docs', {
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (docsRes.ok) {
           const docData = await docsRes.json();
@@ -136,7 +172,7 @@ function Home() {
   };
 
   const handleCreateFolder = async () => {
-    const folderName = prompt("Enter the name of the folder:");
+    const folderName = window.prompt("Enter the name of the folder:");
     if (!folderName) return;
 
     try {
@@ -153,7 +189,6 @@ function Home() {
       if (res.ok) {
         const data = await res.json();
         toast.current?.show({ severity: 'success', summary: 'Folder Created', detail: data.message, life: 3000 });
-        // Re-fetch folders after successful creation
         await fetchFolders();
       } else {
         const errData = await res.json();
@@ -176,7 +211,7 @@ function Home() {
         });
         if (res.ok) {
           const data = await res.json();
-          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []); // Extract the 'dotFiles' key
+          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
         } else {
           console.error("Error fetching folders:", res.statusText);
           setFolders([]);
@@ -187,10 +222,6 @@ function Home() {
       }
     }
   };
-
-  useEffect(() => {
-    fetchFolders();
-  }, [currentUser]);
 
   const handleFolderClick = (folderName) => {
     window.location.href = `/folders/${folderName}`;
@@ -229,7 +260,6 @@ function Home() {
         setSelectedFolder("");
         setDocToMove(null);
 
-        // Re-fetch documents after successful move
         const docsRes = await fetch('/api/docs', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -251,8 +281,20 @@ function Home() {
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
 
-      <h2>Home - Upload Audio ={'>'} Create Doc</h2>
+      <h2>Home - Upload Audio =&gt; Create Doc</h2>
       <div className="upload-section">
+        {showPromptInput && (
+          <div className="prompt-input" style={{ marginBottom: '10px' }}>
+            <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
+            <textarea
+              placeholder="e.g., Please transcribe this audio accurately, paying attention to technical terms."
+              value={transcriptionPrompt}
+              onChange={(e) => setTranscriptionPrompt(e.target.value)}
+              style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
+              rows={2}
+            />
+          </div>
+        )}
         <input
           type="file"
           onChange={handleFileChange}
@@ -361,9 +403,9 @@ function Home() {
           />
         </div>
       </Dialog>
-
     </div>
   );
 }
 
 export default Home;
+

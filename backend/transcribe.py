@@ -8,7 +8,10 @@ import re
 from pathlib import Path
 from firebase_admin import firestore
 import json
-from transcribe_replicate import transcribe_audio_with_replicate
+import importlib.util
+
+# Check if replicate is installed
+replicate_installed = importlib.util.find_spec("replicate") is not None
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +23,16 @@ else:
     logger.info("CUDA not available. Using CPU for transcription.")
 
 WHISPER_MODEL = "small"  # can be tiny, base, small, medium, or large
+
+# Import transcribe_replicate only if available
+try:
+    from transcribe_replicate import transcribe_audio_with_replicate
+except ImportError:
+    logger.warning("Replicate transcription module not available")
+    
+    def transcribe_audio_with_replicate(audio_path, user_id, prompt=None):
+        logger.error("Replicate transcription module is not installed")
+        return "Error: Replicate transcription module is not available"
 
 def get_user_transcription_config(user_id):
     """Get the user's transcription configuration from Firestore"""
@@ -111,6 +124,10 @@ def transcribe_audio(audio_path, user_id=None, prompt=None):
         
         # Select transcription backend based on user settings
         if config.get("mode") == "replicate":
+            if not replicate_installed:
+                logger.error("Replicate package not installed but mode is 'replicate'")
+                return "Error: Replicate package not installed. Please install with 'pip install replicate'"
+                
             logger.info("Using Replicate API for transcription")
             return transcribe_audio_with_replicate(safe_path, user_id, prompt)
         
@@ -139,7 +156,13 @@ def transcribe_audio(audio_path, user_id=None, prompt=None):
             model = whisper.load_model(model_name, device="cpu")
         
         logger.info(f"Processing audio file: {safe_path}")
-        result = model.transcribe(safe_path)
+        
+        # Apply prompt if provided
+        transcription_options = {}
+        if prompt and prompt.strip():
+            transcription_options["initial_prompt"] = prompt.strip()
+            
+        result = model.transcribe(safe_path, **transcription_options)
         text = result.get("text", "")
         logger.info("Transcription complete")
         return text.strip()
@@ -150,7 +173,20 @@ def transcribe_audio(audio_path, user_id=None, prompt=None):
     except Exception as e:
         logger.error(f"Error during transcription: {e}")
         raise
+
 def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=30):
+    """
+    Transcribe audio in chunks for real-time feedback
+    
+    Args:
+        audio_path: Path to the audio file
+        user_id: User ID for configuration
+        prompt: Optional text prompt to guide the transcription
+        chunk_size: Size of audio chunks in seconds
+        
+    Yields:
+        tuple: (chunk_index, total_chunks, transcription_text)
+    """
     try:
         safe_path = normalize_path(audio_path)
         config = get_user_transcription_config(user_id) if user_id else {
@@ -162,19 +198,27 @@ def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=3
         
         model_name = config.get("whisperModel", WHISPER_MODEL)
         
+        # Handle Replicate mode
         if config.get("mode") == "replicate":
+            if not replicate_installed:
+                logger.error("Replicate package not installed but mode is 'replicate'")
+                yield 0, 1, "Error: Replicate package not installed. Please install with 'pip install replicate'"
+                return
+                
             logger.info("Using Replicate API for transcription (full file)")
-            full_text = transcribe_audio_with_replicate(safe_path, user_id, prompt)
+            transcription = transcribe_audio_with_replicate(safe_path, user_id, prompt)
             
-            if full_text and not full_text.startswith("Error:"):
+            # If the transcription doesn't start with "Error:", consider it successful
+            if transcription and not transcription.startswith("Error:"):
                 logger.info("Replicate transcription completed successfully")
-                yield 1, 1, full_text
+                yield 1, 1, transcription
             else:
-                error_msg = full_text if full_text else "Unknown error during transcription"
+                error_msg = transcription if transcription else "Unknown error during transcription"
                 logger.error(f"Replicate transcription error: {error_msg}")
                 yield 0, 1, error_msg
             return
             
+        # Local transcription (GPU or CPU)
         if config.get("mode") == "local-gpu" and CUDA_AVAILABLE:
             # Use local GPU
             gpu_device = config.get("gpuDevice", 0)
@@ -207,6 +251,7 @@ def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=3
         
         logger.info(f"Audio duration: {audio_duration:.2f}s, total chunks: {total_chunks}")
         
+        # Process each chunk
         for i in range(total_chunks):
             start_sample = i * chunk_size * whisper.audio.SAMPLE_RATE
             end_sample = min(len(audio), (i + 1) * chunk_size * whisper.audio.SAMPLE_RATE)
@@ -216,12 +261,18 @@ def chunked_transcribe_audio(audio_path, user_id=None, prompt=None, chunk_size=3
             
             # Process chunk
             logger.info(f"Processing chunk {i+1}/{total_chunks}")
-            result = model.transcribe(chunk)
+            
+            # Apply prompt if provided
+            transcription_options = {}
+            if prompt and prompt.strip():
+                transcription_options["initial_prompt"] = prompt.strip()
+                
+            result = model.transcribe(chunk, **transcription_options)
             text = result.get("text", "").strip()
             
             logger.info(f"Chunk {i+1}/{total_chunks} processed: {len(text)} chars")
             
-            # Important: Yield exactly 3 values for compatibility
+            # Yield results as (chunk_index, total_chunks, text)
             yield i+1, total_chunks, text
             
     except FileNotFoundError as e:

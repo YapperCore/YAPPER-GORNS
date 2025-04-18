@@ -118,6 +118,9 @@ def upload_audio():
             doc_id = str(uuid.uuid4())
             doc_name = f"Doc{doc_counter}"
             
+            # Get transcription prompt if provided
+            transcription_prompt = request.form.get("transcription_prompt", "")
+            
             doc_obj = {
                 "id": doc_id,
                 "name": doc_name,
@@ -130,9 +133,30 @@ def upload_audio():
                 "firebaseUrl": file_url,
                 "firebasePath": firebase_path,
                 "localPath": save_path_str,
-                "transcription_prompt": ""
+                "transcription_prompt": transcription_prompt
             }
             
+            # Get user's transcription config
+            config = get_user_transcription_config(uid)
+            
+            # Check if this is a Replicate transcription
+            if config.get("mode") == "replicate":
+                # For replicate, set flag to await prompt if not already provided
+                if not transcription_prompt:
+                    doc_obj["awaiting_prompt"] = True
+                    logger.info("Using Replicate API - transcription will start after prompt is provided")
+                    
+                    doc_store[doc_id] = doc_obj
+                    save_doc_store()
+                    
+                    return jsonify({
+                        "message": "File received and doc created. Transcription will begin after prompt is provided.",
+                        "filename": unique_name,
+                        "doc_id": doc_id,
+                        "requires_prompt": True
+                    }), 200
+            
+            # For non-Replicate methods or if prompt already provided
             doc_store[doc_id] = doc_obj
             save_doc_store()
             
@@ -151,6 +175,8 @@ def upload_audio():
             doc_id = str(uuid.uuid4())
             doc_name = f"Doc{doc_counter}"
             
+            transcription_prompt = request.form.get("transcription_prompt", "")
+            
             doc_obj = {
                 "id": doc_id,
                 "name": doc_name,
@@ -162,9 +188,28 @@ def upload_audio():
                 "owner": uid,
                 "firebaseUrl": None,
                 "localPath": save_path_str,
-                "transcription_prompt": ""
+                "transcription_prompt": transcription_prompt
             }
             
+            # Check if this is a Replicate transcription
+            config = get_user_transcription_config(uid)
+            if config.get("mode") == "replicate":
+                # For replicate, set flag to await prompt if not already provided
+                if not transcription_prompt:
+                    doc_obj["awaiting_prompt"] = True
+                    
+                    doc_store[doc_id] = doc_obj
+                    save_doc_store()
+                    
+                    return jsonify({
+                        "message": "File received and doc created. Transcription will begin after prompt is provided.",
+                        "filename": unique_name,
+                        "doc_id": doc_id,
+                        "requires_prompt": True,
+                        "warning": "Firebase upload failed, using local file only"
+                    }), 200
+            
+            # For non-Replicate methods or if prompt already provided
             doc_store[doc_id] = doc_obj
             save_doc_store()
             
@@ -202,6 +247,8 @@ def start_transcription(doc_id):
         prompt = data.get("transcription_prompt", "")
         
         doc["transcription_prompt"] = prompt
+        if "awaiting_prompt" in doc:
+            doc["awaiting_prompt"] = False  # Mark that prompt is now provided
         save_doc_store()
         
         filename = doc.get("audioFilename")
