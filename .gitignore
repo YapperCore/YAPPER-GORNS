@@ -6,16 +6,17 @@
 # Node artifact files
 node_modules/
 dist/
-
+*.json
 # Compiled Java class files
 *.class
-
+backend/trash
+backend/uploads
 # Compiled Python bytecode
 *.py[cod]
-
+node_modules/
 # Log files
 *.log
-
+frontend/build/
 # Package files
 *.jar
 
