@@ -5,7 +5,15 @@ import datetime
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, storage, firestore, auth
+<<<<<<< HEAD
 from backend.firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
+=======
+<<<<<<< HEAD
+from firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
+=======
+from backend.firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -54,12 +62,45 @@ def is_admin(user_id):
     return user_id in ADMIN_USER_IDS
 
 def extract_owner_from_path(path):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+    """
+    Extract owner user ID from a Firebase path
+    
+    Args:
+        path: Storage path like "users/{uid}/uploads/filename"
+        
+    Returns:
+        str or None: Owner user ID if found, None otherwise
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     parts = path.split('/')
     if len(parts) >= 2 and parts[0] == 'users':
         return parts[1]
     return None
 
 def is_owner_or_admin(user_id, resource_path_or_owner_id):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+    """
+    Check if user is an admin or the owner of the resource
+    
+    Args:
+        user_id: User ID requesting access
+        resource_path_or_owner_id: Either a resource path or direct owner ID
+        
+    Returns:
+        bool: True if user is owner or admin
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     if not user_id:
         return False
         
@@ -78,6 +119,7 @@ def is_owner_or_admin(user_id, resource_path_or_owner_id):
         
     return False
 
+<<<<<<< HEAD
 def ensure_folder_exists(user_id, folder_type='uploads'):
 
     if not bucket:
@@ -113,14 +155,32 @@ def check_blob_exists(storage_path):
 
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
 
+=======
+def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
+    """
+    Upload file to Firebase Storage with user ownership
+    
+    Args:
+        file_data: File data to upload
+        original_filename: Original name of the file
+        user_id: User ID who owns the file
+        content_type: Content type of the file
+        
+    Returns:
+        dict: Upload result with file URL and metadata
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     if not bucket:
         logger.error("Firebase not initialized. Cannot upload file.")
         return {"success": False, "error": "Firebase not initialized"}
         
     try:
+<<<<<<< HEAD
         # Ensure user has uploads folder
         ensure_folder_exists(user_id, 'uploads')
         
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         # Generate a unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         unique_id = str(uuid.uuid4())
@@ -162,8 +222,12 @@ def upload_file(file_data, original_filename, user_id, content_type='application
             'uploadTime': firestore.SERVER_TIMESTAMP,
             'url': signed_url,
             'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
+<<<<<<< HEAD
             'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat(),  # Use string as backup
             'status': 'active'  # Track file status (active vs trashed)
+=======
+            'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat()  # Use string as backup
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         })
         
         logger.info(f"File uploaded successfully: {storage_path}")
@@ -180,6 +244,23 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         return {"success": False, "error": str(e)}
 
 def get_file_url(storage_path, requesting_user_id=None):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+    """
+    Get a signed URL for a file with permission check
+    
+    Args:
+        storage_path: Storage path of the file
+        requesting_user_id: User ID requesting access
+        
+    Returns:
+        str or None: Signed URL if user has access, None otherwise
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return None
@@ -222,6 +303,23 @@ def get_file_url(storage_path, requesting_user_id=None):
         return None
 
 def delete_file(storage_path, requesting_user_id):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+    """
+    Delete a file with permission check
+    
+    Args:
+        storage_path: Storage path of the file
+        requesting_user_id: User ID requesting deletion
+        
+    Returns:
+        bool: True if deleted successfully, False otherwise
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
@@ -235,7 +333,11 @@ def delete_file(storage_path, requesting_user_id):
             
         # Check if path belongs to user (simple path check)
         path_owner = extract_owner_from_path(storage_path)
+<<<<<<< HEAD
         if path_owner and (path_owner == requesting_user_id or is_admin(requesting_user_id)):
+=======
+        if path_owner and path_owner == requesting_user_id or is_admin(requesting_user_id):
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             # Delete from Storage
             blob.delete()
             
@@ -255,6 +357,24 @@ def delete_file(storage_path, requesting_user_id):
         return False
 
 def move_file(source_path, dest_path, requesting_user_id):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+    """
+    Move a file with permission check
+    
+    Args:
+        source_path: Source storage path
+        dest_path: Destination storage path
+        requesting_user_id: User ID requesting move
+        
+    Returns:
+        bool: True if moved successfully, False otherwise
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
@@ -264,6 +384,7 @@ def move_file(source_path, dest_path, requesting_user_id):
         source_blob = bucket.blob(source_path)
         if not source_blob.exists():
             logger.warning(f"Source file not found: {source_path}")
+<<<<<<< HEAD
             
             # Double-check if dest_path already exists (might have been moved already)
             dest_blob = bucket.blob(dest_path)
@@ -283,6 +404,8 @@ def move_file(source_path, dest_path, requesting_user_id):
                 
                 return True
             
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             return False
             
         # Check if source path belongs to requesting user
@@ -292,10 +415,13 @@ def move_file(source_path, dest_path, requesting_user_id):
         # Validate source and destination owners match and match requesting user
         if source_owner and dest_owner and source_owner == dest_owner:
             if source_owner == requesting_user_id or is_admin(requesting_user_id):
+<<<<<<< HEAD
                 # Ensure destination folder exists
                 folder_type = 'uploads' if 'uploads' in dest_path else 'trash'
                 ensure_folder_exists(dest_owner, folder_type)
                 
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
                 # Copy source to destination
                 bucket.copy_blob(source_blob, bucket, dest_path)
                 
@@ -313,6 +439,7 @@ def move_file(source_path, dest_path, requesting_user_id):
                 # Delete source blob only after successful copy
                 source_blob.delete()
                 
+<<<<<<< HEAD
                 # Update Firestore metadata
                 filename = dest_path.split('/')[-1].replace('/', '_')
                 doc_ref = db.collection('files').document(filename)
@@ -324,6 +451,8 @@ def move_file(source_path, dest_path, requesting_user_id):
                         'status': status
                     })
                 
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
                 logger.info(f"File moved: {source_path} -> {dest_path}")
                 return True
             else:
@@ -336,6 +465,7 @@ def move_file(source_path, dest_path, requesting_user_id):
         logger.error(f"Error moving file: {e}")
         return False
 
+<<<<<<< HEAD
 def list_user_files(user_id, folder_path):
     """
     List files owned by a user in a specific folder.
@@ -343,6 +473,15 @@ def list_user_files(user_id, folder_path):
     Args:
         user_id: User ID
         folder_path: Folder to list (e.g., 'folders/')
+=======
+def list_user_files(user_id, folder_path="uploads"):
+    """
+    List files owned by a user in a specific folder
+    
+    Args:
+        user_id: User ID
+        folder_path: Folder to list (uploads, trash, etc.)
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         
     Returns:
         list: List of file objects
@@ -352,6 +491,7 @@ def list_user_files(user_id, folder_path):
         return []
         
     try:
+<<<<<<< HEAD
         # Ensure folder_path is explicitly passed and not defaulted
         prefix = f"users/{user_id}/{folder_path}"
         logger.debug(f"Listing files with prefix: {prefix}")
@@ -367,13 +507,23 @@ def list_user_files(user_id, folder_path):
                 logger.debug(f"Skipping folder marker: {blob.name}")
                 continue
                 
+=======
+        prefix = f"users/{user_id}/{folder_path}/"
+        blobs = bucket.list_blobs(prefix=prefix)
+        
+        files = []
+        for blob in blobs:
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             # Extract filename from path
             filename = blob.name.split('/')[-1]
             
             # Get metadata
             blob.reload()
             metadata = blob.metadata or {}
+<<<<<<< HEAD
             logger.debug(f"Blob metadata for {blob.name}: {metadata}")
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             
             # Create file object
             file_obj = {
@@ -387,6 +537,7 @@ def list_user_files(user_id, folder_path):
             }
             
             files.append(file_obj)
+<<<<<<< HEAD
         
         if not files:
             logger.info(f"No files found for user {user_id} in folder {folder_path}")
@@ -400,6 +551,24 @@ def list_user_files(user_id, folder_path):
 
 def verify_token(id_token):
 
+=======
+            
+        return files
+    except Exception as e:
+        logger.error(f"Error listing user files: {e}")
+        return []
+
+def verify_token(id_token):
+    """
+    Verify Firebase ID token and get user ID
+    
+    Args:
+        id_token: Firebase ID token
+        
+    Returns:
+        dict: User data if valid, None otherwise
+    """
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     if not firebase_app:
         logger.error("Firebase not initialized")
         return None

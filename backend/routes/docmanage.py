@@ -3,10 +3,17 @@ import os
 import uuid
 import logging
 from flask import request, jsonify, Blueprint
+<<<<<<< HEAD
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
 from services.firebase_service import move_file, check_blob_exists
 from auth import verify_firebase_token, is_admin
+=======
+from backend.config import UPLOAD_FOLDER, TRASH_FOLDER
+from backend.services.storage import save_doc_store, doc_store
+from backend.services.firebase_service import move_file
+from backend.auth import verify_firebase_token, is_admin
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +22,7 @@ docmanage_bp = Blueprint('docmanage', __name__)
 @docmanage_bp.route('/api/docs', methods=['GET'])
 @verify_firebase_token
 def list_docs():
+<<<<<<< HEAD
     """Return only non-deleted documents for the authenticated user that are not in any folder."""
     if not doc_store:
         return jsonify([]), 200
@@ -22,6 +30,15 @@ def list_docs():
     active_docs = [
         d for d in doc_store.values()
         if not d.get("deleted", False) and not d.get("folderName") and (d.get("owner") == request.uid or is_admin(request.uid))
+=======
+    """Return only non-deleted documents for the authenticated user"""
+    if not doc_store:
+        return jsonify([]), 200
+        
+    active_docs = [
+        d for d in doc_store.values() 
+        if not d.get("deleted", False) and (d.get("owner") == request.uid or is_admin(request.uid))
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     ]
     return jsonify(active_docs), 200
 
@@ -91,6 +108,7 @@ def delete_doc(doc_id):
         trash_path = f"users/{uid}/trash/{filename}"
         
         try:
+<<<<<<< HEAD
             # First check if file exists in uploads
             file_exists_in_uploads = check_blob_exists(upload_path)
             
@@ -108,17 +126,26 @@ def delete_doc(doc_id):
                 # File already in trash
                 firebase_moved = True
                 logger.info(f"File {filename} already in trash")
+=======
+            # Move in Firebase - users should always be able to move their own files
+            firebase_moved = move_file(upload_path, trash_path, request.uid)
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             
             # Try to move local file if it exists
             local_moved = False
             try:
                 local_upload_path = os.path.join(UPLOAD_FOLDER, filename)
                 local_trash_path = os.path.join(TRASH_FOLDER, filename)
+<<<<<<< HEAD
                 if (os.path.exists(local_upload_path)):
+=======
+                if os.path.exists(local_upload_path):
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
                     os.makedirs(os.path.dirname(local_trash_path), exist_ok=True)
                     os.rename(local_upload_path, local_trash_path)
                     local_moved = True
                     logger.info(f"Moved local file to trash: {filename}")
+<<<<<<< HEAD
                 elif os.path.exists(local_trash_path):
                     # File already in local trash
                     local_moved = True
@@ -127,6 +154,12 @@ def delete_doc(doc_id):
                 logger.error(f"Error moving local file to trash: {local_err}")
             
             # Update document status if either operation succeeded or file was already in trash
+=======
+            except Exception as local_err:
+                logger.error(f"Error moving local file to trash: {local_err}")
+            
+            # Update document status if either operation succeeded
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             if firebase_moved or local_moved:
                 d["audioTrashed"] = True
                 logger.info(f"Moved file to trash: {filename}")

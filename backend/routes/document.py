@@ -3,7 +3,10 @@ import os
 import uuid
 import json
 import logging
+<<<<<<< HEAD
 import re
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 from pathlib import Path
 from flask import request, jsonify, Blueprint, send_from_directory, Response
 from pydub import AudioSegment
@@ -248,7 +251,11 @@ def upload_audio():
         }), 500
 
 def background_transcription(file_path, doc_id):
+<<<<<<< HEAD
     """Process audio transcription in background with real-time updates"""
+=======
+    """Process audio transcription in background"""
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     try:
         # Ensure file exists
         if not os.path.exists(file_path):
@@ -256,6 +263,7 @@ def background_transcription(file_path, doc_id):
             
         logger.info(f"Starting transcription for file: {file_path}")
         
+<<<<<<< HEAD
         # Initialize variables for processing
         all_text = ""
         processed_chunks = 0
@@ -308,6 +316,26 @@ def background_transcription(file_path, doc_id):
             progress = round((processed_chunks / total_chunks) * 100) if total_chunks > 0 else 0
             
             # Emit current chunk for real-time display
+=======
+        chunk_buffer = []
+        for i, total, text in chunked_transcribe_audio(file_path):
+            chunk_buffer.append({
+                'chunk_index': i,
+                'total_chunks': total,
+                'text': text
+            })
+            
+            if len(chunk_buffer) >= 5:
+                socketio.emit('partial_transcript_batch', {
+                    'doc_id': doc_id,
+                    'chunks': chunk_buffer
+                })
+                socketio.sleep(0.1)
+                append_to_doc(doc_id, chunk_buffer)
+                chunk_buffer = []
+                
+        if chunk_buffer:
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             socketio.emit('partial_transcript_batch', {
                 'doc_id': doc_id,
                 'chunks': [{
@@ -317,6 +345,7 @@ def background_transcription(file_path, doc_id):
                 }],
                 'progress': progress
             })
+<<<<<<< HEAD
             
             # Small delay to prevent socket congestion
             socketio.sleep(0.05)
@@ -335,6 +364,11 @@ def background_transcription(file_path, doc_id):
         save_doc_store()
         
         # Send completion event
+=======
+            socketio.sleep(0.1)
+            append_to_doc(doc_id, chunk_buffer)
+
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         socketio.emit('final_transcript', {
             'doc_id': doc_id,
             'done': True,
@@ -343,6 +377,12 @@ def background_transcription(file_path, doc_id):
         
         logger.info(f"Transcription completed for file: {file_path}")
         
+<<<<<<< HEAD
+=======
+        # Don't delete local file after transcription
+        # We'll keep it for potential playback and let trash management handle deletion
+            
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     except Exception as e:
         logger.error(f"Error during transcription: {e}")
         import traceback
@@ -361,6 +401,7 @@ def append_to_doc(doc_id, chunk_list):
             logger.warning(f"Document not found for appending transcription: {doc_id}")
             return
             
+<<<<<<< HEAD
         # Get existing content
         combined_text = doc.get("content", "")
         
@@ -386,6 +427,12 @@ def append_to_doc(doc_id, chunk_list):
                 combined_text = chunk_text
         
         # Update document
+=======
+        combined_text = doc.get("content", "")
+        for chunk in chunk_list:
+            combined_text += " " + chunk["text"]
+        
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         doc["content"] = combined_text
         save_doc_store()
         logger.debug(f"Updated document {doc_id} with new transcription content")

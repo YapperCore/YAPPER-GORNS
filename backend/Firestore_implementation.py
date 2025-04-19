@@ -23,6 +23,7 @@ except Exception as e:
 bucket = storage.bucket()
 db = firestore.client()
 
+<<<<<<< HEAD
 def ensure_path_exists(firebase_path):
     """
     Ensure folder structure exists in Firebase Storage
@@ -117,6 +118,65 @@ def upload_file_by_path(local_path, firebase_path):
     logger.info(f"File uploaded successfully to {firebase_path} with owner: {user_id}")
     return blob
 
+=======
+def upload_file_by_path(local_path, firebase_path):
+    """
+    Uploads a file from a local path to Firebase Storage with security rules.
+    
+    Args:
+        local_path: Path to local file
+        firebase_path: Path in Firebase (should include user ID for security)
+        
+    Returns:
+        storage.Blob: The uploaded blob
+    """
+    # Extract user ID from path to enforce security model
+    path_parts = firebase_path.split('/')
+    if len(path_parts) >= 2 and path_parts[0] == 'users':
+        user_id = path_parts[1]
+    else:
+        user_id = 'unknown'  # Default for non-user paths
+    
+    # Normalize the local path to avoid platform-specific issues
+    local_path = os.path.abspath(local_path)
+    
+    # Verify the file exists before attempting to upload
+    if not os.path.exists(local_path):
+        error_msg = f"File not found at path: {local_path}"
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
+    
+    # Log file details for debugging
+    file_size = os.path.getsize(local_path)
+    logger.info(f"Uploading file: {local_path}, Size: {file_size} bytes")
+    
+    blob = bucket.blob(firebase_path)
+    
+    try:
+        # Upload file directly from data to avoid path issues
+        with open(local_path, 'rb') as file_obj:
+            file_data = file_obj.read()
+            content_type = 'audio/mpeg'  # Default for audio files
+            blob.upload_from_string(file_data, content_type=content_type)
+    except Exception as e:
+        logger.error(f"Error uploading file content: {e}")
+        raise
+    
+    # Set metadata after upload
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    
+    blob.metadata = {
+        'ownerId': user_id,
+        'uploadTime': timestamp,
+        'originalPath': local_path
+    }
+    # Update the blob with new metadata
+    blob.patch()
+    
+    logger.info(f"File uploaded successfully to {firebase_path} with owner: {user_id}")
+    return blob
+
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 def get_signed_url(firebase_path, expiration=3600):
     """
     Generates a signed URL with security check.
@@ -144,15 +204,19 @@ def delete_file_by_path(firebase_path):
     
     Args:
         firebase_path: Path in Firebase
+<<<<<<< HEAD
         
     Returns:
         bool: True if deleted, False otherwise
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     """
     blob = bucket.blob(firebase_path)
     
     # Check if blob exists before deleting
     if blob.exists():
         blob.delete()
+<<<<<<< HEAD
         
         # Also delete from Firestore
         filename = os.path.basename(firebase_path)
@@ -165,6 +229,11 @@ def delete_file_by_path(firebase_path):
     else:
         logger.warning(f"File not found for deletion: {firebase_path}")
         return False
+=======
+        logger.info(f"File deleted: {firebase_path}")
+    else:
+        logger.warning(f"File not found for deletion: {firebase_path}")
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
 def move_file(firebase_source_path, firebase_dest_path):
     """
@@ -173,15 +242,19 @@ def move_file(firebase_source_path, firebase_dest_path):
     Args:
         firebase_source_path: Source path
         firebase_dest_path: Destination path
+<<<<<<< HEAD
         
     Returns:
         bool: True if moved successfully, False otherwise
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     """
     source_blob = bucket.blob(firebase_source_path)
     
     # Check if source exists
     if not source_blob.exists():
         logger.warning(f"Source file not found: {firebase_source_path}")
+<<<<<<< HEAD
         
         # Check if destination already exists (might have been moved already)
         dest_blob = bucket.blob(firebase_dest_path)
@@ -205,6 +278,10 @@ def move_file(firebase_source_path, firebase_dest_path):
     # Ensure destination folder exists
     ensure_path_exists(firebase_dest_path)
     
+=======
+        return False
+    
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     # Copy with metadata preservation
     source_blob.reload()  # Ensure we have the latest blob data
     bucket.copy_blob(source_blob, bucket, firebase_dest_path)
@@ -217,6 +294,7 @@ def move_file(firebase_source_path, firebase_dest_path):
     
     # Delete source
     source_blob.delete()
+<<<<<<< HEAD
     
     # Update Firestore record
     filename = os.path.basename(firebase_dest_path)
@@ -229,6 +307,8 @@ def move_file(firebase_source_path, firebase_dest_path):
             'lastModified': firestore.SERVER_TIMESTAMP
         })
     
+=======
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     logger.info(f"File moved: {firebase_source_path} -> {firebase_dest_path}")
     return True
 

@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -10,8 +9,10 @@
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
     "python.testing.pytestArgs": [
+<<<<<<< HEAD
         "backend"
 =======
+<<<<<<< HEAD
     "python.analysis.extraPaths": [
         "./backend/services",
         "./backend"
@@ -31,5 +32,9 @@
     "python.testing.pytestArgs": [
         "."
 >>>>>>> c98761d (SCRUM-85: unittest for SCRUM-89)
+=======
+        "."
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
+>>>>>>> df93a2b88634deaa5d7a644eb11b212563b7f63d
     ]
 }
