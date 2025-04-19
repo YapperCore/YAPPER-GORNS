@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 # backend/services/socketio_instance.py
 from flask_socketio import SocketIO, join_room, emit, disconnect
+=======
+from flask_socketio import SocketIO, join_room, emit
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 from services.storage import save_doc_store, doc_store
 import logging
 
+<<<<<<< HEAD
 logger = logging.getLogger(__name__)
 
 # Initialize with threading mode - will be attached to app later
@@ -15,6 +20,10 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info("Client disconnected from socket")
+=======
+# Initialize with threading mode - will be attached to app later
+socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
 @socketio.on('join_doc')
 def handle_join_doc_evt(data):
@@ -50,6 +59,7 @@ def handle_edit_doc_evt(data):
     if doc and not doc.get("deleted"):
         doc['content'] = new_content
         save_doc_store()
+<<<<<<< HEAD
         
         # Broadcast to all clients except sender
         emit('doc_content_update', {
@@ -132,3 +142,9 @@ def emit_transcription_error(doc_id, error_message):
         logger.error(f"Emitted transcription error for doc {doc_id}: {error_message}")
     except Exception as e:
         logger.error(f"Error emitting transcription error: {e}")
+=======
+    emit('doc_content_update', {
+        'doc_id': doc_id,
+        'content': new_content
+    }, room=doc_id, include_self=False)
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui

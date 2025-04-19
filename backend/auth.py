@@ -2,7 +2,11 @@ import firebase_admin
 from firebase_admin import auth
 from flask import request, jsonify
 from functools import wraps
+<<<<<<< HEAD
 from config import ADMIN_UIDS
+=======
+from backend.config import ADMIN_UIDS
+>>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
 def verify_firebase_token(fn):
     @wraps(fn)
