@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, JSX } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { User } from 'firebase/auth';
 
 interface Doc {
@@ -15,7 +15,7 @@ interface Params {
 }
 
 export default function FolderDocs(): JSX.Element {
-  const { folderName } = useParams<Params>();
+  const { folderName } = useParams();
   const { currentUser } = useAuth() as { currentUser: User | null };
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
