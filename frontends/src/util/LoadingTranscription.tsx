@@ -9,7 +9,11 @@ const LoadingTranscription: React.FC = () => {
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data && typeof event.data === "object" && "doc_id" in event.data) {
+      if (
+        event.data &&
+        typeof event.data === "object" &&
+        "doc_id" in event.data
+      ) {
         navigate(`/transcription/${event.data.doc_id}`);
       }
     };

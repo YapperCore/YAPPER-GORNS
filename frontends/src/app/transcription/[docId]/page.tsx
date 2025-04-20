@@ -11,7 +11,6 @@ import "react-quill/dist/quill.snow.css";
 // Dynamically import ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
- 
 interface PartialChunk {
   text: string;
   chunk_index?: number;

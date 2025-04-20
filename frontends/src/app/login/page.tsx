@@ -41,7 +41,10 @@ export default function LoginPage() {
   }
 
   return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+    <Container
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "80vh" }}
+    >
       <div className="w-100" style={{ maxWidth: "400px" }}>
         <Card className="shadow">
           <Card.Body>

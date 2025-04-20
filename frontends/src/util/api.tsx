@@ -12,7 +12,10 @@ export function useApi() {
   /**
    * Make an authenticated API request
    */
-  async function authFetch(url: string, options: RequestInit = {}): Promise<any> {
+  async function authFetch(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<any> {
     try {
       let token: string | null = null;
       if (getIdToken) {
@@ -38,7 +41,9 @@ export function useApi() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || `HTTP error ${response.status}`);
       }
 
@@ -76,7 +81,11 @@ export function useApi() {
   /**
    * Upload a file with authentication
    */
-  async function uploadFile(url: string, file: File, extraData: Record<string, any> = {}): Promise<any> {
+  async function uploadFile(
+    url: string,
+    file: File,
+    extraData: Record<string, any> = {}
+  ): Promise<any> {
     try {
       let token: string | null = null;
       if (getIdToken) {
@@ -107,7 +116,9 @@ export function useApi() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || `HTTP error ${response.status}`);
       }
 

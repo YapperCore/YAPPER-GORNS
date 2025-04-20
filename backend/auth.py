@@ -8,7 +8,7 @@ from config import ADMIN_UIDS
 def verify_firebase_token(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        auth_header = request.headers.get('Authorization', None)
+        auth_header = request.headers.get("Authorization", None)
         if not auth_header:
             return jsonify({"error": "Authorization header missing"}), 401
         parts = auth_header.split()
@@ -22,8 +22,9 @@ def verify_firebase_token(fn):
         except Exception as e:
             return jsonify({"error": "Invalid token", "details": str(e)}), 401
         return fn(*args, **kwargs)
+
     return wrapper
+
 
 def is_admin(uid):
     return uid in ADMIN_UIDS
-

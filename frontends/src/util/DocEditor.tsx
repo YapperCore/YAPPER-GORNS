@@ -87,7 +87,9 @@ function DocList() {
       } else {
         const errorData = await res.json();
         console.error("Failed to delete document:", errorData);
-        setError(`Failed to delete document: ${errorData.error || "Unknown error"}`);
+        setError(
+          `Failed to delete document: ${errorData.error || "Unknown error"}`
+        );
       }
     } catch (err: any) {
       console.error("Error deleting doc:", err);
@@ -95,25 +97,32 @@ function DocList() {
     }
   };
 
-  if (loading) return <div style={{ padding: "1rem" }}>Loading documents...</div>;
+  if (loading)
+    return <div style={{ padding: "1rem" }}>Loading documents...</div>;
 
   return (
     <div style={{ padding: "1rem", background: "#f5f5f5", minHeight: "100vh" }}>
       <h2>Documents</h2>
-      {error && <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>}
+      {error && (
+        <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>
+      )}
       <Link to="new">
         <button>Create New Document</button>
       </Link>
 
       {docs.length === 0 ? (
-        <p style={{ marginTop: "1rem" }}>No documents found. Create a new one to get started!</p>
+        <p style={{ marginTop: "1rem" }}>
+          No documents found. Create a new one to get started!
+        </p>
       ) : (
         <ul>
           {docs.map((d) => (
             <li key={d.id}>
               {d.name}
               {d.audioFilename
-                ? ` (Audio: ${d.audioFilename}${d.audioTrashed ? " [TRASHED]" : ""})`
+                ? ` (Audio: ${d.audioFilename}${
+                    d.audioTrashed ? " [TRASHED]" : ""
+                  })`
                 : ""}
               &nbsp;|&nbsp;
               <Link to={`edit/${d.id}`} style={{ marginRight: "1rem" }}>
@@ -166,7 +175,9 @@ function DocCreate() {
         navigate(`edit/${doc.id}`);
       } else {
         const errorData = await res.json();
-        setError(`Failed to create document: ${errorData.error || "Unknown error"}`);
+        setError(
+          `Failed to create document: ${errorData.error || "Unknown error"}`
+        );
       }
     } catch (err: any) {
       console.error("Error creating doc:", err);
@@ -179,7 +190,9 @@ function DocCreate() {
   return (
     <div style={{ padding: "1rem", background: "#f5f5f5", minHeight: "100vh" }}>
       <h2>Create Document</h2>
-      {error && <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>}
+      {error && (
+        <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>
+      )}
       <p>
         Name:
         <input
@@ -191,7 +204,11 @@ function DocCreate() {
       </p>
       <p>Content:</p>
       <ReactQuill theme="snow" value={content} onChange={setContent} />
-      <button onClick={handleSubmit} disabled={loading} style={{ marginTop: "1rem" }}>
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        style={{ marginTop: "1rem" }}
+      >
         {loading ? "Creating..." : "Create"}
       </button>
     </div>
@@ -288,7 +305,9 @@ function DocEdit() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        setError(`Failed to save document: ${errorData.error || "Unknown error"}`);
+        setError(
+          `Failed to save document: ${errorData.error || "Unknown error"}`
+        );
       }
     } catch (err: any) {
       console.error("Error saving doc:", err);
@@ -296,7 +315,8 @@ function DocEdit() {
     }
   };
 
-  if (loading) return <div style={{ padding: "1rem" }}>Loading document...</div>;
+  if (loading)
+    return <div style={{ padding: "1rem" }}>Loading document...</div>;
 
   if (!doc && !loading) {
     return (
@@ -311,17 +331,25 @@ function DocEdit() {
   return (
     <div style={{ padding: "1rem", background: "#f5f5f5", minHeight: "100vh" }}>
       <h2>Edit Document</h2>
-      {error && <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>}
+      {error && (
+        <div style={{ color: "red", marginBottom: "1rem" }}>{error}</div>
+      )}
       <p>
         Name:
         <input
           style={{ marginLeft: "0.5rem" }}
           value={doc?.name || ""}
-          onChange={(e) => setDoc(doc ? { ...doc, name: e.target.value } : null)}
+          onChange={(e) =>
+            setDoc(doc ? { ...doc, name: e.target.value } : null)
+          }
           onBlur={handleSave}
         />
       </p>
-      {doc && doc.audioTrashed && <p style={{ color: "red" }}>Warning: The associated audio file is currently in trash.</p>}
+      {doc && doc.audioTrashed && (
+        <p style={{ color: "red" }}>
+          Warning: The associated audio file is currently in trash.
+        </p>
+      )}
       <ReactQuill
         theme="snow"
         value={content}

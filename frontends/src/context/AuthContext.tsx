@@ -25,7 +25,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
   isAdmin: boolean; // Added isAdmin property
-    // other properties
+  // other properties
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     getIdToken,
-    isAdmin: false
+    isAdmin: false,
   };
 
   return (

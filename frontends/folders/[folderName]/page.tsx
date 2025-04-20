@@ -1,7 +1,9 @@
-import React, { useState, useEffect, JSX } from "react";
-import { useParams, Link } from "react-router-dom";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { User } from "firebase/auth";
+import { useParams } from "next/navigation";
+import { JSX } from "react/jsx-runtime";
 
 interface Doc {
   id: string;
@@ -10,13 +12,9 @@ interface Doc {
   audioTrashed?: boolean;
 }
 
-interface Params {
-  folderName?: string;
-}
-
 export default function FolderDocs(): JSX.Element {
-  const { folderName } = useParams();
-  const { currentUser } = useAuth() as { currentUser: User | null };
+  const { folderName } = useParams() as { folderName?: string };
+  const { currentUser } = useAuth();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,25 +30,37 @@ export default function FolderDocs(): JSX.Element {
               Authorization: `Bearer ${token}`,
             },
           });
+
+          if (!res.ok) {
+            if (res.status === 404) {
+              setError(`Folder "${folderName}" not found.`);
+            } else {
+              const errData = await res.json();
+              setError(errData.error || "Failed to load documents.");
+            }
+            setDocs([]);
+            return;
+          }
+
           const data = await res.json();
           setDocs(Array.isArray(data) ? data : []);
           setError(null);
         } catch (err) {
           console.error("Error fetching folder docs:", err);
-          setError("Failed to load documents.");
+          setError("An unexpected error occurred.");
           setDocs([]);
         } finally {
           setLoading(false);
         }
       }
     }
+
     fetchDocs();
   }, [currentUser, folderName]);
 
   const handleMoveToHome = async (docId: string) => {
     try {
-      if (!currentUser) return;
-      const token = await currentUser.getIdToken();
+      const token = await currentUser?.getIdToken();
       const res = await fetch(`/api/folders/home/add/${docId}`, {
         method: "POST",
         headers: {
@@ -70,14 +80,8 @@ export default function FolderDocs(): JSX.Element {
   };
 
   const handleDelete = async (docId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this document?"
-    );
-    if (!confirmed) return;
-
     try {
-      if (!currentUser) return;
-      const token = await currentUser.getIdToken();
+      const token = await currentUser?.getIdToken();
       const res = await fetch(`/api/docs/${docId}`, {
         method: "DELETE",
         headers: {
@@ -101,8 +105,8 @@ export default function FolderDocs(): JSX.Element {
       <h2>Documents in Folder: {folderName}</h2>
 
       {loading && <p>Loading documents...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && docs.length === 0 && (
+      {error && <p style={{ color: "red", fontWeight: "bold" }}>{error}</p>}
+      {!loading && !error && docs.length === 0 && (
         <p>No documents found in this folder.</p>
       )}
 
@@ -117,18 +121,20 @@ export default function FolderDocs(): JSX.Element {
               </p>
             )}
             <div className="doc-actions">
-              <Link
-                to={`/transcription/${doc.id}`}
+              <a
+                href={`/transcription/${doc.id}`}
+                rel="noreferrer"
                 className="action-link transcription-link"
               >
                 View Doc
-              </Link>
-              <Link
-                to={`/docs/edit/${doc.id}`}
+              </a>
+              <a
+                href={`/docs/edit/${doc.id}`}
+                rel="noreferrer"
                 className="action-link edit-link"
               >
                 Edit Doc
-              </Link>
+              </a>
               <button
                 onClick={() => handleDelete(doc.id)}
                 className="action-link delete-link"

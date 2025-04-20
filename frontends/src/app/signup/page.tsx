@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Form, Button, Card, Alert, Container, InputGroup } from "react-bootstrap";
+import {
+  Form,
+  Button,
+  Card,
+  Alert,
+  Container,
+  InputGroup,
+} from "react-bootstrap";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -45,7 +52,9 @@ export default function Signup() {
     } catch (error: any) {
       console.error("Signup failed:", error);
       if (error.code === "auth/email-already-in-use") {
-        setError("This email is already registered. Please use a different email or try logging in.");
+        setError(
+          "This email is already registered. Please use a different email or try logging in."
+        );
       } else if (error.code === "auth/invalid-email") {
         setError("Invalid email address format.");
       } else if (error.code === "auth/weak-password") {
@@ -59,13 +68,20 @@ export default function Signup() {
   }
 
   return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
+    <Container
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "80vh" }}
+    >
       <div className="w-100" style={{ maxWidth: "400px" }}>
         <Card className="shadow">
           <Card.Body>
             <h2 className="text-center mb-4">Sign Up</h2>
             {error && <Alert variant="danger">{error}</Alert>}
-            {success && <Alert variant="success">Account created successfully! Redirecting...</Alert>}
+            {success && (
+              <Alert variant="success">
+                Account created successfully! Redirecting...
+              </Alert>
+            )}
             <Form onSubmit={handleSubmit}>
               <Form.Group id="email" className="mb-3">
                 <Form.Label>Email</Form.Label>
@@ -85,7 +101,11 @@ export default function Signup() {
                 <Form.Label>Password Confirmation</Form.Label>
                 <InputGroup>
                   <InputGroup.Text>🔒</InputGroup.Text>
-                  <Form.Control type="password" ref={passwordConfirmRef} required />
+                  <Form.Control
+                    type="password"
+                    ref={passwordConfirmRef}
+                    required
+                  />
                 </InputGroup>
               </Form.Group>
               <Button disabled={loading} className="w-100" type="submit">

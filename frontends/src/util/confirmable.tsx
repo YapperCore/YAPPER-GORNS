@@ -16,23 +16,38 @@ const Confirmable: React.FC<ConfirmableProps> = ({ onDelete, toast }) => {
   const accept = async () => {
     try {
       await onDelete();
-      toast.current?.show({ severity: 'info', summary: 'Deleted', detail: 'Item deleted', life: 3000 });
+      toast.current?.show({
+        severity: "info",
+        summary: "Deleted",
+        detail: "Item deleted",
+        life: 3000,
+      });
     } catch (err) {
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete', life: 3000 });
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete",
+        life: 3000,
+      });
     }
   };
 
   const reject = () => {
-    toast.current?.show({ severity: 'warn', summary: 'Cancelled', detail: 'Deletion cancelled', life: 3000 });
+    toast.current?.show({
+      severity: "warn",
+      summary: "Cancelled",
+      detail: "Deletion cancelled",
+      life: 3000,
+    });
   };
 
   const confirmDelete = (event: MouseEvent<HTMLAnchorElement>) => {
     confirmPopup({
       target: event.currentTarget,
-      message: 'Delete this item?',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: 'p-button-success',
+      message: "Delete this item?",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
+      acceptClassName: "p-button-success",
       accept,
       reject,
     });
@@ -57,29 +72,51 @@ export const Restore: React.FC<RestoreProps> = ({ onRestore, toast }) => {
   const accept = async () => {
     try {
       await onRestore();
-      toast.current?.show({ severity: 'info', summary: 'Restored', detail: 'Item restored', life: 3000 });
+      toast.current?.show({
+        severity: "info",
+        summary: "Restored",
+        detail: "Item restored",
+        life: 3000,
+      });
     } catch (err) {
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to restore', life: 3000 });
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to restore",
+        life: 3000,
+      });
     }
   };
 
   const reject = () => {
-    toast.current?.show({ severity: 'warn', summary: 'Cancelled', detail: 'Restore cancelled', life: 3000 });
+    toast.current?.show({
+      severity: "warn",
+      summary: "Cancelled",
+      detail: "Restore cancelled",
+      life: 3000,
+    });
   };
 
   const confirmRestore = (event: MouseEvent<HTMLButtonElement>) => {
     confirmPopup({
       target: event.currentTarget,
-      message: 'Restore this item?',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: 'p-button-success',
+      message: "Restore this item?",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
+      acceptClassName: "p-button-success",
       accept,
       reject,
     });
   };
 
-  return <Button onClick={confirmRestore} icon="pi pi-check" label="Restore" className="p-button-success" />;
+  return (
+    <Button
+      onClick={confirmRestore}
+      icon="pi pi-check"
+      label="Restore"
+      className="p-button-success"
+    />
+  );
 };
 
 interface PermDelProps {
@@ -91,13 +128,30 @@ export const PermDel: React.FC<PermDelProps> = ({ onDelete, toast }) => {
   const handleDelete = async () => {
     try {
       await onDelete();
-      toast.current?.show({ severity: 'info', summary: 'Deleted', detail: 'Item permanently deleted', life: 3000 });
+      toast.current?.show({
+        severity: "info",
+        summary: "Deleted",
+        detail: "Item permanently deleted",
+        life: 3000,
+      });
     } catch (err) {
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete permanently', life: 3000 });
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete permanently",
+        life: 3000,
+      });
     }
   };
 
-  return <Button onClick={handleDelete} icon="pi pi-trash" label="Perm Delete" className="p-button-danger" />;
+  return (
+    <Button
+      onClick={handleDelete}
+      icon="pi pi-trash"
+      label="Perm Delete"
+      className="p-button-danger"
+    />
+  );
 };
 
 export default Confirmable;

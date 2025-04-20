@@ -7,7 +7,7 @@ import io, { Socket } from "socket.io-client";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import AudioPlayer from "@/components/AudioPlayer"; //! changed this to @ instead of ..
-import { useAuth } from "@/context/AuthContext";    //! changed this to @ instead of ..
+import { useAuth } from "@/context/AuthContext"; //! changed this to @ instead of ..
 import { Toast } from "primereact/toast";
 import { ProgressBar } from "primereact/progressbar";
 
@@ -175,7 +175,10 @@ const TranscriptionEditor: React.FC = () => {
           body: JSON.stringify({ content: newContent }),
         });
 
-        socketRef.current?.emit("edit_doc", { doc_id: docId, content: newContent });
+        socketRef.current?.emit("edit_doc", {
+          doc_id: docId,
+          content: newContent,
+        });
       } catch (err: any) {
         console.error("Error updating document:", err);
         setError(`Error saving changes: ${err.message}`);
@@ -199,7 +202,15 @@ const TranscriptionEditor: React.FC = () => {
       <Toast ref={toastRef} position="top-right" />
       <h2>Transcription for Document</h2>
       {error && (
-        <div style={{ color: "red", background: "#ffeeee", padding: "0.5rem", borderRadius: "4px", marginBottom: "1rem" }}>
+        <div
+          style={{
+            color: "red",
+            background: "#ffeeee",
+            padding: "0.5rem",
+            borderRadius: "4px",
+            marginBottom: "1rem",
+          }}
+        >
           {error}
         </div>
       )}
@@ -224,7 +235,10 @@ const TranscriptionEditor: React.FC = () => {
       />
       {audioFilename && !audioTrashed && (
         <div style={{ marginTop: "1rem" }}>
-          <AudioPlayer filename={audioFilename} audioUrl={`/api/audio/${audioFilename}`} />
+          <AudioPlayer
+            filename={audioFilename}
+            audioUrl={`/api/audio/${audioFilename}`}
+          />
         </div>
       )}
       <div style={{ marginTop: "1rem" }}>
