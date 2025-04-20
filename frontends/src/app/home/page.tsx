@@ -10,7 +10,7 @@ import "primereact/resources/primereact.min.css";
 import { useAuth } from "@/context/AuthContext";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
-
+import { clear } from "console";
 interface Doc {
   id: string;
   name: string;
@@ -117,6 +117,7 @@ function Home() {
           setDocs(Array.isArray(docData) ? docData : []);
         }
       } else {
+        clear();
         const errData = await res.json();
         setUploadMessage(errData.error || "Upload failed");
       }
