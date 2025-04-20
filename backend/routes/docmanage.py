@@ -7,10 +7,6 @@ from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
 from services.firebase_service import move_file, check_blob_exists
 from auth import verify_firebase_token, is_admin
-from backend.config import UPLOAD_FOLDER, TRASH_FOLDER
-from backend.services.storage import save_doc_store, doc_store
-from backend.services.firebase_service import move_file
-from backend.auth import verify_firebase_token, is_admin
 
 logger = logging.getLogger(__name__)
 

@@ -6,10 +6,7 @@ import os
 import uuid
 import logging
 import datetime
-<<<<<<< HEAD
 from pathlib import Path
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 import firebase_admin
 from firebase_admin import credentials, storage, firestore, auth
 from firebase_config import FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_STORAGE_BUCKET, ADMIN_USER_IDS
@@ -60,7 +57,6 @@ def is_admin(user_id):
     """Check if user is an admin"""
     return user_id in ADMIN_USER_IDS
 
-<<<<<<< HEAD
 def extract_owner_from_path(path):
     """
     Extract owner user ID from a Firebase path
@@ -135,42 +131,23 @@ def ensure_folder_exists(user_id, folder_type='uploads'):
         return False
 
 def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
-=======
-def is_admin_or_owner(user_id, owner_id):
-    """Check if user is an admin or the owner of the resource"""
-    if not user_id:
-        return False
-    return user_id == owner_id or is_admin(user_id)
-
-def upload_file(file_data, filename, content_type, user_id=None):
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     """
     Upload file to Firebase Storage with user ownership
     
     Args:
         file_data: File data to upload
-<<<<<<< HEAD
         original_filename: Original name of the file
         user_id: User ID who owns the file
         content_type: Content type of the file
         
     Returns:
         dict: Upload result with file URL and metadata
-=======
-        filename: Name of the file
-        content_type: Content type of the file
-        user_id: User ID who owns the file
-        
-    Returns:
-        dict: Upload result with file URL and success status
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     """
     if not bucket:
         logger.error("Firebase not initialized. Cannot upload file.")
         return {"success": False, "error": "Firebase not initialized"}
         
     try:
-<<<<<<< HEAD
         # Ensure user has uploads folder
         ensure_folder_exists(user_id, 'uploads')
         
@@ -181,23 +158,10 @@ def upload_file(file_data, filename, content_type, user_id=None):
         
         # User-specific storage path for access control
         storage_path = f"users/{user_id}/uploads/{filename}"
-=======
-        # Generate a unique path that includes user ID for access control
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        unique_id = str(uuid.uuid4())
-        
-        if user_id:
-            # Put file in user's directory
-            storage_path = f"users/{user_id}/{unique_id}_{timestamp}_{filename}"
-        else:
-            # Put in public directory if no user ID
-            storage_path = f"public/{unique_id}_{timestamp}_{filename}"
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             
         # Create the blob
         blob = bucket.blob(storage_path)
         
-<<<<<<< HEAD
         # Upload the file first
         blob.upload_from_string(file_data, content_type=content_type)
         
@@ -211,25 +175,6 @@ def upload_file(file_data, filename, content_type, user_id=None):
         blob.patch()
         
         # Get a signed URL that expires in 7 days
-=======
-        # Upload with metadata including owner
-        metadata = {
-            'contentType': content_type,
-            'ownerId': user_id or 'anonymous',
-            'originalFilename': filename,
-            'uploadTime': timestamp
-        }
-        
-        # Upload the file
-        blob.upload_from_string(
-            file_data,
-            content_type=content_type,
-            metadata=metadata
-        )
-        
-        # Get a signed URL that expires in 7 days (for security)
-        # Note: For permanent URLs you would use make_public() instead
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(days=7),
@@ -237,7 +182,6 @@ def upload_file(file_data, filename, content_type, user_id=None):
         )
         
         # Store metadata in Firestore
-<<<<<<< HEAD
         doc_ref = db.collection('files').document(filename.replace('/', '_'))
         doc_ref.set({
             'filename': filename,
@@ -250,19 +194,6 @@ def upload_file(file_data, filename, content_type, user_id=None):
             'expiresAt': datetime.datetime.now() + datetime.timedelta(days=7),  # Store as datetime directly
             'expiresAtString': (datetime.datetime.now() + datetime.timedelta(days=7)).isoformat(),  # Use string as backup
             'status': 'active'  # Track file status (active vs trashed)
-=======
-        doc_ref = db.collection('files').document(storage_path.replace('/', '_'))
-        doc_ref.set({
-            'filename': filename,
-            'storagePath': storage_path,
-            'contentType': content_type,
-            'ownerId': user_id or 'anonymous',
-            'uploadTime': firestore.SERVER_TIMESTAMP,
-            'url': signed_url,
-            'expiresAt': firestore.Timestamp.from_datetime(
-                datetime.datetime.now() + datetime.timedelta(days=7)
-            )
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         })
         
         logger.info(f"File uploaded successfully: {storage_path}")
@@ -270,10 +201,7 @@ def upload_file(file_data, filename, content_type, user_id=None):
         return {
             "success": True,
             "filename": filename,
-<<<<<<< HEAD
             "originalFilename": original_filename,
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             "storage_path": storage_path,
             "url": signed_url
         }
@@ -281,7 +209,6 @@ def upload_file(file_data, filename, content_type, user_id=None):
         logger.error(f"Error uploading file to Firebase: {e}")
         return {"success": False, "error": str(e)}
 
-<<<<<<< HEAD
 def get_file_url(storage_path, requesting_user_id=None):
     """
     Get a signed URL for a file with permission check
@@ -289,21 +216,11 @@ def get_file_url(storage_path, requesting_user_id=None):
     Args:
         storage_path: Storage path of the file
         requesting_user_id: User ID requesting access
-=======
-def get_file_url(storage_path, user_id=None):
-    """
-    Get a temporary URL for a file with access control
-    
-    Args:
-        storage_path: Storage path of the file
-        user_id: User ID requesting access
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         
     Returns:
         str or None: Signed URL if user has access, None otherwise
     """
     if not bucket:
-<<<<<<< HEAD
         logger.error("Firebase Storage bucket not initialized")
         return None
         
@@ -327,39 +244,15 @@ def get_file_url(storage_path, user_id=None):
             return None
             
         # Check file existence
-=======
-        logger.error("Firebase not initialized")
-        return None
-        
-    try:
-        # Check ownership in metadata
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found: {storage_path}")
             return None
-<<<<<<< HEAD
         
         # Generate secure, time-limited URL
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(hours=1),  # Short expiration for security
-=======
-            
-        # Check ownership
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', 'anonymous')
-        
-        # Enforce access control - only owner or admin can access
-        if user_id and not is_admin_or_owner(user_id, owner_id):
-            logger.warning(f"Access denied: User {user_id} is not owner or admin for {storage_path}")
-            return None
-            
-        # Generate a temporary URL
-        signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(hours=1),
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             method="GET"
         )
         
@@ -368,7 +261,6 @@ def get_file_url(storage_path, user_id=None):
         logger.error(f"Error getting file URL: {e}")
         return None
 
-<<<<<<< HEAD
 def check_blob_exists(storage_path):
     """
     Check if a blob exists at the given path
@@ -407,31 +299,11 @@ def delete_file(storage_path, requesting_user_id):
         
     try:
         # Check file existence first
-=======
-def delete_file(storage_path, user_id=None):
-    """
-    Delete a file with access control
-    
-    Args:
-        storage_path: Storage path of the file
-        user_id: User ID requesting deletion
-        
-    Returns:
-        bool: True if deletion succeeded, False otherwise
-    """
-    if not bucket:
-        logger.error("Firebase not initialized")
-        return False
-        
-    try:
-        # Check existence
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         blob = bucket.blob(storage_path)
         if not blob.exists():
             logger.warning(f"File not found for deletion: {storage_path}")
             return False
             
-<<<<<<< HEAD
         # Check if path belongs to user (simple path check)
         path_owner = extract_owner_from_path(storage_path)
         if path_owner and (path_owner == requesting_user_id or is_admin(requesting_user_id)):
@@ -449,31 +321,10 @@ def delete_file(storage_path, user_id=None):
         else:
             logger.warning(f"Delete denied: User {requesting_user_id} is not owner of {storage_path}")
             return False
-=======
-        # Check ownership
-        metadata = blob.metadata or {}
-        owner_id = metadata.get('ownerId', 'anonymous')
-        
-        # Enforce access control - only owner or admin can delete
-        if user_id and not is_admin_or_owner(user_id, owner_id):
-            logger.warning(f"Delete denied: User {user_id} is not owner or admin for {storage_path}")
-            return False
-            
-        # Delete from Storage
-        blob.delete()
-        
-        # Delete metadata from Firestore
-        doc_id = storage_path.replace('/', '_')
-        db.collection('files').document(doc_id).delete()
-        
-        logger.info(f"File deleted: {storage_path}")
-        return True
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     except Exception as e:
         logger.error(f"Error deleting file: {e}")
         return False
 
-<<<<<<< HEAD
 def move_file(source_path, dest_path, requesting_user_id):
     """
     Move a file with permission check
@@ -617,115 +468,6 @@ def list_user_files(user_id, folder_path="uploads"):
         logger.error(f"Error listing user files: {e}")
         return []
 
-=======
-def get_user_files(user_id):
-    """
-    Get all files owned by a user
-    
-    Args:
-        user_id: User ID to fetch files for
-        
-    Returns:
-        list: Files owned by the user
-    """
-    if not db:
-        logger.error("Firebase not initialized")
-        return []
-        
-    try:
-        # Query Firestore for files with matching owner ID
-        query = db.collection('files').where('ownerId', '==', user_id)
-        docs = query.stream()
-        
-        files = []
-        for doc in docs:
-            files.append(doc.to_dict())
-            
-        return files
-    except Exception as e:
-        logger.error(f"Error fetching user files: {e}")
-        return []
-
-def get_all_files(user_id=None):
-    """
-    Get all files (with access control)
-    
-    Args:
-        user_id: User ID requesting access (must be admin for all files)
-        
-    Returns:
-        list: All files if admin, otherwise empty list
-    """
-    if not db:
-        logger.error("Firebase not initialized")
-        return []
-        
-    # Only admins can list all files
-    if not is_admin(user_id):
-        logger.warning(f"User {user_id} is not an admin, cannot list all files")
-        return []
-        
-    try:
-        # Get all files from Firestore
-        docs = db.collection('files').stream()
-        
-        files = []
-        for doc in docs:
-            files.append(doc.to_dict())
-            
-        return files
-    except Exception as e:
-        logger.error(f"Error fetching all files: {e}")
-        return []
-
-def update_transcription(storage_path, transcription, user_id=None):
-    """
-    Update transcription for a file with access control
-    
-    Args:
-        storage_path: Storage path of the file
-        transcription: Transcription text
-        user_id: User ID requesting update
-        
-    Returns:
-        bool: True if update succeeded, False otherwise
-    """
-    if not db:
-        logger.error("Firebase not initialized")
-        return False
-        
-    try:
-        # Get file document from Firestore
-        doc_id = storage_path.replace('/', '_')
-        doc_ref = db.collection('files').document(doc_id)
-        doc = doc_ref.get()
-        
-        if not doc.exists:
-            logger.warning(f"File not found for transcription update: {storage_path}")
-            return False
-            
-        # Check ownership
-        file_data = doc.to_dict()
-        owner_id = file_data.get('ownerId', 'anonymous')
-        
-        # Enforce access control - only owner or admin can update
-        if user_id and not is_admin_or_owner(user_id, owner_id):
-            logger.warning(f"Update denied: User {user_id} is not owner or admin for {storage_path}")
-            return False
-            
-        # Update the transcription
-        doc_ref.update({
-            'transcription': transcription,
-            'transcriptionTime': firestore.SERVER_TIMESTAMP
-        })
-        
-        logger.info(f"Transcription updated for: {storage_path}")
-        return True
-    except Exception as e:
-        logger.error(f"Error updating transcription: {e}")
-        return False
-
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 def verify_token(id_token):
     """
     Verify Firebase ID token and get user ID
@@ -734,11 +476,7 @@ def verify_token(id_token):
         id_token: Firebase ID token
         
     Returns:
-<<<<<<< HEAD
         dict: User data if valid, None otherwise
-=======
-        str or None: User ID if valid, None otherwise
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     """
     if not firebase_app:
         logger.error("Firebase not initialized")
@@ -748,7 +486,6 @@ def verify_token(id_token):
         # Verify the token
         decoded_token = auth.verify_id_token(id_token)
         user_id = decoded_token.get('uid')
-<<<<<<< HEAD
         email = decoded_token.get('email', '')
         
         return {
@@ -756,17 +493,9 @@ def verify_token(id_token):
             'email': email,
             'is_admin': is_admin(user_id)
         }
-=======
-        return user_id
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     except Exception as e:
         logger.error(f"Error verifying token: {e}")
         return None
 
-<<<<<<< HEAD
 # Initialize on import
 initialize_firebase()
-=======
-# Initialize Firebase on module import
-firebase_available = initialize_firebase()
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui

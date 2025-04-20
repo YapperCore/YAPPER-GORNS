@@ -40,13 +40,7 @@ from services.firebase_service import initialize_firebase
 from routes.docmanage import register_docmanage_routes
 from routes.document import register_document_routes
 from routes.trash_route import register_trash_routes
-<<<<<<< HEAD
 from routes.folders import folders_bp
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
-
-# --- Auth ---
-from auth import verify_firebase_token, is_admin
 
 # --- Auth ---
 from auth import verify_firebase_token, is_admin
@@ -95,10 +89,7 @@ def create_app():
     register_docmanage_routes(app)
     register_document_routes(app)
     register_trash_routes(app)
-<<<<<<< HEAD
     app.register_blueprint(folders_bp)
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
     # Attach SocketIO to Flask app
     socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
