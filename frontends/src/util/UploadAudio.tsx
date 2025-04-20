@@ -1,12 +1,11 @@
+// src/pages/UploadAudio.tsx
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
+import React, { ChangeEvent, useState } from "react";
 
 const UploadAudio: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string>("");
-
-  
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
