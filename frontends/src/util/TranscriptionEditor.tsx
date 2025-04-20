@@ -224,7 +224,7 @@ const TranscriptionEditor: React.FC = () => {
       />
       {audioFilename && !audioTrashed && (
         <div style={{ marginTop: "1rem" }}>
-          <AudioPlayer filename={audioFilename} />
+          <AudioPlayer filename={audioFilename} audioUrl={`/api/audio/${audioFilename}`} />
         </div>
       )}
       <div style={{ marginTop: "1rem" }}>
