@@ -2,8 +2,6 @@ import firebase_admin
 from firebase_admin import auth
 from flask import request, jsonify
 from functools import wraps
-# Removed relative import; using absolute import from config instead
-# from config import ADMIN_UIDS already exists below
 from config import ADMIN_UIDS
 
 
