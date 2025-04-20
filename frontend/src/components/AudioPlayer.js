@@ -9,32 +9,22 @@ export default function AudioPlayer({ filename }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-<<<<<<< HEAD
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
   // Fetch audio URL only once when component mounts or filename changes
   useEffect(() => {
-<<<<<<< HEAD
     let isMounted = true;
     let objectUrl = null;
 
     async function fetchAudioUrl() {
       if (!filename || !currentUser) return;
       
-=======
-    // If there's a filename, fetch the raw audio from /local-audio/<filename> as a Blob
-    async function fetchLocalAudio() {
-      if (!filename || !currentUser) return;
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
       try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`/local-audio/${filename}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-<<<<<<< HEAD
         
         if (!res.ok) {
           console.error("Failed to fetch audio, status:", res.status);
@@ -86,33 +76,11 @@ export default function AudioPlayer({ filename }) {
   }, [audioUrl]);
 
   // Set up event listeners
-=======
-        if (!res.ok) {
-          console.error("Failed to fetch local audio, status:", res.status);
-          return;
-        }
-        const blob = await res.blob();
-        // Create an object URL for the blob so <audio> can play it
-        const objectUrl = URL.createObjectURL(blob);
-        if (audioRef.current) {
-          audioRef.current.src = objectUrl;
-          audioRef.current.load();
-        }
-      } catch (err) {
-        console.error("Error fetching local audio:", err);
-      }
-    }
-    fetchLocalAudio();
-  }, [filename, currentUser]);
-
-  // Listen for time updates
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-<<<<<<< HEAD
     const handleLoadedData = () => {
       setDuration(audio.duration);
       setAudioLoaded(true);
@@ -124,31 +92,18 @@ export default function AudioPlayer({ filename }) {
     audio.addEventListener('loadeddata', handleLoadedData);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
-=======
-    const handleLoadedData = () => setDuration(audio.duration);
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadeddata', handleLoadedData);
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadeddata', handleLoadedData);
-<<<<<<< HEAD
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     };
   }, []);
 
   const handlePlayPause = () => {
-<<<<<<< HEAD
     if (!audioRef.current || !audioLoaded) return;
     
-=======
-    if (!audioRef.current) return;
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     if (audioRef.current.paused) {
       // Only attempt to play if audio is fully loaded
       const playPromise = audioRef.current.play();
@@ -177,12 +132,8 @@ export default function AudioPlayer({ filename }) {
   };
 
   const handleProgressChange = (e) => {
-<<<<<<< HEAD
     if (!audioRef.current || !audioLoaded) return;
     
-=======
-    if (!audioRef.current) return;
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     const newTime = (e.target.value / 100) * duration;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
@@ -196,17 +147,12 @@ export default function AudioPlayer({ filename }) {
 
   return (
     <div className="audio-player">
-<<<<<<< HEAD
       <audio ref={audioRef} controls={false} preload="metadata" />
       <button 
         onClick={handlePlayPause} 
         disabled={!audioLoaded}
         className={!audioLoaded ? "button-disabled" : ""}
       >
-=======
-      <audio ref={audioRef} controls={false} />
-      <button onClick={handlePlayPause}>
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         {isPlaying ? '⏸️' : '▶️'}
       </button>
       <input
@@ -224,20 +170,11 @@ export default function AudioPlayer({ filename }) {
         min="0"
         max="1"
         step="0.01"
-<<<<<<< HEAD
         defaultValue="1"
         onChange={handleVolumeChange}
         disabled={!audioLoaded}
         className={`volume-bar ${!audioLoaded ? "slider-disabled" : ""}`}
-=======
-        onChange={handleVolumeChange}
-        className="volume-bar"
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
       />
     </div>
   );
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui

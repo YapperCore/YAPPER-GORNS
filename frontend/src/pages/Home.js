@@ -6,21 +6,15 @@ import { Toast } from 'primereact/toast';
 import 'primereact/resources/themes/saga-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< HEAD
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
 function Home() {
   const [file, setFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [transcripts, setTranscripts] = useState([]);
   const [docs, setDocs] = useState([]); // make sure docs is an array
-<<<<<<< HEAD
   const [folders, setFolders] = useState([]);
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
   const { currentUser } = useAuth();
   const toast = useRef(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -58,7 +52,6 @@ function Home() {
       }
     }
     fetchDocs();
-<<<<<<< HEAD
 
     async function fetchFolders() {
       if (currentUser) {
@@ -78,8 +71,6 @@ function Home() {
       }
     }
     fetchFolders();
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
     return () => {
       socket.disconnect();

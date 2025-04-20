@@ -19,17 +19,10 @@ export default function TranscriptionEditor() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-<<<<<<< HEAD
   const [processedChunks, setProcessedChunks] = useState([]);
   const socketRef = useRef(null);
   const toastRef = useRef(null);
   const editorRef = useRef(null);
-=======
-  const [transcribedChunks, setTranscribedChunks] = useState([]);
-  const [totalChunks, setTotalChunks] = useState(0);
-  const socketRef = useRef(null);
-  const toastRef = useRef(null);
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
   
   // Fetch doc info
   useEffect(() => {
@@ -56,7 +49,6 @@ export default function TranscriptionEditor() {
         setAudioFilename(doc.audioFilename || '');
         setAudioTrashed(!!doc.audioTrashed);
         
-<<<<<<< HEAD
         // Check if transcription is already complete
         if (doc.content && doc.content.trim().length > 0) {
           if (doc.content.includes("Transcription complete") || 
@@ -64,10 +56,6 @@ export default function TranscriptionEditor() {
             setIsComplete(true);
             setProgress(100);
           }
-=======
-        if (doc.content && doc.content.trim().length > 0) {
-          setIsComplete(true); // Assume transcription is complete if content exists
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         }
       } catch (err) {
         console.error("Error loading document:", err);
@@ -95,7 +83,6 @@ export default function TranscriptionEditor() {
 
     const handlePartialBatch = data => {
       if (data.doc_id === docId) {
-<<<<<<< HEAD
         // Update progress directly from server data if available
         if (data.progress !== undefined) {
           setProgress(data.progress);
@@ -116,36 +103,6 @@ export default function TranscriptionEditor() {
             life: 1000
           });
         }
-=======
-        // Update transcribed chunks and progress
-        const newChunks = [...transcribedChunks, ...data.chunks];
-        setTranscribedChunks(newChunks);
-        
-        // Set total chunks if this is new info
-        if (data.chunks.length > 0 && data.chunks[0].total_chunks > 0) {
-          setTotalChunks(data.chunks[0].total_chunks);
-        }
-        
-        // Update progress percentage
-        if (totalChunks > 0) {
-          const processedIndices = new Set(newChunks.map(c => c.chunk_index));
-          const completedChunks = processedIndices.size;
-          const newProgress = Math.floor((completedChunks / totalChunks) * 100);
-          setProgress(newProgress);
-        }
-        
-        // Update content in editor
-        const batchText = data.chunks.map(c => c.text).join(" ");
-        setContent(prev => prev + " " + batchText);
-        
-        // Show notification for new batch
-        toastRef.current?.show({
-          severity: 'info',
-          summary: 'New Transcription Batch',
-          detail: `Received ${data.chunks.length} new chunk(s)`,
-          life: 1500
-        });
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
       }
     };
 
@@ -154,12 +111,9 @@ export default function TranscriptionEditor() {
         setIsComplete(true);
         setProgress(100);
         
-<<<<<<< HEAD
         // Get final content from server
         fetchCurrentContent();
         
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
         toastRef.current?.show({
           severity: 'success',
           summary: 'Transcription Complete',
@@ -167,21 +121,7 @@ export default function TranscriptionEditor() {
           life: 3000
         });
       }
-      
-      // Also update via REST API for persistence
-      await fetch(`/api/docs/${docId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-          'X-User-ID': currentUser.uid
-        },
-        body: JSON.stringify({ content: newContent })
-      });
-    } catch (err) {
-      console.error("Error updating document:", err);
-    }
-  };
+    };
 
     const handleDocUpdate = update => {
       if (update.doc_id === docId) {
@@ -201,7 +141,6 @@ export default function TranscriptionEditor() {
       }
     };
 
-<<<<<<< HEAD
     // Helper function to fetch current content
     const fetchCurrentContent = async () => {
       try {
@@ -221,8 +160,6 @@ export default function TranscriptionEditor() {
       }
     };
 
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     socket.on('partial_transcript_batch', handlePartialBatch);
     socket.on('final_transcript', handleFinal);
     socket.on('doc_content_update', handleDocUpdate);
@@ -235,20 +172,12 @@ export default function TranscriptionEditor() {
       socket.off('transcription_error', handleTranscriptionError);
       socket.disconnect();
     };
-<<<<<<< HEAD
   }, [docId, currentUser]);
-=======
-  }, [docId, transcribedChunks, totalChunks]);
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
   const handleContentChange = async (newContent) => {
     setContent(newContent);
     
-<<<<<<< HEAD
     // Save changes to the server
-=======
-    // Update doc on the server
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
     if (currentUser) {
       try {
         const token = await currentUser.getIdToken();
@@ -260,14 +189,11 @@ export default function TranscriptionEditor() {
           },
           body: JSON.stringify({ content: newContent })
         });
-<<<<<<< HEAD
         
         // Also emit changes to other clients
         if (socketRef.current) {
           socketRef.current.emit('edit_doc', { doc_id: docId, content: newContent });
         }
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
       } catch (err) {
         console.error("Error updating document:", err);
         setError(`Error saving changes: ${err.message}`);
@@ -285,20 +211,6 @@ export default function TranscriptionEditor() {
       </div>
     );
   }
-<<<<<<< HEAD
-=======
-
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Loading Transcription...</h2>
-        <div style={{ width: '60%', margin: '0 auto' }}>
-          <ProgressBar value={50} indeterminate={true} />
-        </div>
-      </div>
-    );
-  }
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 
   return (
     <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '1rem' }}>
@@ -330,10 +242,7 @@ export default function TranscriptionEditor() {
         value={content}
         onChange={handleContentChange}
         style={{ height: '600px', background: '#fff' }}
-<<<<<<< HEAD
         ref={editorRef}
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
       />
       
       {audioFilename && !audioTrashed && (

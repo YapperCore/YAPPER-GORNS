@@ -115,11 +115,8 @@ def chunked_transcribe_audio(audio_path, model_name=WHISPER_MODEL, chunk_size=30
             text = result.get("text", "").strip()
             
             logger.info(f"Chunk {i+1}/{total_chunks} processed: {len(text)} chars")
-<<<<<<< HEAD
             
             # Important: Yield exactly 3 values for compatibility
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
             yield i+1, total_chunks, text
             
     except FileNotFoundError as e:
