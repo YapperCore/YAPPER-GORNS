@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, ChangeEvent } from "react";
 import io from "socket.io-client";
-import "../static/Home.css";
+import "@/static/Home.css";
 import Confirmable from "@/util/confirmable";
 import { Toast } from "primereact/toast";
 import "primereact/resources/themes/saga-blue/theme.css";
