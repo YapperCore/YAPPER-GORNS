@@ -1,7 +1,3 @@
-"""
-Firebase service for Yapper application
-Handles authentication, storage, and user-based access control
-"""
 import os
 import uuid
 import logging
@@ -58,31 +54,14 @@ def is_admin(user_id):
     return user_id in ADMIN_USER_IDS
 
 def extract_owner_from_path(path):
-    """
-    Extract owner user ID from a Firebase path
-    
-    Args:
-        path: Storage path like "users/{uid}/uploads/filename"
-        
-    Returns:
-        str or None: Owner user ID if found, None otherwise
-    """
+
     parts = path.split('/')
     if len(parts) >= 2 and parts[0] == 'users':
         return parts[1]
     return None
 
 def is_owner_or_admin(user_id, resource_path_or_owner_id):
-    """
-    Check if user is an admin or the owner of the resource
-    
-    Args:
-        user_id: User ID requesting access
-        resource_path_or_owner_id: Either a resource path or direct owner ID
-        
-    Returns:
-        bool: True if user is owner or admin
-    """
+
     if not user_id:
         return False
         
@@ -102,16 +81,7 @@ def is_owner_or_admin(user_id, resource_path_or_owner_id):
     return False
 
 def ensure_folder_exists(user_id, folder_type='uploads'):
-    """
-    Ensure the user's folder exists in Firebase Storage
-    
-    Args:
-        user_id: The user ID
-        folder_type: The type of folder (uploads, trash, etc.)
-        
-    Returns:
-        bool: True if folder exists or was created
-    """
+
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
@@ -130,19 +100,21 @@ def ensure_folder_exists(user_id, folder_type='uploads'):
         logger.error(f"Error ensuring {folder_type} folder exists: {e}")
         return False
 
-def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
-    """
-    Upload file to Firebase Storage with user ownership
-    
-    Args:
-        file_data: File data to upload
-        original_filename: Original name of the file
-        user_id: User ID who owns the file
-        content_type: Content type of the file
+def check_blob_exists(storage_path):
+
+    if not bucket:
+        logger.error("Firebase Storage bucket not initialized")
+        return False
         
-    Returns:
-        dict: Upload result with file URL and metadata
-    """
+    try:
+        blob = bucket.blob(storage_path)
+        return blob.exists()
+    except Exception as e:
+        logger.error(f"Error checking blob existence: {e}")
+        return False
+
+def upload_file(file_data, original_filename, user_id, content_type='application/octet-stream'):
+
     if not bucket:
         logger.error("Firebase not initialized. Cannot upload file.")
         return {"success": False, "error": "Firebase not initialized"}
@@ -210,16 +182,7 @@ def upload_file(file_data, original_filename, user_id, content_type='application
         return {"success": False, "error": str(e)}
 
 def get_file_url(storage_path, requesting_user_id=None):
-    """
-    Get a signed URL for a file with permission check
-    
-    Args:
-        storage_path: Storage path of the file
-        requesting_user_id: User ID requesting access
-        
-    Returns:
-        str or None: Signed URL if user has access, None otherwise
-    """
+
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return None
@@ -261,38 +224,8 @@ def get_file_url(storage_path, requesting_user_id=None):
         logger.error(f"Error getting file URL: {e}")
         return None
 
-def check_blob_exists(storage_path):
-    """
-    Check if a blob exists at the given path
-    
-    Args:
-        storage_path: Storage path to check
-        
-    Returns:
-        bool: True if blob exists, False otherwise
-    """
-    if not bucket:
-        logger.error("Firebase Storage bucket not initialized")
-        return False
-        
-    try:
-        blob = bucket.blob(storage_path)
-        return blob.exists()
-    except Exception as e:
-        logger.error(f"Error checking blob existence: {e}")
-        return False
-
 def delete_file(storage_path, requesting_user_id):
-    """
-    Delete a file with permission check
-    
-    Args:
-        storage_path: Storage path of the file
-        requesting_user_id: User ID requesting deletion
-        
-    Returns:
-        bool: True if deleted successfully, False otherwise
-    """
+
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
@@ -326,17 +259,7 @@ def delete_file(storage_path, requesting_user_id):
         return False
 
 def move_file(source_path, dest_path, requesting_user_id):
-    """
-    Move a file with permission check
-    
-    Args:
-        source_path: Source storage path
-        dest_path: Destination storage path
-        requesting_user_id: User ID requesting move
-        
-    Returns:
-        bool: True if moved successfully, False otherwise
-    """
+
     if not bucket:
         logger.error("Firebase Storage bucket not initialized")
         return False
@@ -356,7 +279,7 @@ def move_file(source_path, dest_path, requesting_user_id):
                 filename = dest_path.split('/')[-1].replace('/', '_')
                 doc_ref = db.collection('files').document(filename)
                 doc = doc_ref.get()
-                if doc.exists:
+                if doc.exists():
                     status = 'active' if 'uploads' in dest_path else 'trashed'
                     doc_ref.update({
                         'storagePath': dest_path,
@@ -399,7 +322,7 @@ def move_file(source_path, dest_path, requesting_user_id):
                 filename = dest_path.split('/')[-1].replace('/', '_')
                 doc_ref = db.collection('files').document(filename)
                 doc = doc_ref.get()
-                if doc.exists:
+                if doc.exists():
                     status = 'active' if 'uploads' in dest_path else 'trashed'
                     doc_ref.update({
                         'storagePath': dest_path,
@@ -418,13 +341,13 @@ def move_file(source_path, dest_path, requesting_user_id):
         logger.error(f"Error moving file: {e}")
         return False
 
-def list_user_files(user_id, folder_path="uploads"):
+def list_user_files(user_id, folder_path):
     """
-    List files owned by a user in a specific folder
+    List files owned by a user in a specific folder.
     
     Args:
         user_id: User ID
-        folder_path: Folder to list (uploads, trash, etc.)
+        folder_path: Folder to list (e.g., 'folders/')
         
     Returns:
         list: List of file objects
@@ -434,13 +357,19 @@ def list_user_files(user_id, folder_path="uploads"):
         return []
         
     try:
-        prefix = f"users/{user_id}/{folder_path}/"
-        blobs = bucket.list_blobs(prefix=prefix)
+        # Ensure folder_path is explicitly passed and not defaulted
+        prefix = f"users/{user_id}/{folder_path}"
+        logger.debug(f"Listing files with prefix: {prefix}")
         
+        blobs = bucket.list_blobs(prefix=prefix)
         files = []
+        
         for blob in blobs:
+            logger.debug(f"Found blob: {blob.name}")
+            
             # Skip folder markers
-            if blob.name.endswith('.folder_marker'):
+            if blob.name.endswith('.folder_marker') or blob.name.endswith('/'):
+                logger.debug(f"Skipping folder marker: {blob.name}")
                 continue
                 
             # Extract filename from path
@@ -449,6 +378,7 @@ def list_user_files(user_id, folder_path="uploads"):
             # Get metadata
             blob.reload()
             metadata = blob.metadata or {}
+            logger.debug(f"Blob metadata for {blob.name}: {metadata}")
             
             # Create file object
             file_obj = {
@@ -462,22 +392,19 @@ def list_user_files(user_id, folder_path="uploads"):
             }
             
             files.append(file_obj)
-            
+        
+        if not files:
+            logger.info(f"No files found for user {user_id} in folder {folder_path}")
+        else:
+            logger.debug(f"Files retrieved for user {user_id} in {folder_path}: {files}")
+        
         return files
     except Exception as e:
-        logger.error(f"Error listing user files: {e}")
+        logger.error(f"Error listing user files for user {user_id} in folder {folder_path}: {e}")
         return []
 
 def verify_token(id_token):
-    """
-    Verify Firebase ID token and get user ID
-    
-    Args:
-        id_token: Firebase ID token
-        
-    Returns:
-        dict: User data if valid, None otherwise
-    """
+
     if not firebase_app:
         logger.error("Firebase not initialized")
         return None

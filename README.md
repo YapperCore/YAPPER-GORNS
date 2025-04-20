@@ -233,14 +233,11 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 -Finish User Signup and update UI.
 -I am going to add User login
 - Lastly I am going to implement google authentication
-<<<<<<< HEAD
 
 #### Challenges Of Sprint 2
 - This sprint was particularly challenging, as many of us were unable to run the code, making it nearly impossible to debug and test our work.  
   - **Severe dependency errors**: These issues affected the majority of our team, preventing us from running the code at all. This not only stalled development but also made collaboration and troubleshooting incredibly difficult.
 
-=======
->>>>>>> origin/feature/SCRUM-85-implement-chosen-new-ui
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)

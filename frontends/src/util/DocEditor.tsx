@@ -316,12 +316,12 @@ function DocEdit() {
         Name:
         <input
           style={{ marginLeft: "0.5rem" }}
-          value={doc.name}
-          onChange={(e) => setDoc({ ...doc, name: e.target.value })}
+          value={doc?.name || ""}
+          onChange={(e) => setDoc(doc ? { ...doc, name: e.target.value } : null)}
           onBlur={handleSave}
         />
       </p>
-      {doc.audioTrashed && <p style={{ color: "red" }}>Warning: The associated audio file is currently in trash.</p>}
+      {doc && doc.audioTrashed && <p style={{ color: "red" }}>Warning: The associated audio file is currently in trash.</p>}
       <ReactQuill
         theme="snow"
         value={content}
