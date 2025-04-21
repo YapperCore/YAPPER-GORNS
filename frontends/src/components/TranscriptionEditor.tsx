@@ -1,16 +1,16 @@
-// src/components/TranscriptionEditor.tsx
+// src/components/TranscriptionEditor.tsx - Fixed for real-time updates with proper socket handling
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { getSocket, disconnectSocket } from '@/lib/socket';
-import AudioPlayer from '@/components/AudioPlayer';
-import { useAuth } from '@/context/AuthContext';
+import io from 'socket.io-client';
 import { Toast } from 'primereact/toast';
 import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
 import Link from 'next/link';
 import Editor from '@/components/Editor';
+import AudioPlayer from '@/components/AudioPlayer';
+import { useAuth } from '@/context/AuthContext';
 
 interface ChunkData {
   chunk_index: number;
@@ -22,6 +22,7 @@ export default function TranscriptionEditor() {
   const params = useParams();
   const docId = params.docId as string;
   const { currentUser } = useAuth();
+  const socketRef = useRef<any>(null);
   
   const [content, setContent] = useState<string>('');
   const [isComplete, setIsComplete] = useState<boolean>(false);
@@ -30,21 +31,17 @@ export default function TranscriptionEditor() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [progress, setProgress] = useState<number>(0);
-  const [processedChunks, setProcessedChunks] = useState<ChunkData[]>([]);
-  const [waitingForPrompt, setWaitingForPrompt] = useState<boolean>(false);
-  const [prompt, setPrompt] = useState<string>('');
-  const [showPromptInput, setShowPromptInput] = useState<boolean>(false);
-  const [apiStatus, setApiStatus] = useState<string>('');
-  const [isApiProcessing, setIsApiProcessing] = useState<boolean>(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
   
   const toastRef = useRef<Toast>(null);
+  const maxReconnectAttempts = 5;
   
-  // Fetch document data once on component mount
+  // Load document data
   useEffect(() => {
-    if (typeof window === 'undefined' || !currentUser) return;
-    
     const fetchDocData = async () => {
+      if (!currentUser) return;
+      
       try {
         setLoading(true);
         const token = await currentUser.getIdToken();
@@ -62,41 +59,11 @@ export default function TranscriptionEditor() {
         setContent(doc.content || '');
         setAudioFilename(doc.audioFilename || '');
         setAudioTrashed(!!doc.audioTrashed);
-        setPrompt(doc.transcription_prompt || '');
         
-        if (doc.awaiting_prompt) {
-          setWaitingForPrompt(true);
-          toastRef.current?.show({
-            severity: 'info',
-            summary: 'Input Needed',
-            detail: 'Please provide a transcription prompt to continue',
-            life: 5000
-          });
-        }
-        
+        // Check if content indicates completion
         if (doc.content && doc.content.length > 0) {
-          if (doc.content.includes("Transcription complete") || doc.content.length > 100) {
-            setIsComplete(true);
-            setProgress(100);
-          }
-        }
-        
-        // Fetch user settings
-        try {
-          const settingsRes = await fetch('/api/user-settings', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          if (settingsRes.ok) {
-            const settings = await settingsRes.json();
-            if (settings.transcriptionConfig) {
-              const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
-              setShowPromptInput(usingReplicate);
-            }
-          }
-        } catch (settingsErr) {
-          console.error("Error fetching settings:", settingsErr);
-          setShowPromptInput(false);
+          setIsComplete(true);
+          setProgress(100);
         }
       } catch (err) {
         console.error("Error loading document:", err);
@@ -107,89 +74,120 @@ export default function TranscriptionEditor() {
     };
     
     fetchDocData();
-    
-    // Cleanup function
-    return () => {
-      disconnectSocket();
-    };
   }, [docId, currentUser]);
   
-  // Set up socket connection for real-time updates
+  // Socket connection with reconnection logic
   useEffect(() => {
-    if (typeof window === 'undefined' || !currentUser) return;
+    if (!currentUser) return;
     
-    try {
-      // Initialize socket connection
-      const socket = getSocket();
-      setSocketConnected(socket.connected);
+    let reconnectTimer: NodeJS.Timeout | null = null;
+    
+    const connectSocket = () => {
+      if (reconnectAttempts >= maxReconnectAttempts) {
+        setError(`Failed to connect to real-time updates after ${maxReconnectAttempts} attempts`);
+        return;
+      }
       
-      socket.emit('join_doc', { doc_id: docId });
+      // Close any existing connection
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      
+      // Create socket connection
+      const socket = io('http://localhost:5000', {
+        transports: ['polling', 'websocket'],
+        path: '/socket.io',
+      });
+      
+      socketRef.current = socket;
       
       socket.on('connect', () => {
-        console.log('Socket connected');
-        setApiStatus('Socket connected successfully');
+        console.log('Socket connected with ID:', socket.id);
         setSocketConnected(true);
+        setReconnectAttempts(0);
+        setError('');
+        
+        // Join document room
         socket.emit('join_doc', { doc_id: docId });
+        
+        toastRef.current?.show({
+          severity: 'success',
+          summary: 'Connected',
+          detail: 'Real-time updates enabled',
+          life: 3000
+        });
       });
       
       socket.on('connect_error', (err) => {
         console.error('Socket connection error:', err);
-        setError(`Socket connection error: ${err.message}`);
-        setApiStatus(`Connection error: ${err.message}`);
         setSocketConnected(false);
+        
+        // Attempt reconnection
+        if (reconnectAttempts < maxReconnectAttempts) {
+          console.log(`Attempting to reconnect socket... (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+          setReconnectAttempts(prev => prev + 1);
+          
+          // Schedule reconnection
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connectSocket, 2000);
+        } else {
+          setError('Could not connect to real-time updates. Updates will not be live.');
+        }
       });
       
-      socket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
-        setApiStatus(`Socket disconnected: ${reason}`);
-        setSocketConnected(false);
-      });
-      
-      // Set up specific document events
+      // Handle incoming transcription chunks
       socket.on('partial_transcript_batch', (data) => {
         if (data.doc_id === docId) {
-          setIsApiProcessing(true);
+          console.log('Received partial transcript batch:', data);
           
           if (data.progress !== undefined) {
             setProgress(data.progress);
           }
           
           if (data.chunks && data.chunks.length > 0) {
-            setProcessedChunks(prev => [...prev, ...data.chunks]);
-            
-            const chunk_text = data.chunks.map((c) => c.text).join(' ');
-            
-            // Replace content rather than append indefinitely
-            if (data.is_replicate || data.mode === 'replicate') {
-              setContent(chunk_text);
-            } else {
-              // Smart content merging
-              setContent(prev => {
-                if (!prev) return chunk_text;
+            // Append new chunks to content
+            data.chunks.forEach((chunk: ChunkData) => {
+              setContent(prevContent => {
+                const newText = chunk.text.trim();
                 
-                const last_char = prev.slice(-1);
-                const first_char = chunk_text.charAt(0);
-                
-                if (first_char.match(/[.,;:!?'"]/)) {
-                  return prev + chunk_text;
-                } 
-                else if (last_char.match(/\w/) && first_char.match(/\w/)) {
-                  return prev + ' ' + chunk_text;
-                } 
-                else {
-                  return prev + chunk_text;
+                // If we already have content, append with proper spacing
+                if (prevContent) {
+                  const lastChar = prevContent.charAt(prevContent.length - 1);
+                  const firstChar = newText.charAt(0);
+                  
+                  // Determine how to join text
+                  if (lastChar === '' || firstChar === '') {
+                    return prevContent + newText;
+                  } else if (['.', ',', '!', '?', ':', ';'].includes(firstChar)) {
+                    return prevContent + newText;
+                  } else if (lastChar.match(/\s$/)) {
+                    return prevContent + newText;
+                  } else {
+                    return prevContent + ' ' + newText;
+                  }
                 }
+                
+                // If no previous content, just set the new text
+                return newText;
               });
-            }
+            });
+            
+            // Show a notification
+            toastRef.current?.show({
+              severity: 'info',
+              summary: 'Update',
+              detail: 'New transcription content received',
+              life: 1000
+            });
           }
         }
       });
       
+      // Handle final transcript
       socket.on('final_transcript', (data) => {
         if (data.doc_id === docId && data.done) {
           setIsComplete(true);
           setProgress(100);
-          setIsApiProcessing(false);
           
           if (data.content) {
             setContent(data.content);
@@ -197,51 +195,59 @@ export default function TranscriptionEditor() {
           
           toastRef.current?.show({
             severity: 'success',
-            summary: 'Transcription Complete',
-            detail: 'The audio file has been fully transcribed',
+            summary: 'Complete',
+            detail: 'Transcription completed successfully',
             life: 3000
           });
-          
-          setApiStatus('Transcription completed successfully');
         }
       });
       
+      // Handle document content updates from other users
       socket.on('doc_content_update', (update) => {
         if (update.doc_id === docId) {
+          console.log('Received doc content update');
           setContent(update.content);
         }
       });
       
+      // Handle transcription errors
       socket.on('transcription_error', (data) => {
         if (data.doc_id === docId) {
-          setIsApiProcessing(false);
           setError(`Transcription error: ${data.error}`);
-          setApiStatus(`Error: ${data.error}`);
           
           toastRef.current?.show({
             severity: 'error',
-            summary: 'Transcription Error',
+            summary: 'Error',
             detail: data.error,
             life: 5000
           });
         }
       });
       
-      // Return cleanup function
-      return () => {
-        socket.off('partial_transcript_batch');
-        socket.off('final_transcript');
-        socket.off('doc_content_update');
-        socket.off('transcription_error');
-      };
-    } catch (err) {
-      console.error("Error setting up socket connection:", err);
-      setError(`Socket connection error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      return () => {}; // Empty cleanup if setup failed
-    }
-  }, [docId, currentUser]);
-
-  const handleContentChange = async (newContent) => {
+      // Clean up on disconnect
+      socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        setSocketConnected(false);
+      });
+    };
+    
+    // Initialize connection
+    connectSocket();
+    
+    // Clean up function
+    return () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [docId, currentUser, reconnectAttempts]);
+  
+  const handleContentChange = async (newContent: string) => {
     setContent(newContent);
     
     if (!currentUser) return;
@@ -258,95 +264,12 @@ export default function TranscriptionEditor() {
       });
       
       // Emit to socket if connected
-      if (socketConnected) {
-        const socket = getSocket();
-        socket.emit('edit_doc', { doc_id: docId, content: newContent });
+      if (socketRef.current && socketRef.current.connected) {
+        socketRef.current.emit('edit_doc', { doc_id: docId, content: newContent });
       }
     } catch (err) {
       console.error("Error updating document:", err);
       setError(`Error saving changes: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
-  
-  const savePrompt = async () => {
-    if (!currentUser) return;
-    
-    try {
-      const token = await currentUser.getIdToken();
-      await fetch(`/api/docs/${docId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transcription_prompt: prompt })
-      });
-      
-      toastRef.current?.show({
-        severity: 'success',
-        summary: 'Prompt Saved',
-        detail: 'Transcription prompt has been saved',
-        life: 3000
-      });
-    } catch (err) {
-      console.error("Error saving prompt:", err);
-      setError(`Error saving prompt: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
-  
-  const submitPrompt = async () => {
-    if (!currentUser || !prompt.trim()) return;
-    
-    try {
-      await savePrompt();
-      
-      setContent('');
-      setProgress(0);
-      setIsComplete(false);
-      setWaitingForPrompt(false);
-      setIsApiProcessing(true);
-      setApiStatus("Starting transcription with API...");
-      
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`/api/transcribe/${docId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transcription_prompt: prompt })
-      });
-      
-      if (response.ok) {
-        toastRef.current?.show({
-          severity: 'info',
-          summary: 'Transcription Started',
-          detail: 'The API is processing your audio. This may take a moment...',
-          life: 5000
-        });
-      } else {
-        const data = await response.json();
-        setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
-        setIsApiProcessing(false);
-        
-        toastRef.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to start transcription: ${data.error || 'Unknown error'}`,
-          life: 5000
-        });
-      }
-    } catch (err) {
-      console.error("Error starting transcription:", err);
-      setError(`Error starting transcription: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setIsApiProcessing(false);
-      
-      toastRef.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: `Error starting transcription: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        life: 5000
-      });
     }
   };
   
@@ -357,8 +280,6 @@ export default function TranscriptionEditor() {
       setContent('');
       setProgress(0);
       setIsComplete(false);
-      setIsApiProcessing(true);
-      setApiStatus("Starting transcription...");
       
       const token = await currentUser.getIdToken();
       const response = await fetch(`/api/transcribe/${docId}`, {
@@ -366,8 +287,7 @@ export default function TranscriptionEditor() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transcription_prompt: prompt })
+        }
       });
       
       if (response.ok) {
@@ -380,12 +300,10 @@ export default function TranscriptionEditor() {
       } else {
         const data = await response.json();
         setError(`Failed to start transcription: ${data.error || 'Unknown error'}`);
-        setIsApiProcessing(false);
       }
     } catch (err) {
       console.error("Error starting transcription:", err);
       setError(`Error starting transcription: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setIsApiProcessing(false);
     }
   };
 
@@ -405,61 +323,52 @@ export default function TranscriptionEditor() {
       <Toast ref={toastRef} position="top-right" />
       
       <h2>Transcription for Document</h2>
+      
       {error && (
         <div style={{ color: 'red', background: '#ffeeee', padding: '0.5rem', borderRadius: '4px', marginBottom: '1rem' }}>
           {error}
         </div>
       )}
       
-      {audioFilename && (
-        <p>
-          Audio: {audioFilename} 
-          {audioTrashed && " (in TRASH)"}
-        </p>
-      )}
-      
-      {apiStatus && (
-        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#e8f4fd', borderRadius: '4px', color: '#0c5460' }}>
-          <strong>Status:</strong> {apiStatus}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div>
+          {audioFilename && (
+            <p>
+              Audio: {audioFilename} 
+              {audioTrashed && " (in TRASH)"}
+            </p>
+          )}
         </div>
-      )}
-      
-      {showPromptInput && (waitingForPrompt || !content) && (
-        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd' }}>
-          <h3>Transcription Prompt</h3>
-          <p>Enter a prompt to guide the transcription:</p>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            style={{ width: '100%', marginBottom: '0.5rem' }}
-            placeholder="e.g., Please transcribe this audio file. Pay special attention to technical terms."
-          />
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Button label="Save Prompt" icon="pi pi-save" onClick={savePrompt} />
-            <Button label="Start Transcription" icon="pi pi-play" onClick={submitPrompt} />
-          </div>
+        
+        <div>
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            padding: '0.25rem 0.5rem', 
+            borderRadius: '0.25rem',
+            backgroundColor: socketConnected ? '#e6f7e6' : '#ffeeee',
+            color: socketConnected ? '#2e7d32' : '#d32f2f'
+          }}>
+            <span style={{ 
+              width: '10px', 
+              height: '10px', 
+              borderRadius: '50%',
+              backgroundColor: socketConnected ? '#2e7d32' : '#d32f2f',
+              display: 'inline-block',
+              marginRight: '0.5rem'
+            }}></span>
+            {socketConnected ? 'Real-time updates' : 'Offline mode'}
+          </span>
         </div>
-      )}
+      </div>
       
-      {!isComplete && !isApiProcessing && (
+      {!isComplete && progress > 0 && progress < 100 && (
         <div style={{ marginBottom: '1rem' }}>
           <p>Transcription in progress... {progress}% complete</p>
           <ProgressBar value={progress} />
         </div>
       )}
       
-      {isApiProcessing && (
-        <div style={{ marginBottom: '1rem', padding: '1rem', background: '#fff', borderRadius: '4px', border: '1px solid #ddd', textAlign: 'center' }}>
-          <h3>Processing Audio</h3>
-          <div style={{ margin: '1rem 0' }}>
-            <ProgressBar value={10} />
-          </div>
-          <p>Please wait while we process your transcription...</p>
-        </div>
-      )}
-
-      {/* Use our new Editor component */}
       {typeof window !== 'undefined' && (
         <div className="editor-container">
           <Editor 

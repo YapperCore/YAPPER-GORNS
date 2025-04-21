@@ -1,22 +1,20 @@
 .file-upload-container {
-  margin-bottom: 20px;
-  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .dropzone {
   border: 2px dashed #ccc;
   border-radius: 8px;
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
   cursor: pointer;
-  background-color: #f9f9f9;
-  transition: border-color 0.3s, background-color 0.3s;
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
 }
 
 .dropzone:hover {
-  border-color: #4d7cff;
-  background-color: #f0f7ff;
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
 }
 
 .dropzone-content {
@@ -27,50 +25,46 @@
 }
 
 .dropzone-icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
+  margin-bottom: 1rem;
   color: #6c757d;
-  margin-bottom: 10px;
+}
+
+.selected-file {
+  font-weight: bold;
+  color: #0d6efd;
 }
 
 .hidden-input {
   display: none;
 }
 
-.selected-file {
-  font-weight: bold;
-  color: #4d7cff;
-}
-
-.error-message {
-  color: #f44336;
-  margin: 10px 0;
-  padding: 8px;
-  background-color: #ffeeee;
-  border-radius: 4px;
-  border-left: 3px solid #f44336;
-}
-
 .upload-progress {
-  margin: 15px 0;
+  margin: 1rem 0;
 }
 
 .upload-button {
+  display: block;
   width: 100%;
-  margin-top: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .prompt-input {
-  background-color: #f0f8ff;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #b8daff;
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
 }
 
 .prompt-input textarea {
   width: 100%;
-  min-height: 60px;
-  padding: 8px;
+  padding: 0.5rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
   resize: vertical;

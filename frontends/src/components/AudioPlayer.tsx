@@ -1,4 +1,4 @@
-// src/components/AudioPlayer.tsx - Complete rewritten file
+// src/components/AudioPlayer.tsx
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -18,10 +18,10 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [volume, setVolume] = useState(1);
 
-  // Fetch audio URL only once when component mounts or filename changes
+  // Fetch audio URL
   useEffect(() => {
-    let isMounted = true;
     let objectUrl: string | null = null;
 
     async function fetchAudioUrl() {
@@ -34,10 +34,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
         });
         
         if (!res.ok) {
-          console.error("Failed to fetch audio, status:", res.status);
-          if (isMounted) {
-            setError(`Failed to load audio file (HTTP ${res.status})`);
-          }
+          setError(`Failed to load audio (${res.status})`);
           return;
         }
         
@@ -45,43 +42,35 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
         const contentType = res.headers.get('content-type');
         
         if (contentType && contentType.includes('application/json')) {
-          // Handle JSON response with URL
           const data = await res.json();
-          if (data.url && isMounted) {
+          if (data.url) {
             setAudioUrl(data.url);
             setError(null);
-          } else if (isMounted) {
-            setError("Invalid URL response from server");
+          } else {
+            setError("Invalid URL response");
           }
         } else {
-          // Handle direct blob response
           const blob = await res.blob();
           objectUrl = URL.createObjectURL(blob);
-          if (isMounted) {
-            setAudioUrl(objectUrl);
-            setError(null);
-          }
+          setAudioUrl(objectUrl);
+          setError(null);
         }
       } catch (err) {
         console.error("Error fetching audio:", err);
-        if (isMounted) {
-          setError(`Error loading audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        }
+        setError(`Error loading audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
     
     fetchAudioUrl();
     
-    // Cleanup function to revoke object URL and prevent memory leaks
     return () => {
-      isMounted = false;
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl);
       }
     };
   }, [filename, currentUser]);
 
-  // Set up event listeners when audio element is available
+  // Set up audio element listeners
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -90,11 +79,9 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     const handleLoadedData = () => {
       setDuration(audio.duration);
       setAudioLoaded(true);
-      setError(null);
     };
     const handleEnded = () => setIsPlaying(false);
-    const handleError = (e: Event) => {
-      console.error("Audio error:", e);
+    const handleError = () => {
       setError("Error playing audio file");
       setAudioLoaded(false);
     };
@@ -112,22 +99,12 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     };
   }, [audioUrl]);
 
-  // Update audio source when URL is available
-  useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.load();
-    }
-  }, [audioUrl]);
-
   const handlePlayPause = () => {
     if (!audioRef.current || !audioLoaded) return;
     
     if (audioRef.current.paused) {
-      // Only attempt to play if audio is fully loaded
       const playPromise = audioRef.current.play();
       
-      // Handle the play promise to catch any errors
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
@@ -146,8 +123,10 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = parseFloat(e.target.value);
+      audioRef.current.volume = newVolume;
     }
   };
 
@@ -166,44 +145,53 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   };
 
   return (
-    <div className="audio-player">
-      <audio ref={audioRef} controls={false} preload="metadata" />
+    <div className="compact-audio-player">
+      <audio ref={audioRef} preload="metadata" />
       
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="player-error">{error}</div>}
       
-      <button 
-        onClick={handlePlayPause} 
-        disabled={!audioLoaded}
-        className={!audioLoaded ? "button-disabled" : ""}
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        {isPlaying ? '⏸️' : '▶️'}
-      </button>
+      <div className="player-controls">
+        <button 
+          className="play-pause-btn"
+          onClick={handlePlayPause} 
+          disabled={!audioLoaded}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? '⏸️' : '▶️'}
+        </button>
+        
+        <div className="time-display">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
+      </div>
       
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={(currentTime / duration) * 100 || 0}
-        onChange={handleProgressChange}
-        disabled={!audioLoaded}
-        className={`progress-bar ${!audioLoaded ? "slider-disabled" : ""}`}
-        aria-label="Audio progress"
-      />
+      <div className="progress-controls">
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={(currentTime / duration) * 100 || 0}
+          onChange={handleProgressChange}
+          disabled={!audioLoaded}
+          className="progress-slider"
+          aria-label="Audio progress"
+        />
+      </div>
       
-      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-      
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        defaultValue="1"
-        onChange={handleVolumeChange}
-        disabled={!audioLoaded}
-        className={`volume-bar ${!audioLoaded ? "slider-disabled" : ""}`}
-        aria-label="Volume control"
-      />
+      <div className="volume-controls">
+        <span className="volume-icon">🔊</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          onChange={handleVolumeChange}
+          disabled={!audioLoaded}
+          className="volume-slider"
+          aria-label="Volume control"
+        />
+      </div>
     </div>
   );
 }

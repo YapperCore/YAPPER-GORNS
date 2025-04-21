@@ -1,4 +1,4 @@
-// src/components/Home.tsx - Updated version
+// src/components/Home.tsx - Updated to handle API endpoint issues
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -23,11 +23,6 @@ interface Document {
   folderName?: string;
 }
 
-interface FolderOption {
-  label: string;
-  value: string;
-}
-
 export default function Home() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [docs, setDocs] = useState<Document[]>([]);
@@ -39,52 +34,34 @@ export default function Home() {
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
-  const [dataFetched, setDataFetched] = useState(false); // Flag to prevent multiple fetches
+  const [apiError, setApiError] = useState<string | null>(null);
   const toast = useRef<Toast>(null);
   const { currentUser, logout } = useAuth();
   const router = useRouter();
 
-  // Single data fetch effect to prevent multiple calls
-  useEffect(() => {
-    if (typeof window === 'undefined' || !currentUser || dataFetched) return;
-    
-    const fetchInitialData = async () => {
-      setLoading(true);
-      try {
-        await Promise.all([
-          fetchDocs(),
-          fetchFolders(),
-          fetchSettings()
-        ]);
-        setDataFetched(true); // Mark data as fetched to prevent repeated calls
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data. Please refresh and try again.',
-          life: 3000
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [currentUser]); // Only depend on currentUser
+  // Check if we're in a development environment
+  const isDev = process.env.NODE_ENV === 'development';
+  // Base API URL - use proxy in package.json in dev, or actual server in production
+  const API_BASE = isDev ? '' : process.env.NEXT_PUBLIC_API_URL || '';
 
   useEffect(() => {
     if (!currentUser && typeof window !== 'undefined') {
       router.push('/login');
+      return;
     }
-  }, [currentUser, router]);
+    
+    if (currentUser) {
+      Promise.all([fetchDocs(), fetchFolders(), fetchSettings()])
+        .finally(() => setLoading(false));
+    }
+  }, [currentUser]);
 
   const fetchDocs = async () => {
     if (!currentUser) return;
     
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/docs', {
+      const res = await fetch(`${API_BASE}/api/docs`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -93,18 +70,21 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setDocs(Array.isArray(data) ? data : []);
+        setApiError(null);
       } else {
         console.error("Error fetching docs:", res.status, res.statusText);
         setDocs([]);
         
         if (res.status === 401) {
-          // Unauthorized, redirect to login
           router.push('/login');
+        } else if (res.status === 404) {
+          setApiError("API endpoint not found. Check server connection.");
         }
       }
     } catch (err) {
       console.error("Error fetching docs:", err);
       setDocs([]);
+      setApiError("Failed to connect to the API. Check server connection.");
     }
   };
 
@@ -113,7 +93,7 @@ export default function Home() {
     
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/folders', {
+      const res = await fetch(`${API_BASE}/api/folders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -121,8 +101,6 @@ export default function Home() {
       
       if (res.ok) {
         const data = await res.json();
-        
-        // Handle different response formats
         if (data && data.dotFiles) {
           setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
         } else if (Array.isArray(data)) {
@@ -145,7 +123,7 @@ export default function Home() {
     
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/user-settings', {
+      const res = await fetch(`${API_BASE}/api/user-settings`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -153,8 +131,7 @@ export default function Home() {
 
       if (res.ok) {
         const settings = await res.json();
-        if (settings && settings.transcriptionConfig) {
-          // Check if using Replicate API
+        if (settings.transcriptionConfig) {
           const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
           setShowPromptInput(usingReplicate);
         }
@@ -164,70 +141,69 @@ export default function Home() {
     }
   };
 
- // src/components/Home.tsx - Update folder creation functionality
-// (Only showing the relevant part that needs changing, not the whole file)
-
-const handleCreateFolder = async () => {
-  if (!currentUser || typeof window === 'undefined') return;
-  
-  const folderName = window.prompt("Enter the name of the folder:");
-  if (!folderName || !folderName.trim()) return;
-  
-  try {
-    setCreatingFolder(true);
+  const handleCreateFolder = async () => {
+    if (!currentUser || typeof window === 'undefined') return;
     
-    const token = await currentUser.getIdToken();
-    const res = await fetch('/api/folders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ folderName })
-    });
+    const folderName = window.prompt("Enter the name of the folder:");
+    if (!folderName || !folderName.trim()) return;
     
-    const contentType = res.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      const data = await res.json();
+    try {
+      setCreatingFolder(true);
+      
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE}/api/folders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ folderName })
+      });
+      
+      let success = false;
+      let message = '';
+      
       if (res.ok) {
-        toast.current?.show({ 
-          severity: 'success', 
-          summary: 'Folder Created', 
-          detail: data.message || 'Folder created successfully', 
-          life: 3000 
-        });
-        
-        // Refresh folders list without triggering full data reload
-        await fetchFolders();
+        success = true;
+        try {
+          const data = await res.json();
+          message = data.message || 'Folder created successfully';
+        } catch (parseError) {
+          message = 'Folder created successfully';
+        }
       } else {
-        toast.current?.show({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: data.error || 'Failed to create folder', 
-          life: 3000 
-        });
+        try {
+          const errData = await res.json();
+          message = errData.error || 'Failed to create folder';
+        } catch (parseError) {
+          message = `Failed to create folder (${res.status})`;
+        }
       }
-    } else {
+      
+      toast.current?.show({ 
+        severity: success ? 'success' : 'error', 
+        summary: success ? 'Folder Created' : 'Error', 
+        detail: message, 
+        life: 3000 
+      });
+      
+      if (success) {
+        await fetchFolders();
+      }
+    } catch (err) {
+      console.error("Error creating folder:", err);
+      
       toast.current?.show({ 
         severity: 'error', 
         summary: 'Error', 
-        detail: 'Unexpected response format', 
+        detail: 'Failed to create folder. Please try again.', 
         life: 3000 
       });
+    } finally {
+      setCreatingFolder(false);
     }
-  } catch (err) {
-    console.error("Error creating folder:", err);
-    
-    toast.current?.show({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to create folder. Please try again.', 
-      life: 3000 
-    });
-  } finally {
-    setCreatingFolder(false);
-  }
-}; 
+  };
+
   const handleFolderClick = (folderName: string) => {
     router.push(`/folders/${folderName}`);
   };
@@ -237,7 +213,7 @@ const handleCreateFolder = async () => {
     
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/docs/${id}`, {
+      const res = await fetch(`${API_BASE}/api/docs/${id}`, {
         method: 'DELETE',
         headers: { 
           Authorization: `Bearer ${token}` 
@@ -245,7 +221,6 @@ const handleCreateFolder = async () => {
       });
       
       if (res.ok) {
-        // Update local state to remove the deleted document
         setDocs(prev => prev.filter(d => d.id !== id));
         
         toast.current?.show({
@@ -255,12 +230,18 @@ const handleCreateFolder = async () => {
           life: 3000
         });
       } else {
-        const errData = await res.json().catch(() => ({ error: 'Failed to delete document' }));
+        let errorMessage = 'Failed to delete document';
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          // If response is not valid JSON
+        }
         
         toast.current?.show({
           severity: 'error',
           summary: 'Error',
-          detail: errData.error || 'Failed to delete document',
+          detail: errorMessage,
           life: 3000
         });
       }
@@ -300,7 +281,7 @@ const handleCreateFolder = async () => {
 
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/folders/${selectedFolder}/add/${docToMove}`, {
+      const res = await fetch(`${API_BASE}/api/folders/${selectedFolder}/add/${docToMove}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -308,29 +289,38 @@ const handleCreateFolder = async () => {
       });
 
       if (res.ok) {
-        const data = await res.json();
+        let message = 'Document moved successfully';
+        try {
+          const data = await res.json();
+          message = data.message || message;
+        } catch (e) {
+          // If not parseable JSON
+        }
         
         toast.current?.show({
           severity: 'success',
           summary: 'Document Moved',
-          detail: data.message || 'Document moved successfully',
+          detail: message,
           life: 3000
         });
         
-        // Close the modal and reset selection
         setShowMoveModal(false);
         setSelectedFolder("");
         setDocToMove(null);
-
-        // Refresh documents list after moving
         await fetchDocs();
       } else {
-        const errData = await res.json().catch(() => ({ error: 'Failed to move document' }));
+        let errorMessage = 'Failed to move document';
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          // If not parseable JSON
+        }
         
         toast.current?.show({
           severity: 'error',
           summary: 'Error',
-          detail: errData.error || 'Failed to move document',
+          detail: errorMessage,
           life: 3000
         });
       }
@@ -356,7 +346,6 @@ const handleCreateFolder = async () => {
   };
 
   const handleSuccessfulUpload = (docId: string) => {
-    // Refresh documents after a successful upload
     fetchDocs();
     setUploadMessage("Upload succeeded!");
   };
@@ -378,6 +367,23 @@ const handleCreateFolder = async () => {
           onClick={handleLogout} 
         />
       </div>
+
+      {apiError && (
+        <div className="api-error-banner">
+          <i className="pi pi-exclamation-triangle"></i>
+          <span>{apiError}</span>
+          <Button 
+            label="Retry Connection" 
+            icon="pi pi-refresh"
+            className="p-button-sm p-button-text"
+            onClick={() => {
+              fetchDocs();
+              fetchFolders(); 
+              fetchSettings();
+            }}
+          />
+        </div>
+      )}
 
       <div className="upload-section">
         {showPromptInput && (

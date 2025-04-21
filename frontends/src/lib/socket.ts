@@ -1,4 +1,4 @@
-// src/lib/socket.ts - Updated socket implementation
+// src/lib/socket.ts
 'use client';
 
 import { io, Socket } from 'socket.io-client';
@@ -15,7 +15,7 @@ export function getSocket(): Socket {
     
     socket = io(backendUrl, {
       path: '/socket.io',
-      transports: ['polling', 'websocket'], // Change order: polling first, then websocket
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -36,6 +36,33 @@ export function getSocket(): Socket {
   }
   
   return socket;
+}
+
+export function joinDocRoom(docId: string): void {
+  try {
+    const s = getSocket();
+    s.emit('join_doc', { doc_id: docId });
+  } catch (error) {
+    console.error('Error joining doc room:', error);
+  }
+}
+
+export function leaveDocRoom(docId: string): void {
+  try {
+    const s = getSocket();
+    s.emit('leave_doc', { doc_id: docId });
+  } catch (error) {
+    console.error('Error leaving doc room:', error);
+  }
+}
+
+export function updateDocContent(docId: string, content: string): void {
+  try {
+    const s = getSocket();
+    s.emit('edit_doc', { doc_id: docId, content });
+  } catch (error) {
+    console.error('Error updating doc content:', error);
+  }
 }
 
 export function disconnectSocket(): void {
