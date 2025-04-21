@@ -2,7 +2,7 @@
 # You should customize this list as applicable to your project.
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
-
+backend/accesskey.json
 # Node artifact files
 node_modules/
 dist/
@@ -88,3 +88,24 @@ frontend/src/components/Accesskey.json
 backend/Accesskey.json
 
 /backend/doc_store.json
+
+
+# more ignores (new frontend implementation)
+
+#backend files
+.venv/
+.pytest_cache/
+.vscode/
+backend/__pycache__/
+backend/routes/__pycache__/
+backend/routes/unit-tests/__pycache__/
+backend/routes/unit-tests-delete/__pycache__
+backend/*.wav
+backend/services/__pycache__/
+backend\routes\unittests\dummy_path.wav
+# add your own dummy_path.wav when unittesting
+# removed req.txt, if that was needed refer to previous commits
+doc_store.json
+# added doc_store.json to .gitignore, if that was needed refer to previous commits
+# was added because doc_store.json commits local save data not present in other branches/machines
+backend/routes/unittests/

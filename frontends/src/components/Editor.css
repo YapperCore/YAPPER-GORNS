@@ -1,0 +1,62 @@
+/* src/components/Editor.css */
+.editor-container {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 8px;
+  border-bottom: 1px solid #e1e1e1;
+  background: #f8f8f8;
+}
+
+.editor-toolbar button {
+  margin-right: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #333;
+}
+
+.editor-toolbar button:hover {
+  background: #f1f1f1;
+}
+
+.editor-toolbar button.is-active {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+
+.rich-text-editor {
+  padding: 15px;
+  min-height: 400px;
+  outline: none;
+}
+
+.rich-text-editor p {
+  margin: 0 0 1em 0;
+}
+
+.rich-text-editor h1 {
+  font-size: 1.5em;
+  margin: 1em 0 0.5em;
+}
+
+.rich-text-editor h2 {
+  font-size: 1.3em;
+  margin: 1em 0 0.5em;
+}
+
+.editor-loading {
+  padding: 10px;
+  text-align: center;
+  color: #888;
+}

@@ -1,6 +1,7 @@
 # backend/routes/trash_route.py
 import os
 import logging
+import uuid
 from flask import jsonify, request, Blueprint
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store
@@ -101,6 +102,9 @@ def restore_file(filename):
                 if restored_file:
                     # Mark file as not trashed
                     doc["audioTrashed"] = False
+                    
+                    # Ensure the file goes to home by removing any folder association
+                    doc["folderName"] = None
                     
                     # Also ensure the document is not marked as deleted
                     if doc.get("deleted", False):
