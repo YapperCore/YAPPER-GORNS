@@ -122,3 +122,15 @@ backend\routes\unittests\dummy_path.wav
 doc_store.json
 # added doc_store.json to .gitignore, if that was needed refer to previous commits
 # was added because doc_store.json commits local save data not present in other branches/machines
+
+# Large files exceeding GitHub's 100MB limit
+.venv/Lib/site-packages/torch/lib/dnnl.lib
+.venv/Lib/site-packages/torch/lib/torch_cpu.dll
+frontend/node_modules/.cache/default-development/10.pack
+frontends/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node
+
+# Additional patterns to prevent similar large files
+.venv/Lib/site-packages/torch/lib/*.lib
+.venv/Lib/site-packages/torch/lib/*.dll
+**/node_modules/.cache/**/*.pack
+**/node_modules/@next/swc-*/**/*.node
