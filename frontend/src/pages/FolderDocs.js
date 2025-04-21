@@ -6,6 +6,8 @@ export default function FolderDocs() {
   const { folderName } = useParams();
   const { currentUser } = useAuth();
   const [docs, setDocs] = useState([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState([]);
 
   useEffect(() => {
     async function fetchDocs() {

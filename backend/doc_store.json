@@ -360,32 +360,28 @@
       "firebasePath": "users/5CBv8Rfhw4SVQprUFfy7Aid91An2/uploads/f3049832-4709-4d05-aee6-b092335ee8f7_electronics_explanation.mp3",
       "localPath": "/home/abheekp/DevelopTestYapper/yapper5/yapper/backend/uploads/f3049832-4709-4d05-aee6-b092335ee8f7_electronics_explanation.mp3"
     },
-    "804b5cb2-c9d1-45fe-96b8-17b28ed5e969": {
-      "id": "804b5cb2-c9d1-45fe-96b8-17b28ed5e969",
-      "name": "Doc3",
-      "content": "The birch canoe slid on the smooth planks. Glued the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of steady work faced us.",
-      "audioFilename": "b3cbf4b9-ebfa-4e67-b479-3d20ad46573a_OSR_us_000_0010_8k.mp3",
-      "originalFilename": "OSR_us_000_0010_8k.mp3",
+    "b75baad2-c893-452b-91ee-f274c7ed3702": {
+      "id": "b75baad2-c893-452b-91ee-f274c7ed3702",
+      "name": "Doc37",
+      "content": "<p>The birch canoes slid on the smooth planks. Glue the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of study work faced us.</p>",
+      "audioFilename": "af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
+      "originalFilename": "OSR_us_000_0010_8k.wav",
       "audioTrashed": false,
       "deleted": false,
       "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
-      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/b3cbf4b9-ebfa-4e67-b479-3d20ad46573a_OSR_us_000_0010_8k.mp3?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250421%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250421T152556Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=560800df679e3389f7572716239d950e79c2db8d9c9992396bef0fd298264fb8f69c9ca1ee01fb6320633739c3e5392821aac26dc3a7926b9d4a3ede28850ab73cd67a2f76fdf082b331b0e993bedd3d4fd37c88d47e774c91880a7281cc8dbce210aa8da8617090679675a52b03c3930d90de1466d656113e545fc2eac27945777bb409159e19b865d04764ea916222ed0ee5eff2c02d4b51dfa942019b22393d4b882ea2aeba358dff7249a71e4f1ed32bb9f6ca570212bf1af605298d5f3bdddf9012da254cc8221b440b83a64a7d94a1422f12655253cfd81f16406e85fb193e53c73880f695ab51810f1fbc244eb30fd95b50abb49f4ef558bc130052ef",
-      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/b3cbf4b9-ebfa-4e67-b479-3d20ad46573a_OSR_us_000_0010_8k.mp3",
-      "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\b3cbf4b9-ebfa-4e67-b479-3d20ad46573a_OSR_us_000_0010_8k.mp3",
+      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250416%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250416T031611Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=4bf154f0fa0ecf540827332c32b4f681bd524a59d8e403bb3b9859a825c292dfc31ecafb30e8e46891395b1427edfe231b1ac2005cc4032e315a82c5124979110b237dce7f5ec490e30beb71a6e32d128b00f3308d85f78c1684ef6434e335470e5f498bc3eecd3c17d6a332186ef84c7648eec64b432a94ef52681e8bcc3ccf5afed560e5f19ad9b0fc3668a10726b591b4329aeaf1bbc3474e96ab7de841658b6cd130515d1b7d7f999774b788089a078ab9ac5a0700d369e0979f4e1555585bfa030565662c2ddf083416584cb93824484e7fda05f2d542b05a94dcd1a039bbcf672e7ecf639233aa87d113077274cba8c521c26733c9ad85978f5b857df0",
+      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
+      "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\af8c93b9-8aaa-41bd-a4b6-a0d4826ff2b8_OSR_us_000_0010_8k.wav",
       "folderName": null
     },
-    "d95f877e-02ce-4c41-872b-71ad6ab364f5": {
-      "id": "d95f877e-02ce-4c41-872b-71ad6ab364f5",
-      "name": "Doc4",
-      "content": "The birch canoe slid on the smooth planks. Glued the sheet to the dark blue background. It is easy to tell the depth of a well. These days a chicken leg is a rare dish. Rice is often served in round bowls. The juice of lemons makes fine punch. The box was thrown beside the parked truck. The hogs were fed chopped corn and garbage. Four hours of steady work faced us.",
-      "audioFilename": "590d2f30-02f4-4ad8-b312-b07cc21cf4de_OSR_us_000_0010_8k.mp3",
-      "originalFilename": "OSR_us_000_0010_8k.mp3",
+    "25b82a29-1c50-4ea9-9922-0e0be7350113": {
+      "id": "25b82a29-1c50-4ea9-9922-0e0be7350113",
+      "name": "Doc37",
+      "content": "",
+      "audioFilename": "cae41c70-1900-421a-999b-b33603e44396_Pop2.wav",
+      "originalFilename": "Pop2.wav",
       "audioTrashed": false,
-      "deleted": false,
-      "owner": "vL9FYbYjViPMqV1Dy5DYYTbUaJQ2",
-      "firebaseUrl": "https://storage.googleapis.com/yapper-1958d.firebasestorage.app/users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/590d2f30-02f4-4ad8-b312-b07cc21cf4de_OSR_us_000_0010_8k.mp3?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=firebase-adminsdk-fbsvc%40yapper-1958d.iam.gserviceaccount.com%2F20250421%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20250421T153007Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=38b71f5b239df30d784acb65a0e8125a25da6256d0788e8bc26d956b5b479c3f4d85fa0696d5807c2746c6659d510f8389075747785fc27c86afd43d143ef05ac9be073560fe31b5d90208df1372af235be2c9e5ebe66f9fccaf41bbac796c23368cae174e5bc9e0fdfa5f34897a52c72ee9b88abfef7b37496ad973315897807a0e446f1b63f2c0401cf7e9a8be379ffc284bdf1ee7b811040cb7624e17fd31df30540d3be98e01edfe3c8a3ceeffa7282b0fdec7f801a67945cf41b571f9099ff2bf4bfbb4c8c2e83d883acf986ae77e8fe0b83ccecbd0191b2bb157e44ed5b1f771d758f5e02479f50dc78440f70e8a17e9c9e08dea04ad63fd925c6228ad",
-      "firebasePath": "users/vL9FYbYjViPMqV1Dy5DYYTbUaJQ2/uploads/590d2f30-02f4-4ad8-b312-b07cc21cf4de_OSR_us_000_0010_8k.mp3",
-      "localPath": "C:\\Users\\alija\\Desktop\\School-Folder\\CS3398\\yapper\\backend\\uploads\\590d2f30-02f4-4ad8-b312-b07cc21cf4de_OSR_us_000_0010_8k.mp3"
+      "deleted": false
     }
   },
   "counter": 1

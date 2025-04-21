@@ -20,6 +20,9 @@ function Home() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState([]);
+  const [docsInFolder, setDocsInFolder] = useState([]);
 
   useEffect(() => {
     const socket = io();
@@ -247,6 +250,76 @@ function Home() {
     }
   };
 
+  const handleDeleteFolderClick = async (folderName, event) => {
+    event.stopPropagation(); // Prevent the click event from propagating to the folder card
+    setSelectedFolder(folderName);
+    setShowOverlay(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/folders/${folderName}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setDocsInFolder(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching folder docs:", err);
+      setDocsInFolder([]);
+    }
+  };
+
+  const toggleDocSelection = (docId) => {
+    setSelectedDocs((prev) =>
+      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+    );
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const token = await currentUser.getIdToken();
+      for (const doc of docsInFolder) {
+        await fetch(`/api/docs/${doc.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      await fetch(`/api/folders/${selectedFolder}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowOverlay(false);
+      fetchFolders(); // Refresh folders
+    } catch (err) {
+      console.error("Error deleting all documents and folder:", err);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    try {
+      const token = await currentUser.getIdToken();
+      for (const docId of selectedDocs) {
+        await fetch(`/api/docs/${docId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      const unselectedDocs = docsInFolder.filter((doc) => !selectedDocs.includes(doc.id));
+      for (const doc of unselectedDocs) {
+        await fetch(`/api/folders/home/add/${doc.id}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      await fetch(`/api/folders/${selectedFolder}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowOverlay(false);
+      fetchFolders(); // Refresh folders
+    } catch (err) {
+      console.error("Error deleting selected documents and folder:", err);
+    }
+  };
+
   return (
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
@@ -278,6 +351,12 @@ function Home() {
           {folders.map(folder => (
             <div key={folder} className="doc-card" onClick={() => handleFolderClick(folder)}>
               <h4 className="doc-title">{folder}</h4>
+              <button
+                className="action-link delete-link"
+                onClick={(event) => handleDeleteFolderClick(folder, event)}
+              >
+                Delete Folder
+              </button>
             </div>
           ))}
         </div>
@@ -361,6 +440,46 @@ function Home() {
           />
         </div>
       </Dialog>
+
+      {showOverlay && (
+        <div className="overlay">
+          <div className="overlay-content">
+            <h3>Delete Folder: {selectedFolder}</h3>
+            <p>Select the documents to delete:</p>
+            <ul>
+              {docsInFolder.map((doc) => (
+                <li key={doc.id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedDocs.includes(doc.id)}
+                      onChange={() => toggleDocSelection(doc.id)}
+                    />
+                    {doc.name}
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div className="overlay-actions">
+              <button onClick={handleDeleteAll} className="p-button p-button-danger">
+                Delete All
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                className="p-button p-button-warning"
+              >
+                Delete Selected
+              </button>
+              <button
+                onClick={() => setShowOverlay(false)}
+                className="p-button p-button-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
