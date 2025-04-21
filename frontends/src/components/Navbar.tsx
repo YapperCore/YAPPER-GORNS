@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from 'primereact/button';
+import '../styles/Navbar.css';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
@@ -30,17 +31,32 @@ const Navbar = () => {
             <li><Link href="/documents">Documents</Link></li>
             <li><Link href="/settings">Settings</Link></li>
             <li><Link href="/trash">Trash</Link></li>
-            <li><Button onClick={handleLogout} className="logout-btn p-button-danger p-button-sm">Logout</Button></li>
+            <li>
+              <Button 
+                onClick={handleLogout} 
+                className="logout-btn p-button-danger p-button-sm"
+                label="Logout"
+                icon="pi pi-sign-out"
+              />
+            </li>
           </>
         ) : (
-          <>
-            <li><Link href="/login">Login</Link></li>
-            <li><Link href="/signup">Sign Up</Link></li>
-          </>
+          <div className="nav-buttons">
+            <li>
+              <Link href="/login">
+                <Button className="p-button-outlined p-button-sm" label="Login" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/signup">
+                <Button className="p-button-sm" label="Sign Up" />
+              </Link>
+            </li>
+          </div>
         )}
       </ul>
     </nav>
   );
-};
+}
 
 export default Navbar;

@@ -1,0 +1,34 @@
+.transcription-status {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f5f9ff;
+  border: 1px solid #c3d9ff;
+  border-radius: 8px;
+}
+
+.status-message {
+  margin-top: 0.5rem;
+  font-style: italic;
+  color: #555;
+}
+
+.replicate-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #e8f5e9;
+  border-left: 3px solid #4caf50;
+  font-size: 0.9rem;
+}
+
+.editor-container {
+  margin-top: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  margin-top: 1rem;
+}
+
+.loading-container {
+  margin: 2rem 0;
+}

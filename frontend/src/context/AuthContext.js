@@ -1,28 +1,47 @@
-// frontend/src/context/AuthContext.js
-import React, { useContext, useState, useEffect } from "react";
-import { auth } from "./firebase";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { 
+  getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut,
-  onAuthStateChanged 
+  onAuthStateChanged,
+  User 
 } from "firebase/auth";
+import { app } from "./firebase";
 
-const AuthContext = React.createContext();
-
-export function useAuth() {
-  return useContext(AuthContext);
+interface AuthContextType {
+  currentUser: User | null;
+  loading: boolean;
+  signup: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
+  getIdToken: () => Promise<string | null>;
 }
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-  function signup(email, password) {
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const auth = getAuth(app);
+
+  function signup(email: string, password: string) {
     return createUserWithEmailAndPassword(auth, email, password);
   }
 
-  function login(email, password) {
+  function login(email: string, password: string) {
     return signInWithEmailAndPassword(auth, email, password);
   }
 
@@ -30,7 +49,7 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
-  async function getIdToken() {
+  async function getIdToken(): Promise<string | null> {
     if (!currentUser) return null;
     try {
       return await currentUser.getIdToken(true);
@@ -46,7 +65,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [auth]);
 
   const value = {
     currentUser,

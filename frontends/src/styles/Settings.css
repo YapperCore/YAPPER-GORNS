@@ -1,0 +1,70 @@
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.system-info-container {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.info-item {
+  margin-bottom: 0.5rem;
+}
+
+.field-radiobutton {
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.field-radiobutton label {
+  margin-left: 0.5rem;
+}
+
+.option-disabled {
+  color: #999;
+  font-style: italic;
+}
+
+.radio-group {
+  margin-top: 0.5rem;
+}
+
+.slider-container {
+  margin-top: 0.5rem;
+}
+
+.api-key-input {
+  flex: 1;
+}
+
+.save-button-container {
+  display: flex;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.save-success {
+  margin-left: 1rem;
+  color: #4CAF50;
+}
+
+.p-text-secondary {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
