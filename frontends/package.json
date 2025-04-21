@@ -2,36 +2,39 @@
   "name": "frontends",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:5000",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.2.0",
+    "@firebase/auth": "^1.9.1",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
     "bootstrap": "^5.3.5",
     "firebase": "^11.6.0",
-    "next": "15.3.1",
+    "next": "^14.1.0",
     "primeicons": "^7.0.0",
-    "primereact": "^10.9.4",
-    "quill": "^2.0.3",
-    "react": "^18.3.1",
+    "primereact": "^10.9.2",
+    "react": "^18.2.0",
     "react-bootstrap": "^2.10.9",
-    "react-dom": "^18.3.1",
+    "react-dom": "^18.2.0",
     "react-quill": "^2.0.0",
-    "react-router-dom": "^7.5.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "web-vitals": "^2.1.4"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "^14.1.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.3.3"
   }
 }

@@ -1,220 +1,281 @@
-"use client";
+// src/app/home/page.tsx
+'use client';
 
-import React, { useState, useEffect, useRef, ChangeEvent } from "react";
-import io from "socket.io-client";
-import "@/static/Home.css";
-import Confirmable from "@/util/confirmable";
-import { Toast } from "primereact/toast";
-import "primereact/resources/themes/saga-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import { useAuth } from "@/context/AuthContext";
-import { Dialog } from "primereact/dialog";
-import { Dropdown } from "primereact/dropdown";
-interface Doc {
+import React, { useState, useEffect, useRef } from 'react';
+import { Toast } from 'primereact/toast';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
+import { Button } from 'primereact/button';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import Confirmable from '@/components/Confirmable';
+import FileUpload from '@/components/FileUpload';
+import '@/styles/Home.css';
+
+interface Document {
   id: string;
   name: string;
+  content?: string;
   audioFilename?: string;
   audioTrashed?: boolean;
+  deleted?: boolean;
+  folderName?: string;
 }
 
-function Home() {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploadMessage, setUploadMessage] = useState<string>("");
-  const [transcripts, setTranscripts] = useState<string[]>([]);
-  const [docs, setDocs] = useState<Doc[]>([]);
+interface FolderOption {
+  label: string;
+  value: string;
+}
+
+export default function Home() {
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [docs, setDocs] = useState<Document[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
-  const { currentUser } = useAuth();
-  const toast = useRef<Toast>(null);
-  const [showMoveModal, setShowMoveModal] = useState<boolean>(false);
-  const [selectedFolder, setSelectedFolder] = useState<string>("");
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const toast = useRef<Toast>(null);
+  const { currentUser, logout } = useAuth();
+  const router = useRouter();
 
+  // Fetch data only once when component mounts
   useEffect(() => {
-    const socket = io();
-    socket.on("partial_transcript_batch", (data: any) => {
-      const lines = data.chunks.map(
-        (c: any) => `Chunk ${c.chunk_index}/${c.total_chunks}: ${c.text}`
-      );
-      setTranscripts((prev) => [...prev, ...lines]);
-    });
-    socket.on("final_transcript", () => {
-      setTranscripts((prev) => [...prev, "Transcription complete."]);
-    });
-
-    async function fetchDocs() {
-      if (currentUser) {
-        try {
-          const token = await currentUser.getIdToken();
-          const res = await fetch("/api/docs", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const d = await res.json();
-          setDocs(Array.isArray(d) ? d : []);
-        } catch (err) {
-          console.error("Error fetching docs:", err);
-          setDocs([]);
-        }
-      }
-    }
-
-    async function fetchFolders() {
-      if (currentUser) {
-        try {
-          const token = await currentUser.getIdToken();
-          const res = await fetch("/api/folders", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
-        } catch (err) {
-          console.error("Error fetching folders:", err);
-          setFolders([]);
-        }
-      }
-    }
-
-    fetchDocs();
-    fetchFolders();
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [currentUser]);
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      setUploadMessage("No file selected!");
+    if (typeof window === 'undefined') return;
+    
+    if (!currentUser) {
+      router.push('/login');
       return;
     }
-    try {
-      const formData = new FormData();
-      formData.append("audio", file);
-      const token = await currentUser?.getIdToken();
-      const res = await fetch("/upload-audio", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setUploadMessage(data.message || "Upload succeeded");
-        if (data.doc_id) {
-          window.open(`/transcription/${data.doc_id}`, "_blank");
-        }
-        const docsRes = await fetch("/api/docs", {
-          headers: { Authorization: `Bearer ${token}` },
+    
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch data in parallel
+        await Promise.all([
+          fetchDocs(),
+          fetchFolders(),
+          fetchSettings()
+        ]);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load data. Please refresh and try again.',
+          life: 3000
         });
-        if (docsRes.ok) {
-          const docData = await docsRes.json();
-          setDocs(Array.isArray(docData) ? docData : []);
-        }
-      } else {
-        // clear();
-        setFile(null); // clears the selected file
-        setUploadMessage(""); // resets message if needed
-
-        const errData = await res.json();
-        setUploadMessage(errData.error || "Upload failed");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Upload error:", err);
-      setUploadMessage("Upload failed");
-    }
-  };
+    };
+    
+    fetchData();
+  }, [currentUser, router]);
 
-  const handleDelete = async (id: string) => {
+  const fetchDocs = async () => {
+    if (!currentUser) return;
+    
     try {
-      const token = await currentUser?.getIdToken();
-      const res = await fetch(`/api/docs/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setDocs((prev) => prev.filter((d) => d.id !== id));
-      }
-    } catch (err) {
-      console.error("Error deleting doc:", err);
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    const folderName = prompt("Enter the name of the folder:");
-    if (!folderName) return;
-
-    try {
-      const token = await currentUser?.getIdToken();
-      const res = await fetch("/api/folders", {
-        method: "POST",
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/docs', {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ folderName }),
+          'Authorization': `Bearer ${token}`
+        }
       });
-
+      
       if (res.ok) {
         const data = await res.json();
-        toast.current?.show({
-          severity: "success",
-          summary: "Folder Created",
-          detail: data.message,
-          life: 3000,
-        });
-        await fetchFolders();
+        setDocs(Array.isArray(data) ? data : []);
       } else {
-        const errData = await res.json();
-        toast.current?.show({
-          severity: "error",
-          summary: "Error",
-          detail: errData.error || "Failed to create folder",
-          life: 3000,
-        });
+        console.error("Error fetching docs:", res.status, res.statusText);
+        setDocs([]);
+        
+        if (res.status === 401) {
+          // Unauthorized, redirect to login
+          router.push('/login');
+        }
       }
     } catch (err) {
-      console.error("Error creating folder:", err);
-      toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Failed to create folder",
-        life: 3000,
-      });
+      console.error("Error fetching docs:", err);
+      setDocs([]);
     }
   };
 
   const fetchFolders = async () => {
-    if (currentUser) {
-      try {
-        const token = await currentUser.getIdToken();
-        const res = await fetch("/api/folders", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+    if (!currentUser) return;
+    
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/folders', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Handle both format types
+        if (data && data.dotFiles) {
           setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
+        } else if (Array.isArray(data)) {
+          setFolders(data);
         } else {
-          console.error("Error fetching folders:", res.statusText);
+          console.warn("Unexpected folder data format:", data);
           setFolders([]);
         }
-      } catch (err) {
-        console.error("Error fetching folders:", err);
+      } else {
+        console.error("Error fetching folders:", res.status, res.statusText);
         setFolders([]);
       }
+    } catch (err) {
+      console.error("Error fetching folders:", err);
+      setFolders([]);
     }
   };
 
-  useEffect(() => {
-    fetchFolders();
-  }, [currentUser]);
+  const fetchSettings = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/user-settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const settings = await res.json();
+        if (settings.transcriptionConfig) {
+          // Check if using Replicate API
+          const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
+          setShowPromptInput(usingReplicate);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching settings:", err);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!currentUser || typeof window === 'undefined') return;
+    
+    const folderName = window.prompt("Enter the name of the folder:");
+    if (!folderName || !folderName.trim()) return;
+
+    try {
+      setCreatingFolder(true);
+      
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ folderName })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        toast.current?.show({ 
+          severity: 'success', 
+          summary: 'Folder Created', 
+          detail: data.message || 'Folder created successfully', 
+          life: 3000 
+        });
+        
+        // Refresh folders list
+        await fetchFolders();
+      } else {
+        let errorMessage = 'Failed to create folder';
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          // If response is not valid JSON
+        }
+        
+        toast.current?.show({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: errorMessage, 
+          life: 3000 
+        });
+      }
+    } catch (err) {
+      console.error("Error creating folder:", err);
+      
+      toast.current?.show({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'Failed to create folder. Please try again.', 
+        life: 3000 
+      });
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
 
   const handleFolderClick = (folderName: string) => {
-    window.location.href = `/folders/${folderName}`;
+    router.push(`/folders/${folderName}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!currentUser) return;
+    
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/docs/${id}`, {
+        method: 'DELETE',
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      
+      if (res.ok) {
+        // Update local state to remove the deleted document
+        setDocs(prev => prev.filter(d => d.id !== id));
+        
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Document Deleted',
+          detail: 'Document moved to trash successfully',
+          life: 3000
+        });
+      } else {
+        let errorMessage = 'Failed to delete document';
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          // If response is not valid JSON
+        }
+        
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+          life: 3000
+        });
+      }
+    } catch (err) {
+      console.error("Error deleting doc:", err);
+      
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to delete document. Please try again.',
+        life: 3000
+      });
+    }
   };
 
   const handleOpenMoveModal = (docId: string) => {
@@ -229,183 +290,242 @@ function Home() {
   };
 
   const handleMoveToFolder = async () => {
-    if (!selectedFolder) {
-      toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Please select a folder.",
-        life: 3000,
+    if (!selectedFolder || !docToMove || !currentUser) {
+      toast.current?.show({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'Please select a folder.', 
+        life: 3000 
       });
       return;
     }
 
     try {
-      const token = await currentUser?.getIdToken();
-      const res = await fetch(
-        `/api/folders/${selectedFolder}/add/${docToMove}`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/folders/${selectedFolder}/add/${docToMove}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
 
       if (res.ok) {
         const data = await res.json();
+        
         toast.current?.show({
-          severity: "success",
-          summary: "Document Moved",
-          detail: data.message,
-          life: 3000,
+          severity: 'success',
+          summary: 'Document Moved',
+          detail: data.message || 'Document moved successfully',
+          life: 3000
         });
+        
+        // Close the modal and reset selection
         setShowMoveModal(false);
         setSelectedFolder("");
         setDocToMove(null);
 
-        const docsRes = await fetch("/api/docs", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (docsRes.ok) {
-          const docData = await docsRes.json();
-          setDocs(Array.isArray(docData) ? docData : []);
-        }
+        // Refresh documents list after moving
+        await fetchDocs();
       } else {
-        const errData = await res.json();
+        let errorMessage = 'Failed to move document';
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          // If response is not valid JSON
+        }
+        
         toast.current?.show({
-          severity: "error",
-          summary: "Error",
-          detail: errData.error || "Failed to move document",
-          life: 3000,
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+          life: 3000
         });
       }
     } catch (err) {
       console.error("Error moving document:", err);
+      
       toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Failed to move document",
-        life: 3000,
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to move document. Please try again.',
+        life: 3000
       });
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
+  const handleSuccessfulUpload = (docId: string) => {
+    // Refresh documents after a successful upload
+    fetchDocs();
+    setUploadMessage("Upload succeeded!");
+  };
+
+  if (!currentUser) {
+    return null; // Redirecting to login in useEffect
+  }
+
   return (
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
+      
+      <div className="home-header">
+        <h2>Home - Upload Audio =&gt; Create Doc</h2>
+        <Button 
+          label="Logout" 
+          icon="pi pi-sign-out" 
+          className="p-button-text" 
+          onClick={handleLogout} 
+        />
+      </div>
 
-      <h2>Home - Upload Audio =&gt; Create Doc</h2>
       <div className="upload-section">
-        <input type="file" onChange={handleFileChange} className="file-input" />
-        <button onClick={handleUpload} className="upload-button">
-          Submit
-        </button>
+        {showPromptInput && (
+          <div className="prompt-input">
+            <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
+            <textarea
+              placeholder="e.g., Please transcribe this audio accurately, paying attention to technical terms."
+              value={transcriptionPrompt}
+              onChange={(e) => setTranscriptionPrompt(e.target.value)}
+              rows={2}
+            />
+          </div>
+        )}
+        
+        <FileUpload 
+          onSuccessfulUpload={handleSuccessfulUpload}
+          transcriptionPrompt={transcriptionPrompt}
+        />
+        
+        {uploadMessage && <p className="message">{uploadMessage}</p>}
       </div>
-      <p className="message">{uploadMessage}</p>
 
       <hr className="divider" />
-      <div>
-        <button onClick={handleCreateFolder} className="action-link edit-link">
-          Create Folder
-        </button>
+      
+      <div className="folder-section">
+        <Button 
+          label="Create Folder" 
+          icon="pi pi-folder-plus"
+          onClick={handleCreateFolder} 
+          className="create-folder-btn"
+          disabled={!currentUser || creatingFolder}
+          loading={creatingFolder}
+        />
       </div>
+      
       <hr className="divider" />
-      <div>
+      
+      <div className="folders-section">
         <h3>Folders:</h3>
-        <div className="docs-grid">
-          {folders.map((folder) => (
-            <div
-              key={folder}
-              className="doc-card"
-              onClick={() => handleFolderClick(folder)}
-            >
-              <h4 className="doc-title">{folder}</h4>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <p>Loading folders...</p>
+        ) : folders.length === 0 ? (
+          <p>No folders created yet. Create your first folder to organize your documents.</p>
+        ) : (
+          <div className="docs-grid">
+            {folders.map(folder => (
+              <div key={folder} className="doc-card folder-card" onClick={() => handleFolderClick(folder)}>
+                <h4 className="doc-title">
+                  <i className="pi pi-folder"></i> {folder}
+                </h4>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <hr style={{ border: "1px solid black", margin: "1rem 0" }} />
+      <hr className="divider" />
 
-      <div>
+      <div className="docs-section">
         <h3>Docs in Session:</h3>
-        <div className="docs-grid">
-          {docs.map((doc) => (
-            <div key={doc.id} className="doc-card">
-              <h4 className="doc-title">{doc.name}</h4>
-              {doc.audioFilename && (
-                <p className="audio-info">
-                  Audio: {doc.audioFilename}
-                  {doc.audioTrashed && " [TRASHED]"}
-                </p>
-              )}
+        {loading ? (
+          <p>Loading documents...</p>
+        ) : docs.length === 0 ? (
+          <p>No documents available. Upload an audio file to create your first document.</p>
+        ) : (
+          <div className="docs-grid">
+            {docs.map(doc => (
+              <div key={doc.id} className="doc-card">
+                <h4 className="doc-title">{doc.name}</h4>
+                {doc.audioFilename && (
+                  <p className="audio-info">
+                    Audio: {doc.audioFilename}
+                    {doc.audioTrashed && ' [TRASHED]'}
+                  </p>
+                )}
 
-              <div className="doc-actions">
-                <a
-                  href={`/transcription/${doc.id}`}
-                  rel="noreferrer"
-                  className="action-link transcription-link"
-                >
-                  View Doc
-                </a>
-                <a
-                  href={`/docs/edit/${doc.id}`}
-                  rel="noreferrer"
-                  className="action-link edit-link"
-                >
-                  Edit Doc
-                </a>
-                <Confirmable
-                  onDelete={() => handleDelete(doc.id)}
-                  toast={toast}
-                />
-                <button
-                  onClick={() => handleOpenMoveModal(doc.id)}
-                  className="action-link move-link orange-button"
-                >
-                  Move to Folder
-                </button>
+                <div className="doc-actions">
+                  <Link
+                    href={`/transcription/${doc.id}`}
+                    target="_blank"
+                    className="action-link transcription-link"
+                  >
+                    View Doc
+                  </Link>
+                  <Link
+                    href={`/docs/edit/${doc.id}`}
+                    target="_blank"
+                    className="action-link edit-link"
+                  >
+                    Edit Doc
+                  </Link>
+                  <Confirmable
+                    onDelete={() => handleDelete(doc.id)}
+                    toast={toast}
+                  />
+                  <button
+                    onClick={() => handleOpenMoveModal(doc.id)}
+                    className="action-link move-link"
+                  >
+                    Move to Folder
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Dialog
         header="Move Document to Folder"
         visible={showMoveModal}
-        style={{ width: "30vw" }}
+        style={{ width: '30vw' }}
         onHide={handleCloseMoveModal}
         footer={
           <div>
-            <button
-              className="p-button p-component p-button-text"
-              onClick={handleCloseMoveModal}
-            >
-              Cancel
-            </button>
-            <button
-              className="p-button p-component p-button-primary"
-              onClick={handleMoveToFolder}
-            >
-              Move
-            </button>
+            <Button 
+              label="Cancel" 
+              icon="pi pi-times" 
+              className="p-button-text" 
+              onClick={handleCloseMoveModal} 
+            />
+            <Button 
+              label="Move" 
+              icon="pi pi-check" 
+              onClick={handleMoveToFolder} 
+              disabled={!selectedFolder}
+            />
           </div>
         }
       >
         <div>
           <Dropdown
             value={selectedFolder}
-            options={folders.map((folder) => ({
-              label: folder,
-              value: folder,
-            }))}
+            options={folders.map(folder => ({ label: folder, value: folder }))}
             onChange={(e) => setSelectedFolder(e.value)}
             placeholder="Select a folder"
-            style={{ width: "100%" }}
+            className="w-full"
           />
         </div>
       </Dialog>
     </div>
   );
 }
-
-export default Home;

@@ -1,123 +1,174 @@
-"use client";
+// src/app/signup/page.tsx
+'use client';
 
 import React, { useRef, useState, useEffect } from "react";
-import {
-  Form,
-  Button,
-  Card,
-  Alert,
-  Container,
-  InputGroup,
-} from "react-bootstrap";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Toast } from "primereact/toast";
+import { InputText } from "primereact/inputtext";
+import { Password } from "primereact/password";
+import { Button } from "primereact/button";
+import { Card } from "primereact/card";
+import { Divider } from "primereact/divider";
+import "@/styles/Signup.css";
 
 export default function Signup() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const passwordConfirmRef = useRef<HTMLInputElement>(null);
   const { signup, currentUser } = useAuth();
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const router = useRouter();
+  const toast = useRef<Toast>(null);
 
+  // If already logged in, redirect to home
   useEffect(() => {
     if (currentUser) {
-      router.replace("/home");
+      router.push('/home');
     }
   }, [currentUser, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    setError("");
+    
+    // Clear previous errors
+    setError('');
     setSuccess(false);
-
-    if (passwordRef.current?.value !== passwordConfirmRef.current?.value) {
-      return setError("Passwords do not match");
+    
+    // Validate passwords match
+    if (password !== passwordConfirm) {
+      setError("Passwords do not match");
+      return;
     }
-
-    if (passwordRef.current?.value.length! < 6) {
-      return setError("Password should be at least 6 characters");
+    
+    // Validate password strength
+    if (password.length < 6) {
+      setError("Password should be at least 6 characters");
+      return;
     }
-
+    
     try {
       setLoading(true);
-      await signup(emailRef.current!.value, passwordRef.current!.value);
+      await signup(email, password);
       setSuccess(true);
+      
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Account Created',
+        detail: 'Your account has been created successfully!',
+        life: 3000
+      });
+      
+      // Redirect to home after short delay
       setTimeout(() => {
-        router.replace("/home");
+        router.push('/home');
       }, 1500);
+      
     } catch (error: any) {
       console.error("Signup failed:", error);
-      if (error.code === "auth/email-already-in-use") {
-        setError(
-          "This email is already registered. Please use a different email or try logging in."
-        );
-      } else if (error.code === "auth/invalid-email") {
+      
+      // Provide user-friendly error messages
+      if (error.code === 'auth/email-already-in-use') {
+        setError("This email is already registered. Please use a different email or try logging in.");
+      } else if (error.code === 'auth/invalid-email') {
         setError("Invalid email address format.");
-      } else if (error.code === "auth/weak-password") {
+      } else if (error.code === 'auth/weak-password') {
         setError("Password is too weak. Please use a stronger password.");
       } else {
         setError("Failed to create an account: " + error.message);
       }
+      
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Signup Failed',
+        detail: error.message,
+        life: 3000
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Container
-      className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "80vh" }}
-    >
-      <div className="w-100" style={{ maxWidth: "400px" }}>
-        <Card className="shadow">
-          <Card.Body>
-            <h2 className="text-center mb-4">Sign Up</h2>
-            {error && <Alert variant="danger">{error}</Alert>}
-            {success && (
-              <Alert variant="success">
-                Account created successfully! Redirecting...
-              </Alert>
-            )}
-            <Form onSubmit={handleSubmit}>
-              <Form.Group id="email" className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text>📧</InputGroup.Text>
-                  <Form.Control type="email" ref={emailRef} required />
-                </InputGroup>
-              </Form.Group>
-              <Form.Group id="password" className="mb-3">
-                <Form.Label>Password</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text>🔒</InputGroup.Text>
-                  <Form.Control type="password" ref={passwordRef} required />
-                </InputGroup>
-              </Form.Group>
-              <Form.Group id="password-confirm" className="mb-3">
-                <Form.Label>Password Confirmation</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text>🔒</InputGroup.Text>
-                  <Form.Control
-                    type="password"
-                    ref={passwordConfirmRef}
-                    required
-                  />
-                </InputGroup>
-              </Form.Group>
-              <Button disabled={loading} className="w-100" type="submit">
-                {loading ? "Creating Account..." : "Sign Up"}
-              </Button>
-            </Form>
-          </Card.Body>
-        </Card>
-        <div className="text-center mt-3">
-          Already have an account? <a href="/login">Log In</a>
+    <div className="signup-container">
+      <Toast ref={toast} position="top-right" />
+      
+      <Card className="signup-card">
+        <div className="signup-header">
+          <h1>Yapper</h1>
+          <h2>Sign Up</h2>
         </div>
-      </div>
-    </Container>
+        
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">Account created successfully! Redirecting...</div>}
+        
+        <form onSubmit={handleSubmit} className="signup-form">
+          <div className="form-field">
+            <label htmlFor="email">Email</label>
+            <span className="p-input-icon-left">
+              <i className="pi pi-envelope" />
+              <InputText
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full"
+                required
+              />
+            </span>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="password">Password</label>
+            <Password
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              toggleMask
+              placeholder="Enter your password"
+              className="w-full"
+              required
+            />
+          </div>
+          
+          <div className="form-field">
+            <label htmlFor="password-confirm">Confirm Password</label>
+            <Password
+              id="password-confirm"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              toggleMask
+              feedback={false}
+              placeholder="Confirm your password"
+              className="w-full"
+              required
+            />
+          </div>
+
+          <Button 
+            type="submit"
+            label={loading ? "Creating Account..." : "Sign Up"}
+            icon="pi pi-user-plus"
+            className="signup-button"
+            disabled={loading}
+          />
+        </form>
+        
+        <Divider align="center">
+          <span className="divider-text">OR</span>
+        </Divider>
+        
+        <div className="signup-links">
+          <Link href="/login">Already have an account? Login</Link>
+        </div>
+      </Card>
+    </div>
   );
 }

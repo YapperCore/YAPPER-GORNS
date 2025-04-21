@@ -1,55 +1,88 @@
-import React, { useState, useEffect, JSX } from "react";
-import { useParams, Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { User } from "firebase/auth";
+// src/app/folders/[folderName]/page.tsx - Complete rewritten file
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
+import { ConfirmDialog } from 'primereact/confirmdialog';
+import { useAuth } from '@/context/AuthContext';
 
 interface Doc {
   id: string;
   name: string;
+  content?: string;
   audioFilename?: string;
   audioTrashed?: boolean;
+  owner?: string;
 }
 
-interface Params {
-  folderName?: string;
-}
-
-export default function FolderDocs(): JSX.Element {
-  const { folderName } = useParams();
-  const { currentUser } = useAuth() as { currentUser: User | null };
+export default function FolderDocs() {
+  const params = useParams();
+  const folderName = params.folderName as string;
+  const router = useRouter();
+  const { currentUser } = useAuth();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDialogVisible, setConfirmDialogVisible] = useState<boolean>(false);
+  const [docToDelete, setDocToDelete] = useState<string | null>(null);
+  const toast = useRef<Toast>(null);
 
+  // Fetch documents on component mount
   useEffect(() => {
+    if (!currentUser || typeof window === 'undefined') {
+      return;
+    }
+
     async function fetchDocs() {
-      if (currentUser && folderName) {
+      try {
         setLoading(true);
-        try {
-          const token = await currentUser.getIdToken();
-          const res = await fetch(`/api/folders/${folderName}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+        setError(null);
+        
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`/api/folders/${folderName}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            setError(`Folder "${folderName}" not found.`);
+          } else {
+            const errData = await res.json();
+            setError(errData.error || "Failed to load documents.");
+          }
+          setDocs([]);
+        } else {
           const data = await res.json();
           setDocs(Array.isArray(data) ? data : []);
-          setError(null);
-        } catch (err) {
-          console.error("Error fetching folder docs:", err);
-          setError("Failed to load documents.");
-          setDocs([]);
-        } finally {
-          setLoading(false);
         }
+      } catch (err) {
+        console.error("Error fetching folder docs:", err);
+        setError("An unexpected error occurred.");
+        setDocs([]);
+      } finally {
+        setLoading(false);
       }
     }
+
     fetchDocs();
-  }, [currentUser, folderName]);
+  }, [currentUser, folderName, router]);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!currentUser && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [currentUser, router]);
 
   const handleMoveToHome = async (docId: string) => {
+    if (!currentUser) return;
+
     try {
-      if (!currentUser) return;
       const token = await currentUser.getIdToken();
       const res = await fetch(`/api/folders/home/add/${docId}`, {
         method: "POST",
@@ -61,24 +94,46 @@ export default function FolderDocs(): JSX.Element {
       if (!res.ok) {
         const errData = await res.json();
         console.error("Error moving document to home:", errData.error);
+
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: errData.error || 'Failed to move document',
+          life: 3000
+        });
       } else {
         setDocs((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
+
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Document moved to home successfully',
+          life: 3000
+        });
       }
     } catch (err) {
       console.error("Error moving document to home:", err);
+
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to move document',
+        life: 3000
+      });
     }
   };
 
-  const handleDelete = async (docId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this document?"
-    );
-    if (!confirmed) return;
+  const confirmDelete = (docId: string) => {
+    setDocToDelete(docId);
+    setConfirmDialogVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (!currentUser || !docToDelete) return;
 
     try {
-      if (!currentUser) return;
       const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/docs/${docId}`, {
+      const res = await fetch(`/api/docs/${docToDelete}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,23 +141,63 @@ export default function FolderDocs(): JSX.Element {
       });
 
       if (res.ok) {
-        setDocs((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
+        setDocs((prevDocs) => prevDocs.filter((doc) => doc.id !== docToDelete));
+
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Document deleted successfully',
+          life: 3000
+        });
       } else {
         const errData = await res.json();
         console.error("Error deleting document:", errData.error);
+
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: errData.error || 'Failed to delete document',
+          life: 3000
+        });
       }
     } catch (err) {
       console.error("Error deleting document:", err);
+
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to delete document',
+        life: 3000
+      });
+    } finally {
+      setDocToDelete(null);
+      setConfirmDialogVisible(false);
     }
   };
 
+  if (!currentUser) {
+    return null; // Will redirect in useEffect
+  }
+
   return (
     <div className="home-container">
+      <Toast ref={toast} position="top-right" />
+      <ConfirmDialog
+        visible={confirmDialogVisible}
+        onHide={() => setConfirmDialogVisible(false)}
+        message="Are you sure you want to delete this document?"
+        header="Confirm Delete"
+        icon="pi pi-exclamation-triangle"
+        accept={handleDelete}
+        reject={() => setConfirmDialogVisible(false)}
+      />
+
       <h2>Documents in Folder: {folderName}</h2>
+      {error && <p style={{ color: "red", fontWeight: "bold" }}>{error}</p>}
 
       {loading && <p>Loading documents...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && docs.length === 0 && (
+
+      {!loading && !error && docs.length === 0 && (
         <p>No documents found in this folder.</p>
       )}
 
@@ -118,19 +213,19 @@ export default function FolderDocs(): JSX.Element {
             )}
             <div className="doc-actions">
               <Link
-                to={`/transcription/${doc.id}`}
+                href={`/transcription/${doc.id}`}
                 className="action-link transcription-link"
               >
                 View Doc
               </Link>
               <Link
-                to={`/docs/edit/${doc.id}`}
+                href={`/docs/edit/${doc.id}`}
                 className="action-link edit-link"
               >
                 Edit Doc
               </Link>
               <button
-                onClick={() => handleDelete(doc.id)}
+                onClick={() => confirmDelete(doc.id)}
                 className="action-link delete-link"
               >
                 Delete Doc
@@ -144,6 +239,12 @@ export default function FolderDocs(): JSX.Element {
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: '1rem' }}>
+        <Link href="/home">
+          <Button label="Back to Home" icon="pi pi-arrow-left" className="p-button-secondary" />
+        </Link>
       </div>
     </div>
   );

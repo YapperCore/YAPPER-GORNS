@@ -1,5 +1,5 @@
-/* src/styles/Login.css */
-.login-container {
+/* src/styles/Signup.css */
+.signup-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -8,30 +8,30 @@
   padding: 1rem;
 }
 
-.login-card {
+.signup-card {
   width: 100%;
   max-width: 450px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.login-header {
+.signup-header {
   text-align: center;
   margin-bottom: 1.5rem;
 }
 
-.login-header h1 {
+.signup-header h1 {
   color: #212121;
   margin-bottom: 0.5rem;
   font-size: 2rem;
 }
 
-.login-header h2 {
+.signup-header h2 {
   color: #666;
   margin-top: 0;
   font-size: 1.5rem;
 }
 
-.login-form {
+.signup-form {
   margin-bottom: 1.5rem;
 }
 
@@ -46,7 +46,7 @@
   color: #555;
 }
 
-.login-button {
+.signup-button {
   width: 100%;
   margin-top: 1rem;
 }
@@ -60,23 +60,32 @@
   border-left: 3px solid #d32f2f;
 }
 
+.success-message {
+  padding: 0.75rem;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #2e7d32;
+}
+
 .divider-text {
   background: white;
   padding: 0 10px;
   color: #666;
 }
 
-.login-links {
+.signup-links {
   display: flex;
   justify-content: center;
   margin-top: 1rem;
 }
 
-.login-links a {
+.signup-links a {
   color: #1976d2;
   text-decoration: none;
 }
 
-.login-links a:hover {
+.signup-links a:hover {
   text-decoration: underline;
 }

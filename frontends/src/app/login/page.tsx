@@ -1,100 +1,155 @@
-"use client";
+// src/app/login/page.tsx
+'use client';
 
-import React, { useRef, useState, useEffect } from "react";
-import { Card, Alert, InputGroup, Container } from "react-bootstrap";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import React, { useState, useEffect, useRef } from 'react';
+import { InputText } from 'primereact/inputtext';
+import { Password } from 'primereact/password';
+import { Button } from 'primereact/button';
+import { Toast } from 'primereact/toast';
+import { Card } from 'primereact/card';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import '@/styles/Login.css';
 
-export default function LoginPage() {
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const { login, currentUser } = useAuth();
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { currentUser, login } = useAuth();
   const router = useRouter();
+  const toast = useRef<Toast>(null);
 
-  // Redirect to /home if already logged in
   useEffect(() => {
+    // If already logged in, redirect to home
     if (currentUser) {
-      router.replace("/home");
+      router.push('/home');
     }
   }, [currentUser, router]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!emailRef.current || !passwordRef.current) return;
-
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Login Error',
+        detail: 'Please enter both email and password',
+        life: 3000
+      });
+      return;
+    }
+    
     try {
-      setError("");
+      setError('');
       setLoading(true);
-
-      await login(emailRef.current.value, passwordRef.current.value);
+      
+      await login(email, password);
       console.log("Login successful");
-      router.replace("/home");
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      setError(`Failed to log in: ${error.message}`);
+      
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Login Successful',
+        detail: 'You have been logged in successfully',
+        life: 3000
+      });
+      
+      // Redirect to home page
+      router.push('/home');
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      
+      let errorMessage = 'Failed to log in. Please check your credentials.';
+      
+      // Get specific Firebase error message
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = 'Invalid email or password';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Invalid email format';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many failed login attempts. Please try again later.';
+            break;
+          default:
+            errorMessage = `Failed to log in: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
+      
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: errorMessage,
+        life: 3000
+      });
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <Container
-      className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "80vh" }}
-    >
-      <div className="w-100" style={{ maxWidth: "400px" }}>
-        <Card className="shadow">
-          <Card.Body>
-            <h2 className="text-center mb-4">Log In</h2>
-            {error && <Alert variant="danger">{error}</Alert>}
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label htmlFor="email">Email</label>
-                <InputGroup>
-                  <InputGroup.Text>📧</InputGroup.Text>
-                  <input
-                    type="email"
-                    id="email"
-                    ref={emailRef}
-                    required
-                    placeholder="Enter your email"
-                    className="form-control"
-                  />
-                </InputGroup>
-              </div>
-
-              <div className="mb-3">
-                <label htmlFor="password">Password</label>
-                <InputGroup>
-                  <InputGroup.Text>🔒</InputGroup.Text>
-                  <input
-                    type="password"
-                    id="password"
-                    ref={passwordRef}
-                    required
-                    placeholder="Enter your password"
-                    className="form-control"
-                  />
-                </InputGroup>
-              </div>
-
-              <button
-                disabled={loading}
-                className="w-100 btn btn-primary"
-                type="submit"
-              >
-                {loading ? "Logging in..." : "Log In"}
-              </button>
-            </form>
-          </Card.Body>
-        </Card>
-        <div className="text-center mt-3">
-          Need an account? <a href="/signup">Sign Up</a>
+    <div className="login-container">
+      <Toast ref={toast} position="top-right" />
+      
+      <Card title="Log In" className="login-card">
+        {error && <div className="error-message">{error}</div>}
+        
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="email">Email</label>
+            <span className="p-input-icon-left w-full">
+              <i className="pi pi-envelope" />
+              <InputText
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full"
+                required
+              />
+            </span>
+          </div>
+          
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <span className="p-input-icon-left w-full">
+              <i className="pi pi-lock" />
+              <Password
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                toggleMask
+                feedback={false}
+                className="w-full"
+                inputClassName="w-full"
+                required
+              />
+            </span>
+          </div>
+          
+          <Button
+            type="submit"
+            label={loading ? "Logging in..." : "Log In"}
+            icon="pi pi-sign-in"
+            className="w-full"
+            loading={loading}
+            disabled={loading}
+          />
+        </form>
+        
+        <div className="login-footer">
+          <p>Need an account? <Link href="/signup">Sign Up</Link></p>
         </div>
-      </div>
-    </Container>
+      </Card>
+    </div>
   );
 }

@@ -49,6 +49,7 @@ from routes.docmanage import register_docmanage_routes
 from routes.document import register_document_routes
 from routes.trash_route import register_trash_routes
 from routes.folders import folders_bp
+from routes.user_settings import register_user_settings_routes
 
 # --- Auth ---
 from auth import verify_firebase_token, is_admin
@@ -99,6 +100,7 @@ def create_app():
     register_docmanage_routes(app)
     register_document_routes(app)
     register_trash_routes(app)
+    register_user_settings_routes(app)
     app.register_blueprint(folders_bp)
 
     # Attach SocketIO to Flask app
