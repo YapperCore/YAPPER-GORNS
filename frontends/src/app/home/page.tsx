@@ -39,8 +39,13 @@ export default function Home() {
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState('');
+  const [folderDocs, setFolderDocs] = useState<Document[]>([]);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
   const toast = useRef<Toast>(null);
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const router = useRouter();
 
   // Fetch data only once when component mounts
@@ -90,7 +95,11 @@ export default function Home() {
       
       if (res.ok) {
         const data = await res.json();
-        setDocs(Array.isArray(data) ? data : []);
+        // Filter out documents that are in trash
+        const activeDocs = Array.isArray(data) 
+          ? data.filter(doc => !doc.audioTrashed && !doc.deleted)
+          : [];
+        setDocs(activeDocs);
       } else {
         console.error("Error fetching docs:", res.status, res.statusText);
         setDocs([]);
@@ -228,6 +237,125 @@ export default function Home() {
     router.push(`/folders/${folderName}`);
   };
 
+  const handleDeleteButtonClick = async (folderName: string) => {
+    setFolderToDelete(folderName);
+    setConfirmDeleteDialog(true);
+    await fetchDocsInFolder(folderName);
+  };
+
+  const fetchDocsInFolder = async (folderName: string) => {
+    if (!currentUser) return;
+    
+    setLoadingFolderDocs(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`/api/folders/${folderName}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setFolderDocs(Array.isArray(data) ? data : []);
+        setSelectedDocs(Array.isArray(data) ? data.map(doc => doc.id) : []);
+      } else {
+        console.error("Error fetching docs in folder:", res.status, res.statusText);
+        setFolderDocs([]);
+        setSelectedDocs([]);
+      }
+    } catch (err) {
+      console.error("Error fetching docs in folder:", err);
+      setFolderDocs([]);
+      setSelectedDocs([]);
+    } finally {
+      setLoadingFolderDocs(false);
+    }
+  };
+
+  const handleCheckboxChange = (docId: string) => {
+    setSelectedDocs(prev => {
+      if (prev.includes(docId)) {
+        return prev.filter(id => id !== docId);
+      } else {
+        return [...prev, docId];
+      }
+    });
+  };
+
+  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedDocs(folderDocs.map(doc => doc.id));
+    } else {
+      setSelectedDocs([]);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    await handleDeleteFolder(true);
+  };
+
+  const handleDeleteSelected = async () => {
+    await handleDeleteFolder(false);
+  };
+
+  const handleDeleteFolder = async (deleteAll: boolean = true) => {
+    if (!currentUser || !folderToDelete) return;
+    setLoading(true);
+    
+    try {
+      const token = await currentUser.getIdToken();
+      const docsToDelete = deleteAll ? [] : selectedDocs;
+      
+      const res = await fetch(`/api/folders/${folderToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          deleteAll,
+          docsToDelete
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Folder Deleted',
+          detail: data.message || `Folder deleted. ${data.movedToTrash?.length || 0} files moved to trash.`,
+          life: 3000
+        });
+        
+        // Refresh folders list and documents
+        await fetchFolders();
+        await fetchDocs(); // Important to refresh docs as their status changed
+      } else {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: data.error || 'Failed to delete folder',
+          life: 3000
+        });
+      }
+    } catch (err) {
+      console.error("Error deleting folder:", err);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'An unexpected error occurred while deleting the folder',
+        life: 3000
+      });
+    } finally {
+      setLoading(false);
+      setConfirmDeleteDialog(false);
+      setFolderDocs([]);
+      setSelectedDocs([]);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!currentUser) return;
     
@@ -360,6 +488,30 @@ export default function Home() {
     setUploadMessage("Upload succeeded!");
   };
 
+  const confirmDialogFooter = (
+    <div className="dialog-footer">
+      <Button 
+        label="Cancel" 
+        icon="pi pi-times" 
+        className="p-button-text" 
+        onClick={() => setConfirmDeleteDialog(false)} 
+      />
+      <Button 
+        label="Delete Selected" 
+        icon="pi pi-trash" 
+        className="p-button-warning"
+        disabled={selectedDocs.length === 0}
+        onClick={handleDeleteSelected} 
+      />
+      <Button 
+        label="Delete All" 
+        icon="pi pi-trash" 
+        className="p-button-danger" 
+        onClick={handleDeleteAll} 
+      />
+    </div>
+  );
+
   if (!currentUser) {
     return null; // Redirecting to login in useEffect
   }
@@ -416,16 +568,84 @@ export default function Home() {
           <p>No folders created yet. Create your first folder to organize your documents.</p>
         ) : (
           <div className="docs-grid">
-            {folders.map(folder => (
-              <div key={folder} className="doc-card folder-card" onClick={() => handleFolderClick(folder)}>
-                <h4 className="doc-title">
-                  <i className="pi pi-folder"></i> {folder}
-                </h4>
+            {folders.map((folder) => (
+              <div key={folder} className="doc-card folder-card">
+                <div 
+                  className="folder-content"
+                  onClick={() => handleFolderClick(folder)}
+                >
+                  <h4 className="doc-title">
+                    <i className="pi pi-folder"></i> {folder}
+                  </h4>
+                </div>
+                <div className="folder-actions">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent folder opening
+                      handleDeleteButtonClick(folder);
+                    }}
+                    className="folder-delete-btn"
+                    title="Delete folder"
+                  >
+                    <i className="pi pi-trash"></i>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <Dialog 
+        header={`Delete Folder: ${folderToDelete}`} 
+        visible={confirmDeleteDialog} 
+        style={{ width: '500px' }} 
+        footer={confirmDialogFooter}
+        onHide={() => setConfirmDeleteDialog(false)}
+      >
+        <div className="confirmation-content">
+          <i className="pi pi-exclamation-triangle" style={{ fontSize: '2rem', color: '#ff9800', marginRight: '10px' }} />
+          <span>
+            Are you sure you want to delete the folder <strong>{folderToDelete}</strong>? 
+            Select which documents to move to trash:
+          </span>
+        </div>
+        
+        <div className="folder-docs-list">
+          {loadingFolderDocs ? (
+            <p>Loading documents...</p>
+          ) : folderDocs.length === 0 ? (
+            <p>This folder is empty.</p>
+          ) : (
+            <>
+              <div className="select-all-container">
+                <label className="select-all-label">
+                  <input 
+                    type="checkbox"
+                    checked={selectedDocs.length === folderDocs.length && folderDocs.length > 0}
+                    onChange={handleSelectAllChange}
+                  /> 
+                  Select All Documents
+                </label>
+              </div>
+              <ul className="doc-checkbox-list">
+                {folderDocs.map(doc => (
+                  <li key={doc.id} className="doc-checkbox-item">
+                    <label className="doc-checkbox-label">
+                      <input 
+                        type="checkbox"
+                        checked={selectedDocs.includes(doc.id)}
+                        onChange={() => handleCheckboxChange(doc.id)}
+                      />
+                      <span className="doc-name">{doc.name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </Dialog>
 
       <hr className="divider" />
 

@@ -108,3 +108,4 @@ backend\routes\unittests\dummy_path.wav
 doc_store.json
 # added doc_store.json to .gitignore, if that was needed refer to previous commits
 # was added because doc_store.json commits local save data not present in other branches/machines
+backend/routes/unittests/
