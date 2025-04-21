@@ -354,15 +354,6 @@ export default function Home() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/login');
-    } catch (error) {
-      console.error("Failed to log out", error);
-    }
-  };
-
   const handleSuccessfulUpload = (docId: string) => {
     // Refresh documents after a successful upload
     fetchDocs();
@@ -379,12 +370,6 @@ export default function Home() {
       
       <div className="home-header">
         <h2>Home - Upload Audio =&gt; Create Doc</h2>
-        <Button 
-          label="Logout" 
-          icon="pi pi-sign-out" 
-          className="p-button-text" 
-          onClick={handleLogout} 
-        />
       </div>
 
       <div className="upload-section">

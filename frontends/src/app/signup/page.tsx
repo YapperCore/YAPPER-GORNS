@@ -11,7 +11,7 @@ import { Password } from "primereact/password";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Divider } from "primereact/divider";
-import "@/styles/Signup.css";
+import "@/static/Signup.css"; 
 
 export default function Signup() {
   const emailRef = useRef<HTMLInputElement>(null);

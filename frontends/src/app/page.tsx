@@ -86,7 +86,7 @@ export default function Home() {
           });
         } else {
           // Open transcription page in a new tab
-          window.open(`/transcription/${result.docId}`, '_blank');
+          window.open(`/transcription/${result.docId}`);
         }
       }
     } catch (err) {
