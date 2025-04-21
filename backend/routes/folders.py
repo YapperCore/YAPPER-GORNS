@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from firebase_admin import storage
 from auth import verify_firebase_token  # Assuming you already have this
-from services.firebase_service import list_user_files  # Use Firebase for all operations
+from services.firebase_service import list_user_files # Assuming you have a function to list files in Firebase Storage
+from services.storage import doc_store, save_doc_store
 import logging
 
 folders_bp = Blueprint('folders', __name__)
@@ -62,7 +63,7 @@ def list_folders():
             and not f['filename'].endswith('/')  # Exclude folder markers
         ]
 
-        #logger.info(f"Filtered .dot files for user {user_id}: {dot_files}")
+        logger.info(f"Filtered .dot files for user {user_id}: {dot_files}")
         return jsonify({"dotFiles": dot_files}), 200
     except Exception as e:
         logger.error(f"Error listing dot files for user {user_id}: {e}")
@@ -76,8 +77,18 @@ def get_docs_in_folder(folder_name):
     user_id = request.uid
     try:
         files = list_user_files(user_id, f"folders/{folder_name}/")
-        logger.info(f"Files in folder '{folder_name}': {files}")
-        return jsonify(files), 200
+        logger.info(f"Files in folder '{folder_name}': {files}")  # Log the files fetched from Firebase
+        docs = []
+        for f in files:
+            filename = f['filename'].split('/')[-1]
+            if not filename.endswith('/.keep'):
+                # Find the document in doc_store by audioFilename
+                doc = next((d for d in doc_store.values() if d.get("audioFilename") == filename), None)
+                if doc:
+                    docs.append(doc)
+                else:
+                    logger.warning(f"No matching document found in doc_store for filename: {filename}") # Log the matched documents
+        return jsonify(docs), 200
     except Exception as e:
         logger.error(f"Error getting docs in folder: {e}")
         return jsonify({"error": str(e)}), 500
@@ -90,19 +101,39 @@ def add_doc_to_folder(folder_name, doc_id):
     user_id = request.uid
     try:
         bucket = storage.bucket()
-        source_path = f"users/{user_id}/uploads/{doc_id}"
-        dest_path = f"users/{user_id}/folders/{folder_name}/{doc_id}"
 
+        # Retrieve the document from the doc_store
+        doc = doc_store.get(doc_id)
+        if not doc:
+            return jsonify({"error": f"Document with ID '{doc_id}' not found."}), 404
+
+        # Use the audioFilename field for file operations
+        audio_filename = doc.get("audioFilename")
+        if not audio_filename:
+            return jsonify({"error": "Document does not have an associated audio file."}), 400
+
+        # Define source and destination paths
+        source_path = f"users/{user_id}/uploads/{audio_filename}"
+        dest_path = f"users/{user_id}/folders/{folder_name}/{audio_filename}"
+
+        # Check if the source file exists
         source_blob = bucket.blob(source_path)
         if not source_blob.exists():
-            return jsonify({"error": f"File '{doc_id}' does not exist in uploads."}), 404
+            return jsonify({"error": f"Audio file '{audio_filename}' does not exist in uploads."}), 404
 
+        # Copy the file to the destination folder
         bucket.copy_blob(source_blob, bucket, dest_path)
+
+        # Delete the original file from the source path
         source_blob.delete()
 
-        return jsonify({"message": f"File '{doc_id}' successfully moved to folder '{folder_name}'."}), 200
+        # Update the document's folder in doc_store
+        doc["folderName"] = folder_name
+        save_doc_store()
+
+        return jsonify({"message": f"Document '{doc_id}' successfully moved to folder '{folder_name}'."}), 200
     except Exception as e:
-        logger.error(f"Error moving file '{doc_id}' to folder '{folder_name}': {e}")
+        logger.error(f"Error moving document '{doc_id}' to folder '{folder_name}': {e}")
         return jsonify({"error": str(e)}), 500
 
 
