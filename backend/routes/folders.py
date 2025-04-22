@@ -183,118 +183,29 @@ def move_doc_to_home(doc_id):
 @folders_bp.route('/api/folders/<folder_name>', methods=['DELETE'])
 @verify_firebase_token
 def delete_folder(folder_name):
-    """Delete a folder and move its contents to trash based on selection."""
+    """Delete a folder and its contents from Firebase Storage."""
     user_id = request.uid
-    data = request.get_json() or {}
-    delete_all = data.get('deleteAll', True)  # Default to deleting all
-    docs_to_delete = data.get('docsToDelete', [])  # IDs of docs to delete
-    
     try:
         bucket = storage.bucket()
         folder_path = f"users/{user_id}/folders/{folder_name}/"
-        
+
         # List all files in the folder
         blobs = list(bucket.list_blobs(prefix=folder_path))
-        moved_files_to_trash = []
-        moved_files_to_home = []
-        
-        if delete_all:
-            # Move all files to trash
-            for blob in blobs:
-                if blob.name == folder_path or blob.name.endswith('/.keep'):
-                    continue  # Skip folder itself or placeholder files
-                    
-                filename = blob.name.split('/')[-1]
-                if filename:  # If it's an actual file
-                    trash_path = f"users/{user_id}/trash/{filename}"
-                    
-                    # Copy file to trash
-                    new_blob = bucket.copy_blob(blob, bucket, trash_path)
-                    if new_blob:
-                        # Delete original only after successful copy
-                        blob.delete()
-                        moved_files_to_trash.append(filename)
-                        
-                        # Update document metadata in doc_store
-                        for doc_id, doc in doc_store.items():
-                            if doc.get("audioFilename") == filename and doc.get("owner") == user_id:
-                                doc["audioTrashed"] = True
-                                doc["folderName"] = None  # Clear folder association
-                                logger.info(f"Marked document {doc_id} as trashed")
-        else:
-            # Get a mapping of filenames to doc IDs for easier lookup
-            filename_to_doc_id = {}
-            for doc_id, doc in doc_store.items():
-                if doc.get("owner") == user_id and doc.get("audioFilename"):
-                    filename_to_doc_id[doc.get("audioFilename")] = doc_id
-            
-            # Process each file in the folder
-            for blob in blobs:
-                if blob.name == folder_path or blob.name.endswith('/.keep'):
-                    continue  # Skip folder itself or placeholder files
-                    
-                filename = blob.name.split('/')[-1]
-                if not filename:
-                    continue
-                
-                # Get the doc_id associated with this file
-                doc_id = filename_to_doc_id.get(filename)
-                
-                # Check if this document should be moved to trash
-                should_trash = doc_id in docs_to_delete if doc_id else False
-                
-                if should_trash:
-                    # Move to trash
-                    trash_path = f"users/{user_id}/trash/{filename}"
-                    new_blob = bucket.copy_blob(blob, bucket, trash_path)
-                    if new_blob:
-                        blob.delete()
-                        moved_files_to_trash.append(filename)
-                        
-                        # Mark as trashed in doc_store
-                        if doc_id:
-                            doc = doc_store.get(doc_id)
-                            if doc:
-                                doc["audioTrashed"] = True
-                                doc["folderName"] = None
-                                logger.info(f"Marked selected document {doc_id} as trashed")
-                else:
-                    # Move to home directory
-                    home_path = f"users/{user_id}/uploads/{filename}"
-                    new_blob = bucket.copy_blob(blob, bucket, home_path)
-                    if new_blob:
-                        blob.delete()
-                        moved_files_to_home.append(filename)
-                        
-                        # Update folderName in doc_store
-                        if doc_id:
-                            doc = doc_store.get(doc_id)
-                            if doc:
-                                doc["folderName"] = None
-                                doc["audioTrashed"] = False  # Ensure it's not marked as trashed
-                                logger.info(f"Moved document {doc_id} to home directory")
-        
-        # Save doc_store changes after processing all files
-        if moved_files_to_trash or moved_files_to_home:
-            save_doc_store()
-            
-        # Delete folder structure (metadata files)
-        dot_file_path = f"users/{user_id}/folders/.{folder_name}"
-        dot_blob = bucket.blob(dot_file_path)
-        if dot_blob.exists():
-            dot_blob.delete()
-        
-        # Delete any remaining folder structure/placeholders
-        remaining_blobs = list(bucket.list_blobs(prefix=folder_path))
-        for blob in remaining_blobs:
+        if not blobs:
+            return jsonify({"error": f"Folder '{folder_name}' does not exist."}), 404
+
+        # Delete all files in the folder
+        for blob in blobs:
             blob.delete()
-            
-        return jsonify({
-            "message": f"Folder '{folder_name}' deleted successfully. {len(moved_files_to_trash)} files moved to trash, {len(moved_files_to_home)} files moved to home.",
-            "movedToTrash": moved_files_to_trash,
-            "movedToHome": moved_files_to_home
-        }), 200
-        
+
+        # Delete the dot file associated with the folder
+        dot_file_path = f"users/{user_id}/folders/.{folder_name}"
+        dot_file_blob = bucket.blob(dot_file_path)
+        if dot_file_blob.exists():
+            dot_file_blob.delete()
+
+        logger.info(f"Folder '{folder_name}' and its contents deleted successfully.")
+        return jsonify({"message": f"Folder '{folder_name}' deleted successfully."}), 200
     except Exception as e:
-        logger.error(f"Error deleting folder '{folder_name}': {str(e)}")
-        return jsonify({"error": f"Failed to delete folder: {str(e)}"}), 500
+        logger.error(f"Error deleting folder '{folder_name}': {e}")
+        return jsonify({"error": str(e)}), 500

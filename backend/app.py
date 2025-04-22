@@ -7,9 +7,10 @@ Firebase integration, and SocketIO for real-time updates.
 import os
 import logging
 import tempfile
+import json
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
@@ -50,6 +51,7 @@ from routes.document import register_document_routes
 from routes.trash_route import register_trash_routes
 from routes.folders import folders_bp
 from routes.user_settings import register_user_settings_routes
+from routes.system_routes import register_system_routes
 
 # --- Auth ---
 from auth import verify_firebase_token, is_admin
@@ -84,7 +86,7 @@ def ensure_directories():
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "yapper_secret_key")
     app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
 
@@ -101,10 +103,19 @@ def create_app():
     register_document_routes(app)
     register_trash_routes(app)
     register_user_settings_routes(app)
+    register_system_routes(app)
     app.register_blueprint(folders_bp)
 
-    # Attach SocketIO to Flask app
-    socketio.init_app(app, cors_allowed_origins="*", async_mode="threading")
+    # Attach SocketIO to Flask app with explicit configuration
+    socketio.init_app(
+        app, 
+        cors_allowed_origins="*",  # More restrictive in production
+        async_mode="threading",
+        ping_timeout=60,
+        ping_interval=25,
+        logger=True,
+        engineio_logger=True  # Set to False in production
+    )
 
     # Register error handlers
     register_error_handlers(app)
@@ -124,6 +135,7 @@ def register_basic_routes(app):
                 "status": "running",
                 "platform": PLATFORM_NAME,
                 "version": "1.0.0",
+                "timestamp": datetime.now().isoformat()
             }
         )
 
@@ -135,10 +147,19 @@ def register_basic_routes(app):
                     "status": "ok",
                     "timestamp": datetime.now().isoformat(),
                     "platform": PLATFORM_NAME,
+                    "socketio": "active"
                 }
             ),
             200,
         )
+        
+    @app.route('/socket-test')
+    def socket_test():
+        return jsonify({
+            "socket_status": "active",
+            "server_time": datetime.now().isoformat(),
+            "engine": socketio.async_mode
+        })
 
     @app.route("/auth/check", methods=["GET"])
     @verify_firebase_token
@@ -150,6 +171,22 @@ def register_basic_routes(app):
                 "is_admin": is_admin(request.uid),
             }
         )
+        
+    @app.route("/api/env-check", methods=["GET"])
+    def env_check():
+        """Check for required environment variables"""
+        env_status = {
+            "REPLICATE_API_TOKEN": bool(os.environ.get("REPLICATE_API_TOKEN")),
+            "FIREBASE_CONFIG": bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY")) 
+        }
+        
+        if request.args.get("debug") == "true" and is_admin(request.uid):
+            # Only show masked tokens for admin users with debug flag
+            if os.environ.get("REPLICATE_API_TOKEN"):
+                token = os.environ.get("REPLICATE_API_TOKEN")
+                env_status["REPLICATE_API_TOKEN_MASKED"] = f"{token[:5]}...{token[-5:]}"
+                
+        return jsonify(env_status)
 
 
 # --- Error Handlers ---
@@ -189,7 +226,7 @@ if __name__ == "__main__":
 
     if debug_mode:
         # Use Flask's development server with debug mode
-        socketio.run(app, debug=debug_mode, host="0.0.0.0", port=port)
+        socketio.run(app, debug=debug_mode, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
     else:
         # Use socketio's production-ready server
         print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")

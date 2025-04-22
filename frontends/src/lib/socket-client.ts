@@ -1,5 +1,4 @@
-// src/lib/socket.ts
-
+// src/lib/socket-client.ts
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
@@ -10,16 +9,18 @@ export function getSocket(): Socket {
   }
   
   if (!socket) {
-    // Set the correct socket.io endpoint - connect to backend server port 5000
+    // Connect directly to the backend server
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     
+    console.log(`Connecting socket.io to: ${backendUrl}`);
+    
     socket = io(backendUrl, {
-      path: '/socket.io',
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      timeout: 20000
+      timeout: 20000,
+      forceNew: true
     });
     
     socket.on('connect', () => {
@@ -32,16 +33,6 @@ export function getSocket(): Socket {
     
     socket.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
-    });
-    
-    // Handle transcription status updates
-    socket.on('transcription_status', (data) => {
-      console.log('Transcription status update:', data);
-    });
-    
-    // Add enhanced error handling for transcription errors
-    socket.on('transcription_error', (data) => {
-      console.error('Transcription error:', data.error);
     });
   }
   

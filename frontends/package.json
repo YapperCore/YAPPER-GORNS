@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@firebase/auth": "^1.9.1",
-    "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-alert-dialog": "^1.1.10",
+    "@radix-ui/react-checkbox": "^1.2.2",
+    "@radix-ui/react-dialog": "^1.1.10",
     "@radix-ui/react-slot": "^1.2.0",
-    "@radix-ui/react-tabs": "^1.1.8",
-    "@radix-ui/react-toast": "^1.2.10",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
