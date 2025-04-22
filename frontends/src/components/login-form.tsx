@@ -98,7 +98,7 @@ export default function LoginForm() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter this hard ahh website"
+                 
                   className="rounded-full"
                   required
                 />
