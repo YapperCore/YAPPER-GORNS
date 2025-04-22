@@ -171,7 +171,7 @@ export async function testReplicateApiKey(apiKey: string, token: string): Promis
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ 
-        apiKey: apiKey || 'r8_P18zK076s92g3ZuY4pcb1THRAzmnFpE3j70Vf',
+        apiKey: apiKey || 'default',
         use_default: !apiKey
       })
     });

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -18,7 +17,7 @@ const navLinks = [
   },
   {
     href: "/documents",
-    label: "Documents",
+    label: "Folders", // Changed from "Documents" to "Folders"
     icon: "pi pi-file",
   },
   {
@@ -72,7 +71,7 @@ const Navbar = () => {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          background: "linear-gradient(to bottom,rgb(241, 99, 27), #FFB74D)", // Gradient background
+          background: "linear-gradient(to bottom,rgba(172, 83, 39, 0.91), #FFB74D)", // Gradient background
         }}
         maskStyle={{
           zIndex: 1000,

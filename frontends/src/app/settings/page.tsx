@@ -822,20 +822,6 @@ export default function Settings() {
           
           <Divider />
           
-          <div className="replicate-info">
-            <h4>Default System Key</h4>
-            <p>
-              You can leave this field empty to use the system's default Replicate API key.
-            </p>
-            <div className="default-key-box">
-              <code>r8_P18zK076s92g3ZuY4pcb1THRAzmnFpE3j70Vf</code>
-            </div>
-            <p className="mt-2">
-              <a href="https://replicate.com/signup" target="_blank" rel="noreferrer" className="p-button p-button-text p-button-sm">
-                <i className="pi pi-external-link mr-1"></i> Create your own Replicate account
-              </a>
-            </p>
-          </div>
         </div>
       </Dialog>
     </div>
