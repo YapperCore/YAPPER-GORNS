@@ -30,7 +30,7 @@ export default function TranscriptionEditor() {
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [setSocketConnected] = useState<boolean>(false);
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [usingReplicate, setUsingReplicate] = useState<boolean>(false);
   const socketRef = useRef<any>(null);
@@ -44,6 +44,9 @@ export default function TranscriptionEditor() {
 
     const fetchDoc = async () => {
       try {
+        if (!currentUser) {
+          throw new Error('User is not authenticated');
+        }
         const token = await currentUser.getIdToken();
         const res = await fetch(`/api/docs/${docId}`, {
           headers: {

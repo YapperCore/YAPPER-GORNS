@@ -5,7 +5,7 @@
 }
 
 .card {
-  background: #fff;
+  background: #d6d3d1;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 1rem;
@@ -15,7 +15,7 @@
 .system-info-container {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: #f8f9fa;
+  background: #d6d3d1;
   border-radius: 8px;
   border: 1px solid #e9ecef;
 }

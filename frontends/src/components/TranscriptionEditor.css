@@ -4,6 +4,8 @@
   max-width: 1200px;
   margin: 0 auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #a8a29e; /* match home background */
+  min-height: 100vh;
 }
 
 .transcription-header {
@@ -88,6 +90,7 @@
   display: flex;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+  color: #a8a29e; /* match home text color */
 }
 
 .editor-container {
@@ -96,6 +99,8 @@
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background-color: #d6d3d1; /* match doccard background */
+  border: 1px solid #292524;
 }
 
 .audio-player-container {
@@ -105,6 +110,8 @@
   top: 1rem;
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background-color: #d6d3d1; /* match doccard background */
+  border: 1px solid #292524;
 }
 
 .actions-container {

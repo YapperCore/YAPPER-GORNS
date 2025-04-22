@@ -3,7 +3,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background: #f0f0f0;
+  background: #d6d3d1; /* Background color for audio player */
   border-radius: 8px;
   margin-top: 1rem;
 }
@@ -27,7 +27,7 @@
 }
 
 .audio-player .button-disabled {
-  background: #cccccc;
+  background: #d6d3d1;
   cursor: not-allowed;
 }
 
