@@ -63,6 +63,12 @@ export default function TranscriptionEditor() {
     const fetchDoc = async () => {
       try {
         setLoading(true);
+        if (!currentUser) {
+          console.error("User not authenticated");
+          setError("You must be logged in to view this transcription");
+          setLoading(false);
+          return;
+        }
         const token = await currentUser.getIdToken();
         const res = await fetch(`/api/docs/${docId}`, {
           headers: {
