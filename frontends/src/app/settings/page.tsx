@@ -102,6 +102,9 @@ export default function Settings() {
       setNetworkError(false);
       
       try {
+        // Add null check before accessing getIdToken()
+        if (!currentUser) return;
+
         const token = await currentUser.getIdToken();
         
         // Fetch system info
