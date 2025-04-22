@@ -65,8 +65,11 @@ export default function Settings() {
   const [apiError, setApiError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [networkError, setNetworkError] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
   
   const toast = useRef<Toast>(null);
+  const DEFAULT_REPLICATE_API_KEY = process.env.NEXT_PUBLIC_DEFAULT_REPLICATE_API_KEY || 'r8_P18zK076s92g3ZuY4pcb1THRAzmnFpE3j70Vf';
   
   // Check socket connection
   useEffect(() => {
@@ -96,51 +99,71 @@ export default function Settings() {
 
     async function fetchData() {
       setLoading(true);
+      setNetworkError(false);
+      
       try {
         const token = await currentUser.getIdToken();
         
         // Fetch system info
-        const sysInfoRes = await fetch('/api/system-info', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (sysInfoRes.ok) {
-          const sysInfo = await sysInfoRes.json();
-          setSystemInfo(sysInfo);
+        try {
+          const sysInfoRes = await fetch('/api/system-info', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (sysInfoRes.ok) {
+            const sysInfo = await sysInfoRes.json();
+            setSystemInfo(sysInfo);
+          }
+        } catch (e) {
+          console.error("Error fetching system info:", e);
+          setNetworkError(true);
         }
         
         // Fetch user settings
-        const settingsRes = await fetch('/api/user-settings', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (settingsRes.ok) {
-          const settings = await settingsRes.json();
-          if (settings.transcriptionConfig) {
-            const config = settings.transcriptionConfig;
-            setTranscriptionConfig(prev => ({
-              ...prev,
-              ...config,
-              // Set default threads if not provided
-              cpuThreads: config.cpuThreads || 1,
-              // Don't overwrite API key if it's empty in the response for security
-              replicateApiKey: config.replicateApiKey || prev.replicateApiKey,
-              defaultPrompt: config.defaultPrompt || ''
-            }));
-            
-            // If Replicate mode is selected and we have an API key, verify it
-            if (config.mode === 'replicate' && config.replicateApiKey) {
-              testApiKey(config.replicateApiKey, true);
+        try {
+          const settingsRes = await fetch('/api/user-settings', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (settingsRes.ok) {
+            const settings = await settingsRes.json();
+            if (settings.transcriptionConfig) {
+              const config = settings.transcriptionConfig;
+              setTranscriptionConfig(prev => ({
+                ...prev,
+                ...config,
+                cpuThreads: config.cpuThreads || Math.min(2, systemInfo.cpuThreads || 1),
+                replicateApiKey: config.replicateApiKey || '',
+                defaultPrompt: config.defaultPrompt || ''
+              }));
+              
+              // If Replicate mode is selected, verify API key status
+              if (config.mode === 'replicate') {
+                const apiKey = config.replicateApiKey || DEFAULT_REPLICATE_API_KEY;
+                const isDefaultKey = !config.replicateApiKey || config.replicateApiKey === '';
+                
+                if (isDefaultKey) {
+                  setApiVerified(true);
+                  setApiUsername('Default System Key');
+                } else {
+                  testApiKey(apiKey, true);
+                }
+              }
             }
           }
+        } catch (e) {
+          console.error("Error fetching user settings:", e);
+          setNetworkError(true);
         }
       } catch (error) {
         console.error("Error fetching settings data:", error);
+        setNetworkError(true);
+        
         toast.current?.show({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load settings data',
-          life: 3000
+          summary: 'Connection Error',
+          detail: 'Failed to connect to server. Please check your network connection.',
+          life: 5000
         });
       } finally {
         setLoading(false);
@@ -148,12 +171,37 @@ export default function Settings() {
     }
     
     fetchData();
-  }, [currentUser]);
+    
+    // Retry logic if we encounter network errors
+    if (networkError && retryCount < 3) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        fetchData();
+      }, 3000 * (retryCount + 1)); // Exponential backoff
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser, retryCount, networkError, systemInfo.cpuThreads]);
   
   const handleSaveSettings = async () => {
     if (!currentUser) return;
     
     try {
+      setApiError('');
+      
+      // If using Replicate with empty key, use default
+      if (transcriptionConfig.mode === 'replicate' && !transcriptionConfig.replicateApiKey.trim()) {
+        toast.current?.show({
+          severity: 'info',
+          summary: 'Using Default API Key',
+          detail: 'No API key provided. Using system default key.',
+          life: 3000
+        });
+        
+        setApiUsername('Default System Key');
+        setApiVerified(true);
+      }
+      
       const token = await currentUser.getIdToken();
       const res = await fetch('/api/user-settings', {
         method: 'POST',
@@ -175,39 +223,51 @@ export default function Settings() {
           life: 3000
         });
         
-        // Hide success message after 3 seconds
         setTimeout(() => setSaveSuccess(false), 3000);
         
-        // If Replicate is selected, test the API key
-        if (transcriptionConfig.mode === 'replicate' && transcriptionConfig.replicateApiKey) {
-          testApiKey(transcriptionConfig.replicateApiKey);
+        // If Replicate is selected, ensure API key is verified
+        if (transcriptionConfig.mode === 'replicate') {
+          const apiKey = transcriptionConfig.replicateApiKey || DEFAULT_REPLICATE_API_KEY;
+          if (!apiVerified) {
+            testApiKey(apiKey);
+          }
         }
       } else {
+        let errorMsg = 'Failed to save settings';
+        try {
+          const errData = await res.json();
+          errorMsg = errData.error || errorMsg;
+        } catch (e) {}
+        
         toast.current?.show({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to save settings',
+          detail: errorMsg,
           life: 3000
         });
       }
     } catch (error) {
       console.error("Error saving settings:", error);
+      
       toast.current?.show({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to save settings: ' + (error as Error).message,
+        detail: `Failed to save settings: ${(error as Error).message}`,
         life: 3000
       });
     }
   };
   
   const testApiKey = async (apiKey: string, silent = false) => {
-    if (!currentUser || !apiKey) return;
+    if (!currentUser) return;
     
     try {
       setApiKeyTesting(true);
       setApiVerified(false);
       setApiError('');
+      
+      const isDefaultKey = !apiKey || apiKey.trim() === '';
+      const keyToTest = isDefaultKey ? DEFAULT_REPLICATE_API_KEY : apiKey;
       
       const token = await currentUser.getIdToken();
       const testResponse = await fetch('/api/test-replicate-api', {
@@ -216,28 +276,36 @@ export default function Settings() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ apiKey })
+        body: JSON.stringify({ 
+          apiKey: keyToTest,
+          use_default: isDefaultKey
+        })
       });
       
       const testResult = await testResponse.json();
       
       if (testResult.success) {
         setApiVerified(true);
-        if (testResult.username) {
-          setApiUsername(testResult.username);
-        }
+        setApiUsername(isDefaultKey ? 'Default System Key' : (testResult.username || 'Verified'));
         
         if (!silent) {
           toast.current?.show({
             severity: 'success',
             summary: 'Replicate API Key Verified',
-            detail: testResult.message || 'Your Replicate API key is valid and working correctly',
+            detail: isDefaultKey 
+              ? 'Using system default API key. Working correctly.'
+              : (testResult.message || 'Your Replicate API key is valid and working correctly'),
             life: 5000
           });
         }
       } else {
         setApiVerified(false);
-        setApiError(testResult.message || 'API key validation failed');
+        
+        if (isDefaultKey) {
+          setApiError('System default API key is currently unavailable. Network issue or key expired.');
+        } else {
+          setApiError(testResult.message || 'API key validation failed');
+        }
         
         if (!silent) {
           toast.current?.show({
@@ -251,13 +319,25 @@ export default function Settings() {
     } catch (error) {
       console.error("Error testing Replicate API:", error);
       setApiVerified(false);
-      setApiError(`Error testing API key: ${(error as Error).message}`);
+      
+      // Detect network connectivity issues
+      const isNetworkError = (error as Error).message.includes('fetch failed') ||
+                           (error as Error).message.includes('network') ||
+                           (error as Error).message.includes('connect');
+      
+      if (isNetworkError) {
+        setApiError('Network error. Unable to connect to Replicate API service.');
+      } else {
+        setApiError(`Error testing API key: ${(error as Error).message}`);
+      }
       
       if (!silent) {
         toast.current?.show({
           severity: 'error',
-          summary: 'Error',
-          detail: `Failed to test Replicate API key: ${(error as Error).message}`,
+          summary: 'Connection Error',
+          detail: isNetworkError 
+            ? 'Unable to connect to Replicate API service. Please check your network connection.'
+            : `Failed to test Replicate API key: ${(error as Error).message}`,
           life: 5000
         });
       }
@@ -273,6 +353,7 @@ export default function Settings() {
     }));
     
     if (mode === 'replicate' && !transcriptionConfig.replicateApiKey) {
+      // Show dialog or use default
       setShowApiKeyDialog(true);
     }
   };
@@ -282,6 +363,17 @@ export default function Settings() {
     
     if (transcriptionConfig.replicateApiKey) {
       testApiKey(transcriptionConfig.replicateApiKey);
+    } else {
+      // Using default API key
+      setApiVerified(true);
+      setApiUsername('Default System Key');
+      
+      toast.current?.show({
+        severity: 'info',
+        summary: 'Using Default API Key',
+        detail: 'Using system default Replicate API key.',
+        life: 3000
+      });
     }
   };
   
@@ -329,6 +421,11 @@ export default function Settings() {
     );
   };
   
+  const retryConnection = () => {
+    setNetworkError(false);
+    setRetryCount(0);
+  };
+  
   if (loading) {
     return (
       <div className="settings-loading">
@@ -341,6 +438,22 @@ export default function Settings() {
   return (
     <div className="settings-container">
       <Toast ref={toast} position="top-right" />
+      
+      {networkError && (
+        <div className="network-error-banner">
+          <Message 
+            severity="error" 
+            text="Unable to connect to server. Check your network connection." 
+            style={{ width: '100%', marginBottom: '1rem' }}
+          />
+          <Button 
+            label="Retry Connection" 
+            icon="pi pi-refresh" 
+            onClick={retryConnection}
+            className="p-button-sm"
+          />
+        </div>
+      )}
       
       <TabView activeIndex={activeIndex} onTabChange={(e) => setActiveIndex(e.index)}>
         <TabPanel header="Transcription Settings">
@@ -507,7 +620,7 @@ export default function Settings() {
                       feedback={false}
                       toggleMask
                       className="api-key-input"
-                      placeholder="Enter your Replicate API key"
+                      placeholder="Enter your Replicate API key or leave empty for default"
                       disabled={apiKeyTesting}
                     />
                     <Button 
@@ -520,7 +633,7 @@ export default function Settings() {
                       icon={apiKeyTesting ? "pi pi-spin pi-spinner" : (apiVerified ? "pi pi-check" : "pi pi-check-circle")}
                       onClick={() => testApiKey(transcriptionConfig.replicateApiKey || '')}
                       className={apiVerified ? "p-button-success" : "p-button-primary"}
-                      disabled={!transcriptionConfig.replicateApiKey || apiKeyTesting}
+                      disabled={apiKeyTesting}
                       tooltip="Test API Key"
                     />
                   </div>
@@ -531,7 +644,7 @@ export default function Settings() {
                     <Message severity="error" text={apiError} />
                   ) : (
                     <small className="p-text-secondary">
-                      Your API key is stored securely and used only for transcription requests. It typically starts with "r8_" and looks like r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.
+                      You can use your own API key or leave empty to use the system default key.
                       <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer" className="ml-2">
                         Get from Replicate
                       </a>
@@ -622,7 +735,8 @@ export default function Settings() {
                 To use the Replicate cloud-based transcription:
               </p>
               <ol>
-                <li>Create a free account at <a href="https://replicate.com/signup" target="_blank" rel="noreferrer">replicate.com</a></li>
+                <li>You can use the system default API key by leaving the field empty</li>
+                <li>Or create a free account at <a href="https://replicate.com/signup" target="_blank" rel="noreferrer">replicate.com</a></li>
                 <li>Get your API key from <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer">your account page</a></li>
                 <li>Enter the key in the settings and click "Test API Key"</li>
                 <li>Save your configuration</li>
@@ -655,6 +769,7 @@ export default function Settings() {
                 <li>If your API key fails verification, check that you've copied it correctly.</li>
                 <li>API keys start with "r8_" and should not include any spaces.</li>
                 <li>If transcription fails, check your account's API token status and credits.</li>
+                <li>If the system default key fails, try using your own API key instead.</li>
               </ul>
               
               <h4>Local Transcription Issues</h4>
@@ -675,6 +790,10 @@ export default function Settings() {
         onHide={() => setShowApiKeyDialog(false)}
         footer={
           <div>
+            <Button label="Use Default Key" icon="pi pi-key" onClick={() => {
+              setTranscriptionConfig(prev => ({...prev, replicateApiKey: ''}));
+              handleApiKeySubmit();
+            }} className="p-button-secondary" />
             <Button label="Cancel" icon="pi pi-times" onClick={() => setShowApiKeyDialog(false)} className="p-button-text" />
             <Button 
               label="Save" 
@@ -694,7 +813,7 @@ export default function Settings() {
             feedback={false}
             toggleMask
             className="w-full"
-            placeholder="Enter your Replicate API key"
+            placeholder="Enter your Replicate API key or leave empty for default"
           />
           <small className="p-text-secondary">
             You can find your API key in your Replicate account settings at <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer">replicate.com/account/api-tokens</a>.
@@ -704,12 +823,16 @@ export default function Settings() {
           <Divider />
           
           <div className="replicate-info">
-            <h4>Don't have a Replicate account?</h4>
+            <h4>Default System Key</h4>
             <p>
-              Replicate provides cloud-based AI models and offers free credits for new accounts.
-              <br />
-              <a href="https://replicate.com/signup" target="_blank" rel="noreferrer" className="p-button p-button-text p-button-sm mt-2">
-                <i className="pi pi-external-link mr-1"></i> Create an account
+              You can leave this field empty to use the system's default Replicate API key.
+            </p>
+            <div className="default-key-box">
+              <code>r8_P18zK076s92g3ZuY4pcb1THRAzmnFpE3j70Vf</code>
+            </div>
+            <p className="mt-2">
+              <a href="https://replicate.com/signup" target="_blank" rel="noreferrer" className="p-button p-button-text p-button-sm">
+                <i className="pi pi-external-link mr-1"></i> Create your own Replicate account
               </a>
             </p>
           </div>

@@ -8,14 +8,13 @@ import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputText } from 'primereact/inputtext';
-import { Divider } from 'primereact/divider';
 import { Dialog } from 'primereact/dialog';
-import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket';
+import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket-client';
 import { useAuth } from '@/context/AuthContext';
 import { restartTranscription } from '@/services/transcriptionService';
 import AudioPlayer from '@/components/AudioPlayer';
+import '@/styles/Transcription.css';
 
-// Define interface for document structure
 interface Doc {
   id: string;
   name: string;
@@ -28,12 +27,10 @@ interface Doc {
 }
 
 export default function TranscriptionEditor() {
-  // Get URL parameters and navigation
   const { docId } = useParams();
   const router = useRouter();
   const { currentUser } = useAuth();
   
-  // Document state
   const [doc, setDoc] = useState<Doc | null>(null);
   const [content, setContent] = useState<string>('');
   const [docName, setDocName] = useState<string>('');
@@ -41,13 +38,11 @@ export default function TranscriptionEditor() {
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   
-  // Transcription state
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [isReplicate, setIsReplicate] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
   
-  // UI state
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -55,12 +50,10 @@ export default function TranscriptionEditor() {
   const [transcriptionPrompt, setTranscriptionPrompt] = useState<string>('');
   const [isPromptSubmitting, setIsPromptSubmitting] = useState<boolean>(false);
   
-  // Refs
   const toast = useRef<Toast>(null);
   const contentRef = useRef<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // On mount, fetch document data
   useEffect(() => {
     if (!currentUser && typeof window !== 'undefined') {
       router.push('/login');
@@ -85,13 +78,12 @@ export default function TranscriptionEditor() {
           setDocName(docData.name || '');
           setIsReplicate(!!docData.is_replicate);
           
-          // Determine transcription status
           if (docData.transcription_status === 'completed') {
             setIsComplete(true);
             setProgress(100);
           } else if (docData.transcription_status === 'in_progress') {
             setIsComplete(false);
-            setProgress(docData.progress || 30); // Default to some progress
+            setProgress(docData.progress || 30);
           } else if (docData.transcription_status === 'failed') {
             setIsComplete(true);
             setProgress(0);
@@ -133,22 +125,17 @@ export default function TranscriptionEditor() {
     fetchDoc();
   }, [currentUser, docId, router]);
 
-  // Socket connection for real-time updates
   useEffect(() => {
     if (!currentUser || !docId || typeof window === 'undefined') return;
     
     try {
-      // Join document room
       joinDocRoom(docId as string);
       
-      // Get socket instance
       const socket = getSocket();
       setSocketConnected(socket.connected);
       
-      // Connection status handlers
       const handleConnect = () => {
         setSocketConnected(true);
-        // Re-join room on reconnection
         joinDocRoom(docId as string);
       };
       
@@ -156,24 +143,19 @@ export default function TranscriptionEditor() {
         setSocketConnected(false);
       };
       
-      // Handle received transcript chunks
       const handlePartialBatch = (data: any) => {
         if (data.doc_id === docId) {
-          // Update progress
           if (data.progress !== undefined) {
             setProgress(data.progress);
           }
           
-          // If Replicate transcription, update entire content
           if (data.is_replicate && data.chunks && data.chunks.length > 0) {
             const newText = data.chunks[0]?.text || '';
             if (newText) {
               setContent(newText);
               contentRef.current = newText;
             }
-          } 
-          // For regular chunked transcription, append chunks
-          else if (data.chunks && data.chunks.length > 0) {
+          } else if (data.chunks && data.chunks.length > 0) {
             let updatedContent = contentRef.current;
             
             data.chunks.forEach((chunk: any) => {
@@ -182,7 +164,6 @@ export default function TranscriptionEditor() {
               const chunkText = chunk.text.trim();
               if (!chunkText) return;
               
-              // Smart text joining
               if (updatedContent) {
                 const lastChar = updatedContent.slice(-1);
                 const firstChar = chunkText.charAt(0);
@@ -205,7 +186,6 @@ export default function TranscriptionEditor() {
         }
       };
       
-      // Handle transcription completion
       const handleFinal = (data: any) => {
         if (data.doc_id === docId && data.done) {
           setIsComplete(true);
@@ -225,17 +205,14 @@ export default function TranscriptionEditor() {
         }
       };
       
-      // Handle status updates
       const handleStatus = (data: any) => {
         if (data.doc_id === docId) {
           setStatusMessage(data.status || '');
         }
       };
       
-      // Handle document content updates from other users
       const handleDocContentUpdate = (data: any) => {
         if (data.doc_id === docId) {
-          // Only update if we're not currently editing
           if (!isSaving) {
             setContent(data.content);
             contentRef.current = data.content;
@@ -243,11 +220,10 @@ export default function TranscriptionEditor() {
         }
       };
       
-      // Handle transcription errors
       const handleTranscriptionError = (data: any) => {
         if (data.doc_id === docId) {
           setError(`Transcription error: ${data.error}`);
-          setIsComplete(true); // Mark as complete to stop progress bar
+          setIsComplete(true);
           
           toast.current?.show({
             severity: 'error',
@@ -258,7 +234,6 @@ export default function TranscriptionEditor() {
         }
       };
       
-      // Register event handlers
       socket.on('connect', handleConnect);
       socket.on('disconnect', handleDisconnect);
       socket.on('partial_transcript_batch', handlePartialBatch);
@@ -267,7 +242,6 @@ export default function TranscriptionEditor() {
       socket.on('doc_content_update', handleDocContentUpdate);
       socket.on('transcription_error', handleTranscriptionError);
       
-      // Clean up function
       return () => {
         socket.off('connect', handleConnect);
         socket.off('disconnect', handleDisconnect);
@@ -284,7 +258,6 @@ export default function TranscriptionEditor() {
     }
   }, [currentUser, docId, router, isSaving]);
 
-  // Debounced save function
   const saveDocument = async (newContent: string, saveName = false) => {
     if (!currentUser || !doc) return;
     
@@ -305,10 +278,8 @@ export default function TranscriptionEditor() {
       
       if (res.ok) {
         setSaveSuccess(true);
-        // Clear success message after 2 seconds
         setTimeout(() => setSaveSuccess(false), 2000);
         
-        // Emit content update to other users if connected
         if (socketConnected) {
           updateDocContent(docId as string, newContent);
         }
@@ -333,28 +304,23 @@ export default function TranscriptionEditor() {
     }
   };
 
-  // Handle content changes with debounced save
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
     contentRef.current = newContent;
     
-    // Clear any existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    // Set a new timeout for 1 second
     saveTimeoutRef.current = setTimeout(() => {
       saveDocument(newContent);
     }, 1000);
   };
 
-  // Handle document name changes
   const handleNameChange = (newName: string) => {
     setDocName(newName);
   };
 
-  // Save document name
   const saveDocName = () => {
     if (docName.trim() !== doc?.name) {
       saveDocument(content, true);
@@ -362,12 +328,10 @@ export default function TranscriptionEditor() {
     setIsEditingName(false);
   };
 
-  // Start editing document name
   const startEditingName = () => {
     setIsEditingName(true);
   };
 
-  // Submit transcription prompt for Replicate
   const handlePromptSubmit = async () => {
     if (!currentUser || !docId) return;
     
@@ -408,19 +372,15 @@ export default function TranscriptionEditor() {
     }
   };
 
-  // Restart transcription
   const handleRestartTranscription = () => {
     if (isReplicate) {
-      // For Replicate, show prompt dialog
       setShowPromptDialog(true);
       setTranscriptionPrompt('');
     } else {
-      // For local transcription, restart directly
       restartWithoutPrompt();
     }
   };
 
-  // Restart transcription without prompt
   const restartWithoutPrompt = async () => {
     if (!currentUser || !docId) return;
     
@@ -459,17 +419,15 @@ export default function TranscriptionEditor() {
     }
   };
 
-  // If not authenticated, return null (will redirect in useEffect)
   if (!currentUser) {
     return null;
   }
 
   return (
-    <div className="transcription-editor">
+    <div className="transcription-container">
       <Toast ref={toast} position="top-right" />
       
-      {/* Header section */}
-      <div className="editor-header">
+      <div className="transcription-header">
         {isEditingName ? (
           <div className="edit-name-container">
             <InputText
@@ -478,6 +436,7 @@ export default function TranscriptionEditor() {
               onBlur={saveDocName}
               onKeyDown={(e) => e.key === 'Enter' && saveDocName()}
               autoFocus
+              className="w-full"
             />
             <Button
               icon="pi pi-check"
@@ -487,44 +446,39 @@ export default function TranscriptionEditor() {
             />
           </div>
         ) : (
-          <h2 className="doc-title" onClick={startEditingName}>
+          <h1 className="doc-title" onClick={startEditingName}>
             {doc?.name || 'Loading...'}
             <Button
               icon="pi pi-pencil"
-              className="p-button-rounded p-button-text p-button-sm"
+              className="p-button-rounded p-button-text p-button-sm ml-2"
               onClick={startEditingName}
               tooltip="Edit name"
             />
-          </h2>
+          </h1>
         )}
         
-        {/* Connection status indicator */}
-        <div className="connection-status">
-          <span className={`status-indicator ${socketConnected ? 'connected' : 'disconnected'}`}></span>
-          <span className="status-text">{socketConnected ? 'Connected' : 'Offline'}</span>
+        <div className={`socket-status ${socketConnected ? 'connected' : 'disconnected'}`}>
+          {socketConnected ? 'Connected' : 'Offline'}
         </div>
       </div>
       
-      {/* Audio filename info */}
       {doc?.audioFilename && (
         <div className="audio-info">
-          <i className="pi pi-file-audio"></i> 
+          <i className="pi pi-file-audio mr-2"></i> 
           Audio: {doc.audioFilename}
-          {doc.audioTrashed && <span className="trashed-indicator"> [TRASHED]</span>}
+          {doc.audioTrashed && <span className="trashed-badge ml-2">TRASHED</span>}
         </div>
       )}
       
-      {/* Error display */}
       {error && (
         <div className="error-message">
-          <i className="pi pi-exclamation-triangle"></i> {error}
+          <i className="pi pi-exclamation-triangle mr-2"></i> {error}
         </div>
       )}
       
-      {/* Transcription progress section */}
       {!isComplete && (
-        <div className="transcription-progress">
-          <div className="progress-header">
+        <div className="progress-container">
+          <div className="processing-indicator">
             <h3>Transcription in progress... {progress}% complete</h3>
             {statusMessage && <div className="status-message">{statusMessage}</div>}
           </div>
@@ -532,76 +486,72 @@ export default function TranscriptionEditor() {
           
           {isReplicate && (
             <div className="replicate-info">
-              <i className="pi pi-cloud"></i> Using Replicate API for cloud-based transcription. 
+              <i className="pi pi-cloud mr-2"></i> Using Replicate API for cloud-based transcription. 
               This may take a few minutes to complete.
             </div>
           )}
         </div>
       )}
       
-      {/* Main editor */}
       {loading ? (
         <div className="loading-container">
-          <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
+          <ProgressBar mode="indeterminate" style={{ height: '6px', width: '50%' }} />
           <p>Loading document...</p>
         </div>
       ) : (
-        <>
+        <div className="main-content">
           <div className="editor-container">
             <InputTextarea
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
               rows={15}
-              className="full-width-editor"
+              className="w-full"
               placeholder="Transcription will appear here..."
             />
             
             {saveSuccess && (
               <div className="save-indicator">
-                <i className="pi pi-check"></i> Saved
+                <i className="pi pi-check mr-1"></i> Saved
               </div>
             )}
           </div>
           
-          {/* Audio player */}
           {doc?.audioFilename && !doc.audioTrashed && (
             <div className="audio-player-container">
               <h3>Audio Player</h3>
               <AudioPlayer filename={doc.audioFilename} />
             </div>
           )}
-          
-          {/* Action buttons */}
-          <div className="action-buttons">
-            <Link href="/home">
-              <Button
-                label="Back to Home"
-                icon="pi pi-arrow-left"
-                className="p-button-secondary"
-              />
-            </Link>
-            
-            <Button
-              label="Save"
-              icon="pi pi-save"
-              onClick={() => saveDocument(content)}
-              loading={isSaving}
-              className="p-button-primary"
-            />
-            
-            {isComplete && (
-              <Button 
-                label="Restart Transcription" 
-                icon="pi pi-refresh" 
-                className="p-button-warning"
-                onClick={handleRestartTranscription}
-              />
-            )}
-          </div>
-        </>
+        </div>
       )}
       
-      {/* Prompt dialog for Replicate */}
+      <div className="actions-container">
+        <Link href="/home">
+          <Button
+            label="Back to Home"
+            icon="pi pi-arrow-left"
+            className="p-button-secondary"
+          />
+        </Link>
+        
+        <Button
+          label="Save"
+          icon="pi pi-save"
+          onClick={() => saveDocument(content)}
+          loading={isSaving}
+          className="p-button-primary"
+        />
+        
+        {isComplete && (
+          <Button 
+            label="Restart Transcription" 
+            icon="pi pi-refresh" 
+            className="p-button-warning"
+            onClick={handleRestartTranscription}
+          />
+        )}
+      </div>
+      
       <Dialog
         header="Enter Transcription Prompt"
         visible={showPromptDialog}
@@ -629,7 +579,7 @@ export default function TranscriptionEditor() {
           Enter a prompt to guide the Replicate AI transcription. A good prompt can improve accuracy
           for domain-specific content, accents, or technical terminology.
         </p>
-        <div className="prompt-input-container">
+        <div className="prompt-input-container mt-3">
           <InputTextarea
             value={transcriptionPrompt}
             onChange={(e) => setTranscriptionPrompt(e.target.value)}

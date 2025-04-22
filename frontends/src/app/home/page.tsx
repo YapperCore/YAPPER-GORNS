@@ -5,11 +5,13 @@ import { Toast } from 'primereact/toast';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
+import { ProgressBar } from 'primereact/progressbar';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import Confirmable from '@/components/Confirmable';
 import FileUpload from '@/components/FileUpload';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import '@/styles/Home.css';
 
 interface Document {
@@ -37,12 +39,16 @@ export default function Home() {
   const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [folderLoading, setFolderLoading] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
+  const [networkError, setNetworkError] = useState(false);
+  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
   const toast = useRef<Toast>(null);
   const { currentUser, logout } = useAuth();
   const router = useRouter();
 
-  // Fetch data only once when component mounts
+  // Fetch data on component mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -53,6 +59,8 @@ export default function Home() {
     
     const fetchData = async () => {
       setLoading(true);
+      setNetworkError(false);
+      
       try {
         // Fetch data in parallel
         await Promise.all([
@@ -62,11 +70,13 @@ export default function Home() {
         ]);
       } catch (err) {
         console.error("Error fetching data:", err);
+        setNetworkError(true);
+        
         toast.current?.show({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data. Please refresh and try again.',
-          life: 3000
+          summary: 'Connection Error',
+          detail: 'Failed to load data. Please check your network connection.',
+          life: 5000
         });
       } finally {
         setLoading(false);
@@ -75,6 +85,13 @@ export default function Home() {
     
     fetchData();
   }, [currentUser, router]);
+  
+  // Refresh folders when key changes
+  useEffect(() => {
+    if (currentUser && folderRefreshKey > 0) {
+      fetchFolders();
+    }
+  }, [currentUser, folderRefreshKey]);
 
   const fetchDocs = async () => {
     if (!currentUser) return;
@@ -102,6 +119,7 @@ export default function Home() {
     } catch (err) {
       console.error("Error fetching docs:", err);
       setDocs([]);
+      throw err; // Propagate for the parent handler
     }
   };
 
@@ -109,6 +127,7 @@ export default function Home() {
     if (!currentUser) return;
     
     try {
+      setFolderLoading(true);
       const token = await currentUser.getIdToken();
       const res = await fetch('/api/folders', {
         headers: {
@@ -135,6 +154,9 @@ export default function Home() {
     } catch (err) {
       console.error("Error fetching folders:", err);
       setFolders([]);
+      throw err; // Propagate for the parent handler
+    } finally {
+      setFolderLoading(false);
     }
   };
 
@@ -225,6 +247,105 @@ export default function Home() {
 
   const handleFolderClick = (folderName: string) => {
     router.push(`/folders/${folderName}`);
+  };
+  
+  const handleDeleteFolder = async (folderName: string) => {
+    if (!currentUser || !folderName) return;
+    
+    confirmDialog({
+      message: `Are you sure you want to delete folder "${folderName}"? Any documents in this folder will be moved to home.`,
+      header: 'Delete Folder',
+      icon: 'pi pi-exclamation-triangle',
+      acceptClassName: 'p-button-danger',
+      accept: async () => {
+        try {
+          setDeletingFolder(folderName);
+          const token = await currentUser.getIdToken();
+          
+          // First get documents in this folder to handle them properly
+          const docsRes = await fetch(`/api/folders/${folderName}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          // If we get documents, move them to home first
+          if (docsRes.ok) {
+            const folderDocs = await docsRes.json();
+            
+            // Move each document to home
+            if (Array.isArray(folderDocs) && folderDocs.length > 0) {
+              for (const doc of folderDocs) {
+                if (doc.id) {
+                  try {
+                    await fetch(`/api/folders/home/add/${doc.id}`, {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${token}`
+                      }
+                    });
+                  } catch (err) {
+                    console.error(`Error moving doc ${doc.id} to home:`, err);
+                  }
+                }
+              }
+            }
+          }
+          
+          // Now delete the folder
+          const res = await fetch(`/api/folders/${folderName}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          if (res.ok) {
+            // Remove from local state for immediate UI update
+            setFolders(prev => prev.filter(f => f !== folderName));
+            
+            toast.current?.show({
+              severity: 'success',
+              summary: 'Folder Deleted',
+              detail: `Folder "${folderName}" has been deleted`,
+              life: 3000
+            });
+            
+            // Refetch docs as some might have been moved
+            fetchDocs();
+          } else {
+            try {
+              const errData = await res.json();
+              toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: errData.error || 'Failed to delete folder',
+                life: 3000
+              });
+            } catch (e) {
+              toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Failed to delete folder (${res.status})`,
+                life: 3000
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Error deleting folder:", err);
+          toast.current?.show({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete folder. Please try again.',
+            life: 3000
+          });
+        } finally {
+          setDeletingFolder(null);
+          // Force a refresh of the folders list
+          setFolderRefreshKey(prev => prev + 1);
+        }
+      }
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -331,7 +452,7 @@ export default function Home() {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
-          // If response is not valid JSON
+          // If not parseable JSON
         }
         
         toast.current?.show({
@@ -358,6 +479,29 @@ export default function Home() {
     fetchDocs();
     setUploadMessage("Upload succeeded!");
   };
+  
+  const handleRetryConnection = () => {
+    setNetworkError(false);
+    
+    // Retry all fetch operations
+    Promise.all([
+      fetchDocs(),
+      fetchFolders(),
+      fetchSettings()
+    ]).catch(err => {
+      console.error("Retry failed:", err);
+      setNetworkError(true);
+      
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Connection Failed',
+        detail: 'Still unable to connect to server. Please check your network.',
+        life: 5000
+      });
+    }).finally(() => {
+      setLoading(false);
+    });
+  };
 
   if (!currentUser) {
     return null; // Redirecting to login in useEffect
@@ -366,10 +510,27 @@ export default function Home() {
   return (
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
+      <ConfirmDialog />
       
       <div className="home-header">
         <h2>Home - Upload Audio =&gt; Create Doc</h2>
       </div>
+      
+      {networkError && (
+        <div className="network-error-banner">
+          <div className="network-error-content">
+            <i className="pi pi-exclamation-triangle"></i>
+            <span>Unable to connect to server. Please check your network connection.</span>
+          </div>
+          <Button 
+            label="Retry Connection" 
+            icon="pi pi-refresh"
+            className="p-button-sm"
+            onClick={handleRetryConnection}
+            disabled={loading}
+          />
+        </div>
+      )}
 
       <div className="upload-section">
         {showPromptInput && (
@@ -409,17 +570,39 @@ export default function Home() {
       
       <div className="folders-section">
         <h3>Folders:</h3>
-        {loading ? (
-          <p>Loading folders...</p>
+        {loading || folderLoading ? (
+          <div className="loading-container">
+            <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
+            <p>Loading folders...</p>
+          </div>
         ) : folders.length === 0 ? (
           <p>No folders created yet. Create your first folder to organize your documents.</p>
         ) : (
           <div className="docs-grid">
             {folders.map(folder => (
-              <div key={folder} className="doc-card folder-card" onClick={() => handleFolderClick(folder)}>
-                <h4 className="doc-title">
-                  <i className="pi pi-folder"></i> {folder}
-                </h4>
+              <div key={folder} className="doc-card folder-card">
+                <div className="folder-content" onClick={() => handleFolderClick(folder)}>
+                  <h4 className="doc-title">
+                    <i className="pi pi-folder"></i> {folder}
+                  </h4>
+                </div>
+                <div className="folder-actions">
+                  <button 
+                    className="folder-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      handleDeleteFolder(folder);
+                    }}
+                    title="Delete folder"
+                    disabled={deletingFolder === folder}
+                  >
+                    {deletingFolder === folder ? (
+                      <i className="pi pi-spin pi-spinner"></i>
+                    ) : (
+                      <i className="pi pi-trash"></i>
+                    )}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -431,7 +614,10 @@ export default function Home() {
       <div className="docs-section">
         <h3>Docs in Session:</h3>
         {loading ? (
-          <p>Loading documents...</p>
+          <div className="loading-container">
+            <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
+            <p>Loading documents...</p>
+          </div>
         ) : docs.length === 0 ? (
           <p>No documents available. Upload an audio file to create your first document.</p>
         ) : (

@@ -1,5 +1,4 @@
 // src/services/transcriptionService.ts
-
 interface TranscriptionConfig {
   mode: string;
   replicateApiKey?: string;
@@ -16,16 +15,6 @@ interface TranscriptionResult {
   error?: string;
 }
 
-/**
- * Uploads and transcribes an audio file
- * 
- * @param audioFile The audio file to transcribe
- * @param docId Optional document ID if updating existing document
- * @param prompt Optional transcription prompt for Replicate
- * @param token User's authentication token
- * @param config Transcription configuration
- * @returns Transcription result object
- */
 export async function transcribeAudio(
   audioFile: File,
   docId: string = "",
@@ -36,6 +25,11 @@ export async function transcribeAudio(
   try {
     const formData = new FormData();
     formData.append('audio', audioFile);
+    
+    // Use default API key if not provided
+    if (config.mode === 'replicate' && !config.replicateApiKey) {
+      formData.append('default_replicate_api', 'true');
+    }
     
     // Add transcription prompt if provided
     if (prompt) {
@@ -96,28 +90,22 @@ export async function transcribeAudio(
   }
 }
 
-/**
- * Submit a transcription prompt for an existing document (Replicate mode)
- * 
- * @param docId Document ID
- * @param prompt Transcription prompt to guide Replicate
- * @param token User's authentication token
- * @returns Transcription result
- */
 export async function submitTranscriptionPrompt(
   docId: string,
   prompt: string,
   token: string
 ): Promise<TranscriptionResult> {
   try {
-    // This endpoint initiates transcription with Replicate
     const response = await fetch(`/api/transcribe/${docId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ transcription_prompt: prompt })
+      body: JSON.stringify({ 
+        transcription_prompt: prompt,
+        use_default_api: !prompt 
+      })
     });
     
     if (!response.ok) {
@@ -143,12 +131,6 @@ export async function submitTranscriptionPrompt(
   }
 }
 
-/**
- * Retrieve user's transcription settings
- * 
- * @param token User's authentication token
- * @returns User's transcription configuration or default config if unavailable
- */
 export async function getUserSettings(token: string): Promise<TranscriptionConfig | null> {
   try {
     const response = await fetch('/api/user-settings', {
@@ -163,6 +145,11 @@ export async function getUserSettings(token: string): Promise<TranscriptionConfi
     
     const data = await response.json();
     
+    // If no API key is set, use the default
+    if (data.transcriptionConfig && data.transcriptionConfig.mode === 'replicate' && !data.transcriptionConfig.replicateApiKey) {
+      data.transcriptionConfig.replicateApiKey = 'default';
+    }
+    
     return data.transcriptionConfig || {
       mode: 'local-cpu',
       cpuThreads: 1,
@@ -175,38 +162,6 @@ export async function getUserSettings(token: string): Promise<TranscriptionConfi
   }
 }
 
-/**
- * Fetch system information (CPU/GPU data)
- * 
- * @param token User's authentication token 
- * @returns System information or null if unavailable
- */
-export async function getSystemInfo(token: string): Promise<any | null> {
-  try {
-    const response = await fetch('/api/system-info', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch system information');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching system information:', error);
-    return null;
-  }
-}
-
-/**
- * Test Replicate API key validity
- * 
- * @param apiKey Replicate API key to test
- * @param token User's authentication token
- * @returns Test result
- */
 export async function testReplicateApiKey(apiKey: string, token: string): Promise<{success: boolean, message: string}> {
   try {
     const response = await fetch('/api/test-replicate-api', {
@@ -215,7 +170,10 @@ export async function testReplicateApiKey(apiKey: string, token: string): Promis
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ apiKey })
+      body: JSON.stringify({ 
+        apiKey: apiKey || 'r8_P18zK076s92g3ZuY4pcb1THRAzmnFpE3j70Vf',
+        use_default: !apiKey
+      })
     });
     
     const data = await response.json();
@@ -241,14 +199,6 @@ export async function testReplicateApiKey(apiKey: string, token: string): Promis
   }
 }
 
-/**
- * Restart transcription for an existing document
- * 
- * @param docId Document ID
- * @param prompt Optional transcription prompt (for Replicate)
- * @param token User's authentication token
- * @returns Transcription result
- */
 export async function restartTranscription(
   docId: string,
   prompt: string = "",
@@ -263,7 +213,8 @@ export async function restartTranscription(
       },
       body: JSON.stringify({ 
         transcription_prompt: prompt,
-        restart: true
+        restart: true,
+        use_default_api: !prompt
       })
     });
     

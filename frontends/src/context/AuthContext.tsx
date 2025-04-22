@@ -1,15 +1,8 @@
+// src/context/AuthContext.tsx
 "use client";
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut,
-  onAuthStateChanged,
-  User 
-} from "firebase/auth";
-import { app } from "./firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "./firebase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -24,9 +17,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
 
@@ -37,7 +28,6 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth(app);
 
   function signup(email: string, password: string) {
     return createUserWithEmailAndPassword(auth, email, password);
@@ -67,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
     });
     return unsubscribe;
-  }, [auth]);
+  }, []);
 
   const value = {
     currentUser,
