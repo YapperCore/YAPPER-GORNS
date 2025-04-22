@@ -124,7 +124,7 @@ export default function LoginForm() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black text-white rounded-full"
+                className="inline-flex items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-black text-orange-500 hover:bg-black/90 h-10 px-4 py-2 w-full"
                 disabled={loading}
               >
                 {loading ? "Logging in..." : "Login"}
@@ -134,13 +134,18 @@ export default function LoginForm() {
                   Or continue with
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="w-full rounded-full">
-                  Google
-                </Button>
-              
-              </div>
-              <div className="text-center text-sm">
+              <div className="grid grid-cols-3">
+              <div className="col-span-3 flex justify-center">
+                    <Button variant="outline" className="rounded-full flex items-center justify-center">
+                      <img
+                        src="/static/google.png"
+                        alt="Google Logo"
+                        className="h-6 w-6"
+                      />
+                    </Button>
+                  </div>
+                </div>
+                  <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
                 <a href="/signup" className="underline underline-offset-4">
                   Sign up

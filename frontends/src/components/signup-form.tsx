@@ -1,4 +1,6 @@
+// src/app/signup/page.tsx
 'use client';
+
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -108,6 +110,8 @@ export default function SignupForm() {
                   Sign up to join Yapper
                 </p>
               </div>
+  
+              {/* Email */}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -120,6 +124,8 @@ export default function SignupForm() {
                   required
                 />
               </div>
+  
+              {/* Password */}
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -132,6 +138,8 @@ export default function SignupForm() {
                   required
                 />
               </div>
+  
+              {/* Confirm Password */}
               <div className="grid gap-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
@@ -144,32 +152,52 @@ export default function SignupForm() {
                   required
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full bg-black text-white rounded-full"
-                disabled={loading}
-              >
-                {loading ? "Signing up..." : "Sign Up"}
+  
+              {/* Submit Button */}
+              <Button asChild>
+                <button
+                  type="submit"
+                  className="!inline-flex !items-center !justify-center !rounded-full !text-sm !font-medium !transition-colors !focus-visible:outline-none !focus-visible:ring-2 !focus-visible:ring-ring !focus-visible:ring-offset-2 !disabled:opacity-50 !disabled:pointer-events-none !ring-offset-background !bg-black !text-orange-500 !hover:bg-black/90 !h-10 !px-4 !py-2 !w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Signing up..." : "Sign Up"}
+                </button>
               </Button>
+  
+              {/* Or divider */}
               <div className="relative text-center text-sm">
                 <span className="relative z-10 bg-background px-2 text-muted-foreground rounded-full">
                   Or continue with
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="w-full rounded-full">
-                  Google
-                </Button>
-              
+  
+              {/* Google Sign In Button */}
+              <div className="grid grid-cols-3">
+                <div className="col-span-3 flex justify-center">
+                  <Button
+                    variant="outline"
+                    className="rounded-full flex items-center justify-center"
+                  >
+                    <img
+                      src="/static/google.png"
+                      alt="Google Logo"
+                      className="h-6 w-6"
+                    />
+                  </Button>
+                </div>
               </div>
-              <div className="text-center text-sm">
+  
+              {/* Login Link */}
+              <div className="text-center text-sm mt-4">
                 Already have an account?{" "}
-                <a href="/login" className="underline underline-offset-4">
+                <a href="/login" className="underline underline-offset-4 text-black">
                   Login
                 </a>
               </div>
             </div>
           </form>
+  
+          {/* Side image */}
           <div className="relative hidden bg-muted md:block rounded-lg">
             <img
               src="/static/Yapperlogoimg.png"
@@ -179,6 +207,8 @@ export default function SignupForm() {
           </div>
         </CardContent>
       </Card>
+  
+      {/* Terms & Policy */}
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
         and <a href="#">Privacy Policy</a>.
