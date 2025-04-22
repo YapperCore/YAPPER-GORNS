@@ -86,9 +86,17 @@ def ensure_directories():
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+    
+    # Update CORS to accept requests from your Vercel frontend
+    CORS(app, 
+         supports_credentials=True, 
+         origins=[
+             "http://localhost:3000",  # Local development
+             "https://yapper-frontend.vercel.app",  # Update this to your actual Vercel domain
+         ])
+    
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "yapper_secret_key")
-    app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
+    app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
 
     # Initialize Firebase
     initialize_firebase()
@@ -103,18 +111,16 @@ def create_app():
     register_document_routes(app)
     register_trash_routes(app)
     register_user_settings_routes(app)
-    register_system_routes(app)
     app.register_blueprint(folders_bp)
 
-    # Attach SocketIO to Flask app with explicit configuration
+    # Attach SocketIO to Flask app with appropriate CORS for production
     socketio.init_app(
         app, 
-        cors_allowed_origins="*",  # More restrictive in production
-        async_mode="threading",
-        ping_timeout=60,
-        ping_interval=25,
-        logger=True,
-        engineio_logger=True  # Set to False in production
+        cors_allowed_origins=[
+            "http://localhost:3000",
+            "https://yapper-frontend.vercel.app"  # Update this to your actual Vercel domain
+        ],
+        async_mode="eventlet"
     )
 
     # Register error handlers

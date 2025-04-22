@@ -3,9 +3,19 @@
 Firebase configuration for Yapper application
 """
 import os
+import json
 
-# Path to service account key file
-FIREBASE_SERVICE_ACCOUNT_KEY = os.path.join(os.getcwd(), "Accesskey.json")
+# Path to service account key file (local development) or use environment variable (production)
+if os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
+    # For Render deployment - create a temp file with the credentials from env var
+    import tempfile
+    service_account_data = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT', '{}'))
+    fd, FIREBASE_SERVICE_ACCOUNT_KEY = tempfile.mkstemp()
+    with open(FIREBASE_SERVICE_ACCOUNT_KEY, 'w') as f:
+        json.dump(service_account_data, f)
+else:
+    # Local development 
+    FIREBASE_SERVICE_ACCOUNT_KEY = os.path.join(os.getcwd(), "Accesskey.json")
 
 # Firebase configuration
 FIREBASE_CONFIG = {
