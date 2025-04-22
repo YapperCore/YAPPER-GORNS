@@ -70,6 +70,7 @@ const Navbar = () => {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
+          background: "#2e2b46", // light gray
         }}
         maskStyle={{
           zIndex: 1000,
