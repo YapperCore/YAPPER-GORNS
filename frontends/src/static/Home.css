@@ -1,0 +1,51 @@
+/* Layout container for page spacing */
+.home-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Section spacing */
+.upload-section {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Remove custom button/input styles, use shadcn/ui components instead */
+
+/* Grid for docs/cards */
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Remove .doc-card, .doc-title, .audio-info, .doc-actions, .action-link, .transcription-link, .edit-link, .delete-link, .orange-button, etc. */
+
+/* Message styling */
+.message {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  color: #e53e3e; /* red-600 for errors */
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+  margin: 2rem 0 1.5rem 0;
+}
+
+/* Folders/Docs section headings */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Remove all custom button and card color overrides, use shadcn/ui defaults */
+
+/* If you use shadcn/ui Alert, Card, Button, Input, etc., no further custom CSS is needed for those components. */

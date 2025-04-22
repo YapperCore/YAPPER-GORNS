@@ -7,27 +7,36 @@ Firebase integration, and SocketIO for real-time updates.
 import os
 import logging
 import tempfile
+import json
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
 # --- Platform Detection ---
 import platform
+
 IS_WINDOWS = platform.system() == "Windows"
-IS_WSL = "microsoft" in platform.uname().release.lower() if hasattr(platform, 'uname') else False
+IS_WSL = (
+    "microsoft" in platform.uname().release.lower()
+    if hasattr(platform, "uname")
+    else False
+)
 PLATFORM_NAME = f"{platform.system()} {'(WSL)' if IS_WSL else ''}"
 
 # --- Windows Patch ---
 if IS_WINDOWS:
     import ctypes.util
+
     _original_find_library = ctypes.util.find_library
+
     def patched_find_library(name):
         ret = _original_find_library(name)
         if ret is None and name == "c":
             return "msvcrt"
         return ret
+
     ctypes.util.find_library = patched_find_library
 
 # --- Config and Services ---
@@ -41,6 +50,8 @@ from routes.docmanage import register_docmanage_routes
 from routes.document import register_document_routes
 from routes.trash_route import register_trash_routes
 from routes.folders import folders_bp
+from routes.user_settings import register_user_settings_routes
+from routes.system_routes import register_system_routes
 
 # --- Auth ---
 from auth import verify_firebase_token, is_admin
@@ -48,17 +59,18 @@ from auth import verify_firebase_token, is_admin
 # --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(os.path.join(tempfile.gettempdir(), 'yapper.log'))
-    ]
+        logging.FileHandler(os.path.join(tempfile.gettempdir(), "yapper.log")),
+    ],
 )
 logger = logging.getLogger(__name__)
 
 # Log platform information
 logger.info(f"Starting on platform: {PLATFORM_NAME}")
 logger.info(f"Python version: {platform.python_version()}")
+
 
 # --- Ensure Directories Exist ---
 def ensure_directories():
@@ -69,17 +81,18 @@ def ensure_directories():
     logger.info(f"Trash folder: {TRASH_FOLDER}")
     logger.info(f"Doc store file: {DOC_STORE_FILE}")
 
+
 # --- App Initialization ---
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    CORS(app, supports_credentials=True)
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'yapper_secret_key')
-    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "yapper_secret_key")
+    app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
 
     # Initialize Firebase
     initialize_firebase()
-    
+
     # Initialize directories and load doc store
     ensure_directories()
     load_doc_store()
@@ -89,48 +102,97 @@ def create_app():
     register_docmanage_routes(app)
     register_document_routes(app)
     register_trash_routes(app)
+    register_user_settings_routes(app)
+    register_system_routes(app)
     app.register_blueprint(folders_bp)
 
-    # Attach SocketIO to Flask app
-    socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
-    
+    # Attach SocketIO to Flask app with explicit configuration
+    socketio.init_app(
+        app, 
+        cors_allowed_origins="*",  # More restrictive in production
+        async_mode="threading",
+        ping_timeout=60,
+        ping_interval=25,
+        logger=True,
+        engineio_logger=True  # Set to False in production
+    )
+
     # Register error handlers
     register_error_handlers(app)
-    
+
     return app
+
 
 # --- Basic Routes ---
 def register_basic_routes(app):
     """Register basic application routes"""
-    @app.route('/')
+
+    @app.route("/")
     def index():
+        return jsonify(
+            {
+                "service": "Yapper Backend API",
+                "status": "running",
+                "platform": PLATFORM_NAME,
+                "version": "1.0.0",
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+    @app.route("/healthcheck")
+    def healthcheck():
+        return (
+            jsonify(
+                {
+                    "status": "ok",
+                    "timestamp": datetime.now().isoformat(),
+                    "platform": PLATFORM_NAME,
+                    "socketio": "active"
+                }
+            ),
+            200,
+        )
+        
+    @app.route('/socket-test')
+    def socket_test():
         return jsonify({
-            "service": "Yapper Backend API",
-            "status": "running",
-            "platform": PLATFORM_NAME,
-            "version": "1.0.0"
+            "socket_status": "active",
+            "server_time": datetime.now().isoformat(),
+            "engine": socketio.async_mode
         })
 
-    @app.route('/healthcheck')
-    def healthcheck():
-        return jsonify({
-            "status": "ok",
-            "timestamp": datetime.now().isoformat(),
-            "platform": PLATFORM_NAME
-        }), 200
-
-    @app.route('/auth/check', methods=['GET'])
+    @app.route("/auth/check", methods=["GET"])
     @verify_firebase_token
     def check_auth():
-        return jsonify({
-            "authenticated": True,
-            "uid": request.uid,
-            "is_admin": is_admin(request.uid)
-        })
+        return jsonify(
+            {
+                "authenticated": True,
+                "uid": request.uid,
+                "is_admin": is_admin(request.uid),
+            }
+        )
+        
+    @app.route("/api/env-check", methods=["GET"])
+    def env_check():
+        """Check for required environment variables"""
+        env_status = {
+            "REPLICATE_API_TOKEN": bool(os.environ.get("REPLICATE_API_TOKEN")),
+            "FIREBASE_CONFIG": bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY")) 
+        }
+        
+        if request.args.get("debug") == "true" and is_admin(request.uid):
+            # Only show masked tokens for admin users with debug flag
+            if os.environ.get("REPLICATE_API_TOKEN"):
+                token = os.environ.get("REPLICATE_API_TOKEN")
+                env_status["REPLICATE_API_TOKEN_MASKED"] = f"{token[:5]}...{token[-5:]}"
+                
+        return jsonify(env_status)
+
 
 # --- Error Handlers ---
 def register_error_handlers(app):
     """Register application error handlers"""
+
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"error": "Bad request"}), 400
@@ -151,20 +213,21 @@ def register_error_handlers(app):
     def internal_server(error):
         return jsonify({"error": "Internal server error"}), 500
 
+
 # --- Application Entry Point ---
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
-    
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
+
     logger.info(f"Starting Yapper backend on {PLATFORM_NAME}")
     logger.info(f"Port: {port}, Debug mode: {debug_mode}")
-    
+
     app = create_app()
-    
+
     if debug_mode:
         # Use Flask's development server with debug mode
-        socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
+        socketio.run(app, debug=debug_mode, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
     else:
         # Use socketio's production-ready server
         print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")
-        socketio.run(app, host='0.0.0.0', port=port)
+        socketio.run(app, host="0.0.0.0", port=port)

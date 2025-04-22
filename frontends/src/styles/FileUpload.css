@@ -1,0 +1,71 @@
+.file-upload-container {
+  margin-bottom: 1rem;
+}
+
+.dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropzone-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #6c757d;
+}
+
+.selected-file {
+  font-weight: bold;
+  color: #0d6efd;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.upload-progress {
+  margin: 1rem 0;
+}
+
+.upload-button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+}
+
+.error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.prompt-input {
+  margin-bottom: 1rem;
+}
+
+.prompt-input textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  resize: vertical;
+}
