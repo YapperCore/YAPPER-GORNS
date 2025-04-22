@@ -3,15 +3,24 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Toast } from 'primereact/toast';
-import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
+import { Checkbox } from 'primereact/checkbox'; // Import Checkbox component
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import Confirmable from '@/components/Confirmable';
 import FileUpload from '@/components/FileUpload';
 import '@/styles/Home.css';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 interface Document {
   id: string;
@@ -23,27 +32,24 @@ interface Document {
   folderName?: string;
 }
 
-interface FolderOption {
-  label: string;
-  value: string;
-}
-
 export default function Home() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [docs, setDocs] = useState<Document[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
-  const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
   const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
-  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Track delete dialog open state
   const [folderToDelete, setFolderToDelete] = useState('');
   const [folderDocs, setFolderDocs] = useState<Document[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // Track dialog open state
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false); // Track move dialog open state
   const toast = useRef<Toast>(null);
   const { currentUser } = useAuth();
   const router = useRouter();
@@ -173,36 +179,36 @@ export default function Home() {
   };
 
   const handleCreateFolder = async () => {
-    if (!currentUser || typeof window === 'undefined') return;
-    
-    const folderName = window.prompt("Enter the name of the folder:");
-    if (!folderName || !folderName.trim()) return;
+    if (!currentUser || !newFolderName.trim()) return;
 
     try {
       setCreatingFolder(true);
-      
+
       const token = await currentUser.getIdToken();
       const res = await fetch('/api/folders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ folderName })
+        body: JSON.stringify({ folderName: newFolderName }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        
-        toast.current?.show({ 
-          severity: 'success', 
-          summary: 'Folder Created', 
-          detail: data.message || 'Folder created successfully', 
-          life: 3000 
+
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Folder Created',
+          detail: data.message || 'Folder created successfully',
+          life: 3000,
         });
-        
+
         // Refresh folders list
         await fetchFolders();
+
+        // Close the dialog box
+        setIsDialogOpen(false);
       } else {
         let errorMessage = 'Failed to create folder';
         try {
@@ -211,25 +217,26 @@ export default function Home() {
         } catch (e) {
           // If response is not valid JSON
         }
-        
-        toast.current?.show({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: errorMessage, 
-          life: 3000 
+
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+          life: 3000,
         });
       }
     } catch (err) {
-      console.error("Error creating folder:", err);
-      
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to create folder. Please try again.', 
-        life: 3000 
+      console.error('Error creating folder:', err);
+
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to create folder. Please try again.',
+        life: 3000,
       });
     } finally {
       setCreatingFolder(false);
+      setNewFolderName("");
     }
   };
 
@@ -239,7 +246,7 @@ export default function Home() {
 
   const handleDeleteButtonClick = async (folderName: string) => {
     setFolderToDelete(folderName);
-    setConfirmDeleteDialog(true);
+    setIsDeleteDialogOpen(true);
     await fetchDocsInFolder(folderName);
   };
 
@@ -350,7 +357,7 @@ export default function Home() {
       });
     } finally {
       setLoading(false);
-      setConfirmDeleteDialog(false);
+      setIsDeleteDialogOpen(false);
       setFolderDocs([]);
       setSelectedDocs([]);
     }
@@ -408,14 +415,15 @@ export default function Home() {
 
   const handleOpenMoveModal = (docId: string) => {
     setDocToMove(docId);
-    setShowMoveModal(true);
+    setIsMoveDialogOpen(true);
   };
 
   const handleCloseMoveModal = () => {
-    setShowMoveModal(false);
+    setIsMoveDialogOpen(false);
     setSelectedFolder("");
     setDocToMove(null);
   };
+
 
   const handleMoveToFolder = async () => {
     if (!selectedFolder || !docToMove || !currentUser) {
@@ -448,7 +456,7 @@ export default function Home() {
         });
         
         // Close the modal and reset selection
-        setShowMoveModal(false);
+        setIsMoveDialogOpen(false);
         setSelectedFolder("");
         setDocToMove(null);
 
@@ -460,7 +468,6 @@ export default function Home() {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
-          // If response is not valid JSON
         }
         
         toast.current?.show({
@@ -482,35 +489,11 @@ export default function Home() {
     }
   };
 
-  const handleSuccessfulUpload = (docId: string) => {
+  const handleSuccessfulUpload = () => {
     // Refresh documents after a successful upload
     fetchDocs();
     setUploadMessage("Upload succeeded!");
   };
-
-  const confirmDialogFooter = (
-    <div className="dialog-footer">
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        className="p-button-text" 
-        onClick={() => setConfirmDeleteDialog(false)} 
-      />
-      <Button 
-        label="Delete Selected" 
-        icon="pi pi-trash" 
-        className="p-button-warning"
-        disabled={selectedDocs.length === 0}
-        onClick={handleDeleteSelected} 
-      />
-      <Button 
-        label="Delete All" 
-        icon="pi pi-trash" 
-        className="p-button-danger" 
-        onClick={handleDeleteAll} 
-      />
-    </div>
-  );
 
   if (!currentUser) {
     return null; // Redirecting to login in useEffect
@@ -548,14 +531,44 @@ export default function Home() {
       <hr className="divider" />
       
       <div className="folder-section">
-        <Button 
-          label="Create Folder" 
-          icon="pi pi-folder-plus"
-          onClick={handleCreateFolder} 
-          className="create-folder-btn"
-          disabled={!currentUser || creatingFolder}
-          loading={creatingFolder}
-        />
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger>
+            <Button
+              label="Create Folder"
+              icon="pi pi-folder-plus"
+              className="create-folder-btn"
+              disabled={!currentUser || creatingFolder}
+            />
+          </DialogTrigger>
+          <DialogContent className="bg-black text-white p-6 rounded-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">Create a New Folder</DialogTitle>
+              <DialogDescription className="text-sm">
+                Enter the name of the folder you want to create.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="dialog-body mt-4">
+              <input
+                type="text"
+                placeholder="Folder Name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                className="w-full p-2 border border-gray-500 rounded bg-gray-800 text-white"
+              />
+            </div>
+            <DialogFooter className="mt-4 flex justify-end">
+              <Button
+                label="Create"
+                icon="pi pi-check"
+                type="button"
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim() || creatingFolder}
+                loading={creatingFolder}
+                className="bg-blue-500 text-white hover:bg-blue-600"
+              />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <hr className="divider" />
@@ -596,55 +609,63 @@ export default function Home() {
         )}
       </div>
 
-      <Dialog 
-        header={`Delete Folder: ${folderToDelete}`} 
-        visible={confirmDeleteDialog} 
-        style={{ width: '500px' }} 
-        footer={confirmDialogFooter}
-        onHide={() => setConfirmDeleteDialog(false)}
-      >
-        <div className="confirmation-content">
-          <i className="pi pi-exclamation-triangle" style={{ fontSize: '2rem', color: '#ff9800', marginRight: '10px' }} />
-          <span>
-            Are you sure you want to delete the folder <strong>{folderToDelete}</strong>? 
-            Select which documents to move to trash:
-          </span>
-        </div>
-        
-        <div className="folder-docs-list">
-          {loadingFolderDocs ? (
-            <p>Loading documents...</p>
-          ) : folderDocs.length === 0 ? (
-            <p>This folder is empty.</p>
-          ) : (
-            <>
-              <div className="select-all-container">
-                <label className="select-all-label">
-                  <input 
-                    type="checkbox"
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-slate-800 text-white p-6 rounded-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Delete Folder: {folderToDelete}</DialogTitle>
+          </DialogHeader>
+          <div className="folder-docs-list mt-4 bg-slate-900">
+            {loadingFolderDocs ? (
+              <p>Loading documents...</p>
+            ) : folderDocs.length === 0 ? (
+              <p>This folder is empty.</p>
+            ) : (
+              <>
+                <div className="select-all-container mb-2">
+                  <Checkbox
+                    inputId="selectAll"
                     checked={selectedDocs.length === folderDocs.length && folderDocs.length > 0}
-                    onChange={handleSelectAllChange}
-                  /> 
-                  Select All Documents
-                </label>
-              </div>
-              <ul className="doc-checkbox-list">
-                {folderDocs.map(doc => (
-                  <li key={doc.id} className="doc-checkbox-item">
-                    <label className="doc-checkbox-label">
-                      <input 
-                        type="checkbox"
+                    onChange={(e) => handleSelectAllChange(e)}
+                  />
+                  <label htmlFor="selectAll" className="ml-2">Select All Documents</label>
+                </div>
+                <ul className="doc-checkbox-list">
+                  {folderDocs.map((doc) => (
+                    <li key={doc.id} className="doc-checkbox-item flex items-center mb-2">
+                      <Checkbox
+                        inputId={`doc-${doc.id}`}
                         checked={selectedDocs.includes(doc.id)}
                         onChange={() => handleCheckboxChange(doc.id)}
                       />
-                      <span className="doc-name">{doc.name}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
+                      <label htmlFor={`doc-${doc.id}`} className="ml-2">{doc.name}</label>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+          <DialogFooter className="mt-4 flex justify-end">
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="bg-gray-500 text-white hover:bg-gray-600 px-6 py-3"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            />
+            <Button
+              label="Delete Selected"
+              icon="pi pi-trash"
+              className="bg-yellow-500 text-white hover:bg-yellow-600 ml-2"
+              onClick={handleDeleteSelected}
+              disabled={selectedDocs.length === 0}
+            />
+            <Button
+              label="Delete All"
+              icon="pi pi-trash"
+              className="bg-red-500 text-white hover:bg-red-600 ml-2"
+              onClick={handleDeleteAll}
+            />
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <hr className="divider" />
@@ -699,38 +720,41 @@ export default function Home() {
         )}
       </div>
 
-      <Dialog
-        header="Move Document to Folder"
-        visible={showMoveModal}
-        style={{ width: '30vw' }}
-        onHide={handleCloseMoveModal}
-        footer={
-          <div>
-            <Button 
-              label="Cancel" 
-              icon="pi pi-times" 
-              className="p-button-text" 
-              onClick={handleCloseMoveModal} 
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="bg-slate-800 text-white p-6 rounded-lxl shadow-2xl border border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Move Document to Folder</DialogTitle>
+          </DialogHeader>
+          <div className="dialog-body mt-4">
+            <select
+              value={selectedFolder}
+              onChange={(e) => setSelectedFolder(e.target.value)}
+              className="w-full p-2 border border-gray-500 rounded-md bg-black text-white"
+            >
+              <option value="" disabled hidden>Select folder</option>
+              {folders.map(folder => (
+                <option key={folder} value={folder}>{folder}</option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter className="mt-4 flex justify-end">
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-6 py-3"
+              onClick={handleCloseMoveModal}
             />
-            <Button 
-              label="Move" 
-              icon="pi pi-check" 
-              onClick={handleMoveToFolder} 
+            <Button
+              label="Move"
+              icon="pi pi-check"
+              className="bg-blue-500 text-white hover:bg-blue-600 ml-4 rounded-xl px-6 py-3"
+              onClick={handleMoveToFolder}
               disabled={!selectedFolder}
             />
-          </div>
-        }
-      >
-        <div>
-          <Dropdown
-            value={selectedFolder}
-            options={folders.map(folder => ({ label: folder, value: folder }))}
-            onChange={(e) => setSelectedFolder(e.value)}
-            placeholder="Select a folder"
-            className="w-full"
-          />
-        </div>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
+
     </div>
   );
 }
