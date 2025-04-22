@@ -216,12 +216,6 @@ export default function FolderDocs() {
               >
                 View Doc
               </Link>
-              <Link
-                href={`/docs/edit/${doc.id}`}
-                className="action-link edit-link"
-              >
-                Edit Doc
-              </Link>
               <button
                 onClick={() => confirmDelete(doc.id)}
                 className="action-link delete-link"

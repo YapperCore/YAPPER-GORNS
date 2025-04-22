@@ -5,7 +5,7 @@ body {
 }
 .home {
   padding: 1rem;
-  background-color: #fff; /* color for the main background of the homepage */
+  background-color: #ffffff; /* color for the main background of the homepage */
   color: #292524; /* color for text on the homepage */
   min-height: 100vh;
 }
