@@ -38,8 +38,18 @@ def update_user_settings():
     if user_id not in user_settings_store:
         user_settings_store[user_id] = {}
     
+    # IMPORTANT FIX: Log the updated settings for debugging
+    logger.info(f"Updating settings for user {user_id}: {data}")
+    
     for key, value in data.items():
         user_settings_store[user_id][key] = value
+        
+        # Log if we're changing the transcription mode
+        if key == "transcriptionConfig" and "mode" in value:
+            logger.info(f"Transcription mode set to: {value['mode']}")
+            if value['mode'] == 'replicate' and 'replicateApiKey' in value:
+                api_key = value['replicateApiKey']
+                logger.info(f"Replicate API key set: {api_key[:5]}...")
     
     return jsonify({"message": "Settings updated successfully"}), 200
 

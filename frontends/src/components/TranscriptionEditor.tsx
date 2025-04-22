@@ -11,7 +11,8 @@ import Link from 'next/link';
 import Editor from '@/components/Editor';
 import AudioPlayer from '@/components/AudioPlayer';
 import { useAuth } from '@/context/AuthContext';
-
+// In TranscriptionEditor component
+import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket-client';
 interface ChunkData {
   chunk_index: number;
   total_chunks: number;
