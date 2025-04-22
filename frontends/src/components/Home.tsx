@@ -1,17 +1,17 @@
 // src/components/Home.tsx - Updated to handle API endpoint issues
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Toast } from 'primereact/toast';
-import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
-import { Button } from 'primereact/button';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import Confirmable from '@/components/Confirmable';
-import FileUpload from '@/components/FileUpload';
-import '@/styles/Home.css';
+import React, { useState, useEffect, useRef } from "react";
+import { Toast } from "primereact/toast";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { Button } from "primereact/button";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import Confirmable from "@/components/Confirmable";
+import FileUpload from "@/components/FileUpload";
+import "@/styles/Home.css";
 
 interface Document {
   id: string;
@@ -30,7 +30,7 @@ export default function Home() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
-  const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState("");
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -40,33 +40,34 @@ export default function Home() {
   const router = useRouter();
 
   // Check if we're in a development environment
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV === "development";
   // Base API URL - use proxy in package.json in dev, or actual server in production
-  const API_BASE = isDev ? '' : process.env.NEXT_PUBLIC_API_URL || '';
+  const API_BASE = isDev ? "" : process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
-    if (!currentUser && typeof window !== 'undefined') {
-      router.push('/login');
+    if (!currentUser && typeof window !== "undefined") {
+      router.push("/login");
       return;
     }
-    
+
     if (currentUser) {
-      Promise.all([fetchDocs(), fetchFolders(), fetchSettings()])
-        .finally(() => setLoading(false));
+      Promise.all([fetchDocs(), fetchFolders(), fetchSettings()]).finally(() =>
+        setLoading(false)
+      );
     }
   }, [currentUser]);
 
   const fetchDocs = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/docs`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setDocs(Array.isArray(data) ? data : []);
@@ -74,9 +75,9 @@ export default function Home() {
       } else {
         console.error("Error fetching docs:", res.status, res.statusText);
         setDocs([]);
-        
+
         if (res.status === 401) {
-          router.push('/login');
+          router.push("/login");
         } else if (res.status === 404) {
           setApiError("API endpoint not found. Check server connection.");
         }
@@ -90,15 +91,15 @@ export default function Home() {
 
   const fetchFolders = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/folders`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         if (data && data.dotFiles) {
@@ -120,19 +121,20 @@ export default function Home() {
 
   const fetchSettings = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/user-settings`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (res.ok) {
         const settings = await res.json();
         if (settings.transcriptionConfig) {
-          const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
+          const usingReplicate =
+            settings.transcriptionConfig.mode === "replicate";
           setShowPromptInput(usingReplicate);
         }
       }
@@ -142,62 +144,62 @@ export default function Home() {
   };
 
   const handleCreateFolder = async () => {
-    if (!currentUser || typeof window === 'undefined') return;
-    
+    if (!currentUser || typeof window === "undefined") return;
+
     const folderName = window.prompt("Enter the name of the folder:");
     if (!folderName || !folderName.trim()) return;
-    
+
     try {
       setCreatingFolder(true);
-      
+
       const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/folders`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ folderName })
+        body: JSON.stringify({ folderName }),
       });
-      
+
       let success = false;
-      let message = '';
-      
+      let message = "";
+
       if (res.ok) {
         success = true;
         try {
           const data = await res.json();
-          message = data.message || 'Folder created successfully';
+          message = data.message || "Folder created successfully";
         } catch (parseError) {
-          message = 'Folder created successfully';
+          message = "Folder created successfully";
         }
       } else {
         try {
           const errData = await res.json();
-          message = errData.error || 'Failed to create folder';
+          message = errData.error || "Failed to create folder";
         } catch (parseError) {
           message = `Failed to create folder (${res.status})`;
         }
       }
-      
-      toast.current?.show({ 
-        severity: success ? 'success' : 'error', 
-        summary: success ? 'Folder Created' : 'Error', 
-        detail: message, 
-        life: 3000 
+
+      toast.current?.show({
+        severity: success ? "success" : "error",
+        summary: success ? "Folder Created" : "Error",
+        detail: message,
+        life: 3000,
       });
-      
+
       if (success) {
         await fetchFolders();
       }
     } catch (err) {
       console.error("Error creating folder:", err);
-      
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to create folder. Please try again.', 
-        life: 3000 
+
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to create folder. Please try again.",
+        life: 3000,
       });
     } finally {
       setCreatingFolder(false);
@@ -210,49 +212,49 @@ export default function Home() {
 
   const handleDelete = async (id: string) => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/docs/${id}`, {
-        method: 'DELETE',
-        headers: { 
-          Authorization: `Bearer ${token}` 
-        }
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
-        setDocs(prev => prev.filter(d => d.id !== id));
-        
+        setDocs((prev) => prev.filter((d) => d.id !== id));
+
         toast.current?.show({
-          severity: 'success',
-          summary: 'Document Deleted',
-          detail: 'Document moved to trash successfully',
-          life: 3000
+          severity: "success",
+          summary: "Document Deleted",
+          detail: "Document moved to trash successfully",
+          life: 3000,
         });
       } else {
-        let errorMessage = 'Failed to delete document';
+        let errorMessage = "Failed to delete document";
         try {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
           // If response is not valid JSON
         }
-        
+
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
-          life: 3000
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error deleting doc:", err);
-      
+
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to delete document. Please try again.',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete document. Please try again.",
+        life: 3000,
       });
     }
   };
@@ -270,68 +272,71 @@ export default function Home() {
 
   const handleMoveToFolder = async () => {
     if (!selectedFolder || !docToMove || !currentUser) {
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Please select a folder.', 
-        life: 3000 
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Please select a folder.",
+        life: 3000,
       });
       return;
     }
 
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch(`${API_BASE}/api/folders/${selectedFolder}/add/${docToMove}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetch(
+        `${API_BASE}/api/folders/${selectedFolder}/add/${docToMove}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (res.ok) {
-        let message = 'Document moved successfully';
+        let message = "Document moved successfully";
         try {
           const data = await res.json();
           message = data.message || message;
         } catch (e) {
           // If not parseable JSON
         }
-        
+
         toast.current?.show({
-          severity: 'success',
-          summary: 'Document Moved',
+          severity: "success",
+          summary: "Document Moved",
           detail: message,
-          life: 3000
+          life: 3000,
         });
-        
+
         setShowMoveModal(false);
         setSelectedFolder("");
         setDocToMove(null);
         await fetchDocs();
       } else {
-        let errorMessage = 'Failed to move document';
+        let errorMessage = "Failed to move document";
         try {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
           // If not parseable JSON
         }
-        
+
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
-          life: 3000
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error moving document:", err);
-      
+
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to move document. Please try again.',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to move document. Please try again.",
+        life: 3000,
       });
     }
   };
@@ -339,7 +344,7 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
       console.error("Failed to log out", error);
     }
@@ -357,14 +362,14 @@ export default function Home() {
   return (
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
-      
+
       <div className="home-header">
         <h2>Home - Upload Audio =&gt; Create Doc</h2>
-        <Button 
-          label="Logout" 
-          icon="pi pi-sign-out" 
-          className="p-button-text" 
-          onClick={handleLogout} 
+        <Button
+          label="Logout"
+          icon="pi pi-sign-out"
+          className="p-button-text"
+          onClick={handleLogout}
         />
       </div>
 
@@ -372,13 +377,13 @@ export default function Home() {
         <div className="api-error-banner">
           <i className="pi pi-exclamation-triangle"></i>
           <span>{apiError}</span>
-          <Button 
-            label="Retry Connection" 
+          <Button
+            label="Retry Connection"
             icon="pi pi-refresh"
             className="p-button-sm p-button-text"
             onClick={() => {
               fetchDocs();
-              fetchFolders(); 
+              fetchFolders();
               fetchSettings();
             }}
           />
@@ -388,7 +393,10 @@ export default function Home() {
       <div className="upload-section">
         {showPromptInput && (
           <div className="prompt-input">
-            <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
+            <p>
+              Using Replicate API: Enter a prompt to guide transcription
+              (optional)
+            </p>
             <textarea
               placeholder="e.g., Please transcribe this audio accurately, paying attention to technical terms."
               value={transcriptionPrompt}
@@ -397,40 +405,47 @@ export default function Home() {
             />
           </div>
         )}
-        
-        <FileUpload 
+
+        <FileUpload
           onSuccessfulUpload={handleSuccessfulUpload}
           transcriptionPrompt={transcriptionPrompt}
         />
-        
+
         {uploadMessage && <p className="message">{uploadMessage}</p>}
       </div>
 
       <hr className="divider" />
-      
+
       <div className="folder-section">
-        <Button 
-          label="Create Folder" 
+        <Button
+          label="Create Folder"
           icon="pi pi-folder-plus"
-          onClick={handleCreateFolder} 
+          onClick={handleCreateFolder}
           className="create-folder-btn"
           disabled={!currentUser || creatingFolder}
           loading={creatingFolder}
         />
       </div>
-      
+
       <hr className="divider" />
-      
+
       <div className="folders-section">
         <h3>Folders:</h3>
         {loading ? (
           <p>Loading folders...</p>
         ) : folders.length === 0 ? (
-          <p>No folders created yet. Create your first folder to organize your documents.</p>
+          <p>
+            No folders created yet. Create your first folder to organize your
+            documents.
+          </p>
         ) : (
           <div className="docs-grid">
-            {folders.map(folder => (
-              <div key={folder} className="doc-card folder-card" onClick={() => handleFolderClick(folder)}>
+            {folders.map((folder) => (
+              <div
+                key={folder}
+                className="doc-card folder-card"
+                onClick={() => handleFolderClick(folder)}
+              >
                 <h4 className="doc-title">
                   <i className="pi pi-folder"></i> {folder}
                 </h4>
@@ -447,16 +462,19 @@ export default function Home() {
         {loading ? (
           <p>Loading documents...</p>
         ) : docs.length === 0 ? (
-          <p>No documents available. Upload an audio file to create your first document.</p>
+          <p>
+            No documents available. Upload an audio file to create your first
+            document.
+          </p>
         ) : (
           <div className="docs-grid">
-            {docs.map(doc => (
+            {docs.map((doc) => (
               <div key={doc.id} className="doc-card">
                 <h4 className="doc-title">{doc.name}</h4>
                 {doc.audioFilename && (
                   <p className="audio-info">
                     Audio: {doc.audioFilename}
-                    {doc.audioTrashed && ' [TRASHED]'}
+                    {doc.audioTrashed && " [TRASHED]"}
                   </p>
                 )}
 
@@ -467,13 +485,6 @@ export default function Home() {
                     className="action-link transcription-link"
                   >
                     View Doc
-                  </Link>
-                  <Link
-                    href={`/docs/edit/${doc.id}`}
-                    target="_blank"
-                    className="action-link edit-link"
-                  >
-                    Edit Doc
                   </Link>
                   <Confirmable
                     onDelete={() => handleDelete(doc.id)}
@@ -495,20 +506,20 @@ export default function Home() {
       <Dialog
         header="Move Document to Folder"
         visible={showMoveModal}
-        style={{ width: '30vw' }}
+        style={{ width: "30vw" }}
         onHide={handleCloseMoveModal}
         footer={
           <div>
-            <Button 
-              label="Cancel" 
-              icon="pi pi-times" 
-              className="p-button-text" 
-              onClick={handleCloseMoveModal} 
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="p-button-text"
+              onClick={handleCloseMoveModal}
             />
-            <Button 
-              label="Move" 
-              icon="pi pi-check" 
-              onClick={handleMoveToFolder} 
+            <Button
+              label="Move"
+              icon="pi pi-check"
+              onClick={handleMoveToFolder}
               disabled={!selectedFolder}
             />
           </div>
@@ -517,7 +528,10 @@ export default function Home() {
         <div>
           <Dropdown
             value={selectedFolder}
-            options={folders.map(folder => ({ label: folder, value: folder }))}
+            options={folders.map((folder) => ({
+              label: folder,
+              value: folder,
+            }))}
             onChange={(e) => setSelectedFolder(e.value)}
             placeholder="Select a folder"
             className="w-full"

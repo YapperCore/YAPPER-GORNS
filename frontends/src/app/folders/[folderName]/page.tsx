@@ -35,6 +35,9 @@ export default function FolderDocs() {
     async function fetchDocs() {
       setLoading(true);
       try {
+        if (!currentUser) {
+          throw new Error("User is not authenticated.");
+        }
         const token = await currentUser.getIdToken();
         const res = await fetch(`/api/folders/${folderName}`, {
           headers: {
@@ -214,12 +217,6 @@ export default function FolderDocs() {
                 className="action-link transcription-link"
               >
                 View Doc
-              </Link>
-              <Link
-                href={`/docs/edit/${doc.id}`}
-                className="action-link edit-link"
-              >
-                Edit Doc
               </Link>
               <button
                 onClick={() => confirmDelete(doc.id)}
