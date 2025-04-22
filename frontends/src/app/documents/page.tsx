@@ -304,7 +304,7 @@ export default function Documents() {
       <Toast ref={toast} position="top-right" />
 
       <div className="flex justify-between items-center mb-6 mt-4">
-        <h2 className="text-2xl font-bold">Document Folders</h2>
+        <h2 className="text-2xl font-bold">Folders</h2>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
