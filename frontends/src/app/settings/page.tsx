@@ -54,10 +54,7 @@ export default function Settings() {
 
     async function fetchData() {
       try {
-        const token = await currentUser?.getIdToken();
-        if (!token) {
-          throw new Error("User is not authenticated.");
-        }
+        const token = await currentUser.getIdToken();
         
         // Fetch system info
         const sysInfoRes = await fetch('/api/system-info', {

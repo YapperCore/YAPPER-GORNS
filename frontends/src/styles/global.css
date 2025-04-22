@@ -1,8 +1,5 @@
-/* stylelint-disable-next-line unknown-at-rule */
 @tailwind base;
-/* stylelint-disable-next-line unknown-at-rule */
 @tailwind components;
-/* stylelint-disable-next-line unknown-at-rule */
 @tailwind utilities;
 
 /* Your custom styles below *//* src/styles/globals.css */
@@ -153,7 +150,7 @@ main {
   transition: background-color 0.3s ease;
 }
 .orange-button {
-  background-color: #292524 /* was modified because the buttom for "move to home" in the folder of a document was colored to this */;
+  background-color: #ff9800;
   color: white !important;
 }
 

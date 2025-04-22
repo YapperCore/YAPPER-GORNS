@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
-import { Checkbox, CheckboxChangeEvent } from 'primereact/checkbox';
+import { Checkbox } from 'primereact/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -211,13 +211,13 @@ export default function Documents() {
     });
   };
 
-  const handleSelectAllChange = (e: CheckboxChangeEvent) => {
-      if (e.checked) {
-        setSelectedDocs(folderDocs.map(doc => doc.id));
-      } else {
-        setSelectedDocs([]);
-      }
-    };
+  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedDocs(folderDocs.map(doc => doc.id));
+    } else {
+      setSelectedDocs([]);
+    }
+  };
 
   const handleDeleteAll = async () => {
     await handleDeleteFolder(true);
