@@ -1,0 +1,29 @@
+Error during chunked transcription - file not found: File not found at path: C:\Users\michaelelder\Programming\Gorns\yapper\dummy_path.wav
+Error during chunked transcription - file not found: File not found at path: C:\Users\michaelelder\Programming\Gorns\yapper\dummy_path.wav
+FError during chunked transcription - file not found: File not found at path: C:\Users\michaelelder\Programming\Gorns\yapper\dummy_path.wav
+Fs
+======================================================================
+FAIL: test_chunked_transcribe_audio_multiple_chunks (__main__.TestTranscription)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\michaelelder\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1379, in patched    
+    return func(*newargs, **newkeywargs)
+  File "c:\Users\michaelelder\Programming\Gorns\yapper\backend\routes\unittests\transcribetest.py", line 53, in test_chunked_transcribe_audio_multiple_chunks
+    self.assertEqual(len(results), 3)
+AssertionError: 1 != 3
+
+======================================================================
+FAIL: test_chunked_transcribe_audio_single_chunk (__main__.TestTranscription)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\michaelelder\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1379, in patched
+    return func(*newargs, **newkeywargs)
+  File "c:\Users\michaelelder\Programming\Gorns\yapper\backend\routes\unittests\transcribetest.py", line 30, in test_chunked_transcribe_audio_single_chunk
+    self.assertEqual(chunk_idx, 1)
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.038s
+
+FAILED (failures=2, skipped=1)
+

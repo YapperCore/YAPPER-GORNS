@@ -1,6 +1,7 @@
 # backend/routes/trash_route.py
 import os
 import logging
+import uuid
 from flask import jsonify, request, Blueprint
 from config import UPLOAD_FOLDER, TRASH_FOLDER
 from services.storage import save_doc_store, doc_store

@@ -135,17 +135,9 @@ def get_signed_url(firebase_path, expiration=3600):
         logger.warning(f"Blob not found at path: {firebase_path}")
         return None
     
-    # Generate a URL with the specified expiration time
-    try:
-        url = blob.generate_signed_url(
-            expiration=datetime.timedelta(seconds=expiration),
-            method="GET",
-            version="v4"
-        )
-        return url
-    except Exception as e:
-        logger.error(f"Error generating signed URL: {e}")
-        return None
+    # Generate a short-lived URL for security
+    return blob.generate_signed_url(expiration=expiration, version="v4")
+
 def delete_file_by_path(firebase_path):
     """
     Deletes a file from Firebase Storage with security check.
