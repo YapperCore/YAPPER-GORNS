@@ -3,8 +3,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Toast } from 'primereact/toast';
-import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,6 +10,13 @@ import { useAuth } from '@/context/AuthContext';
 import Confirmable from '@/components/Confirmable';
 import FileUpload from '@/components/FileUpload';
 import '@/styles/Home.css';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 interface Document {
   id: string;
@@ -23,27 +28,16 @@ interface Document {
   folderName?: string;
 }
 
-interface FolderOption {
-  label: string;
-  value: string;
-}
-
 export default function Home() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [docs, setDocs] = useState<Document[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
-  const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
   const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
-  const [folderToDelete, setFolderToDelete] = useState('');
-  const [folderDocs, setFolderDocs] = useState<Document[]>([]);
-  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-  const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false); // Track move dialog open state
   const toast = useRef<Toast>(null);
   const { currentUser } = useAuth();
   const router = useRouter();
@@ -172,190 +166,6 @@ export default function Home() {
     }
   };
 
-  const handleCreateFolder = async () => {
-    if (!currentUser || typeof window === 'undefined') return;
-    
-    const folderName = window.prompt("Enter the name of the folder:");
-    if (!folderName || !folderName.trim()) return;
-
-    try {
-      setCreatingFolder(true);
-      
-      const token = await currentUser.getIdToken();
-      const res = await fetch('/api/folders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ folderName })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        
-        toast.current?.show({ 
-          severity: 'success', 
-          summary: 'Folder Created', 
-          detail: data.message || 'Folder created successfully', 
-          life: 3000 
-        });
-        
-        // Refresh folders list
-        await fetchFolders();
-      } else {
-        let errorMessage = 'Failed to create folder';
-        try {
-          const errData = await res.json();
-          errorMessage = errData.error || errorMessage;
-        } catch (e) {
-          // If response is not valid JSON
-        }
-        
-        toast.current?.show({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: errorMessage, 
-          life: 3000 
-        });
-      }
-    } catch (err) {
-      console.error("Error creating folder:", err);
-      
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to create folder. Please try again.', 
-        life: 3000 
-      });
-    } finally {
-      setCreatingFolder(false);
-    }
-  };
-
-  const handleFolderClick = (folderName: string) => {
-    router.push(`/folders/${folderName}`);
-  };
-
-  const handleDeleteButtonClick = async (folderName: string) => {
-    setFolderToDelete(folderName);
-    setConfirmDeleteDialog(true);
-    await fetchDocsInFolder(folderName);
-  };
-
-  const fetchDocsInFolder = async (folderName: string) => {
-    if (!currentUser) return;
-    
-    setLoadingFolderDocs(true);
-    try {
-      const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/folders/${folderName}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setFolderDocs(Array.isArray(data) ? data : []);
-        setSelectedDocs(Array.isArray(data) ? data.map(doc => doc.id) : []);
-      } else {
-        console.error("Error fetching docs in folder:", res.status, res.statusText);
-        setFolderDocs([]);
-        setSelectedDocs([]);
-      }
-    } catch (err) {
-      console.error("Error fetching docs in folder:", err);
-      setFolderDocs([]);
-      setSelectedDocs([]);
-    } finally {
-      setLoadingFolderDocs(false);
-    }
-  };
-
-  const handleCheckboxChange = (docId: string) => {
-    setSelectedDocs(prev => {
-      if (prev.includes(docId)) {
-        return prev.filter(id => id !== docId);
-      } else {
-        return [...prev, docId];
-      }
-    });
-  };
-
-  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedDocs(folderDocs.map(doc => doc.id));
-    } else {
-      setSelectedDocs([]);
-    }
-  };
-
-  const handleDeleteAll = async () => {
-    await handleDeleteFolder(true);
-  };
-
-  const handleDeleteSelected = async () => {
-    await handleDeleteFolder(false);
-  };
-
-  const handleDeleteFolder = async (deleteAll: boolean = true) => {
-    if (!currentUser || !folderToDelete) return;
-    setLoading(true);
-    
-    try {
-      const token = await currentUser.getIdToken();
-      const docsToDelete = deleteAll ? [] : selectedDocs;
-      
-      const res = await fetch(`/api/folders/${folderToDelete}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          deleteAll,
-          docsToDelete
-        })
-      });
-
-      const data = await res.json();
-      
-      if (res.ok) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Folder Deleted',
-          detail: data.message || `Folder deleted. ${data.movedToTrash?.length || 0} files moved to trash.`,
-          life: 3000
-        });
-        
-        // Refresh folders list and documents
-        await fetchFolders();
-        await fetchDocs(); // Important to refresh docs as their status changed
-      } else {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: data.error || 'Failed to delete folder',
-          life: 3000
-        });
-      }
-    } catch (err) {
-      console.error("Error deleting folder:", err);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'An unexpected error occurred while deleting the folder',
-        life: 3000
-      });
-    } finally {
-      setLoading(false);
-      setConfirmDeleteDialog(false);
-      setFolderDocs([]);
-      setSelectedDocs([]);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!currentUser) return;
     
@@ -408,14 +218,15 @@ export default function Home() {
 
   const handleOpenMoveModal = (docId: string) => {
     setDocToMove(docId);
-    setShowMoveModal(true);
+    setIsMoveDialogOpen(true);
   };
 
   const handleCloseMoveModal = () => {
-    setShowMoveModal(false);
+    setIsMoveDialogOpen(false);
     setSelectedFolder("");
     setDocToMove(null);
   };
+
 
   const handleMoveToFolder = async () => {
     if (!selectedFolder || !docToMove || !currentUser) {
@@ -448,7 +259,7 @@ export default function Home() {
         });
         
         // Close the modal and reset selection
-        setShowMoveModal(false);
+        setIsMoveDialogOpen(false);
         setSelectedFolder("");
         setDocToMove(null);
 
@@ -460,7 +271,6 @@ export default function Home() {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
-          // If response is not valid JSON
         }
         
         toast.current?.show({
@@ -482,35 +292,11 @@ export default function Home() {
     }
   };
 
-  const handleSuccessfulUpload = (docId: string) => {
+  const handleSuccessfulUpload = () => {
     // Refresh documents after a successful upload
     fetchDocs();
     setUploadMessage("Upload succeeded!");
   };
-
-  const confirmDialogFooter = (
-    <div className="dialog-footer">
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        className="p-button-text" 
-        onClick={() => setConfirmDeleteDialog(false)} 
-      />
-      <Button 
-        label="Delete Selected" 
-        icon="pi pi-trash" 
-        className="p-button-warning"
-        disabled={selectedDocs.length === 0}
-        onClick={handleDeleteSelected} 
-      />
-      <Button 
-        label="Delete All" 
-        icon="pi pi-trash" 
-        className="p-button-danger" 
-        onClick={handleDeleteAll} 
-      />
-    </div>
-  );
 
   if (!currentUser) {
     return null; // Redirecting to login in useEffect
@@ -521,7 +307,7 @@ export default function Home() {
       <Toast ref={toast} position="top-right" />
       
       <div className="home-header">
-        <h2>Home - Upload Audio =&gt; Create Doc</h2>
+      <h2 className="text-2xl font-bold">Home</h2>
       </div>
 
       <div className="upload-section">
@@ -547,106 +333,7 @@ export default function Home() {
 
       <hr className="divider" />
       
-      <div className="folder-section">
-        <Button 
-          label="Create Folder" 
-          icon="pi pi-folder-plus"
-          onClick={handleCreateFolder} 
-          className="create-folder-btn"
-          disabled={!currentUser || creatingFolder}
-          loading={creatingFolder}
-        />
-      </div>
       
-      <hr className="divider" />
-      
-      <div className="folders-section">
-        <h3>Folders:</h3>
-        {loading ? (
-          <p>Loading folders...</p>
-        ) : folders.length === 0 ? (
-          <p>No folders created yet. Create your first folder to organize your documents.</p>
-        ) : (
-          <div className="docs-grid">
-            {folders.map((folder) => (
-              <div key={folder} className="doc-card folder-card">
-                <div 
-                  className="folder-content"
-                  onClick={() => handleFolderClick(folder)}
-                >
-                  <h4 className="doc-title">
-                    <i className="pi pi-folder"></i> {folder}
-                  </h4>
-                </div>
-                <div className="folder-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent folder opening
-                      handleDeleteButtonClick(folder);
-                    }}
-                    className="folder-delete-btn"
-                    title="Delete folder"
-                  >
-                    <i className="pi pi-trash"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Dialog 
-        header={`Delete Folder: ${folderToDelete}`} 
-        visible={confirmDeleteDialog} 
-        style={{ width: '500px' }} 
-        footer={confirmDialogFooter}
-        onHide={() => setConfirmDeleteDialog(false)}
-      >
-        <div className="confirmation-content">
-          <i className="pi pi-exclamation-triangle" style={{ fontSize: '2rem', color: '#ff9800', marginRight: '10px' }} />
-          <span>
-            Are you sure you want to delete the folder <strong>{folderToDelete}</strong>? 
-            Select which documents to move to trash:
-          </span>
-        </div>
-        
-        <div className="folder-docs-list">
-          {loadingFolderDocs ? (
-            <p>Loading documents...</p>
-          ) : folderDocs.length === 0 ? (
-            <p>This folder is empty.</p>
-          ) : (
-            <>
-              <div className="select-all-container">
-                <label className="select-all-label">
-                  <input 
-                    type="checkbox"
-                    checked={selectedDocs.length === folderDocs.length && folderDocs.length > 0}
-                    onChange={handleSelectAllChange}
-                  /> 
-                  Select All Documents
-                </label>
-              </div>
-              <ul className="doc-checkbox-list">
-                {folderDocs.map(doc => (
-                  <li key={doc.id} className="doc-checkbox-item">
-                    <label className="doc-checkbox-label">
-                      <input 
-                        type="checkbox"
-                        checked={selectedDocs.includes(doc.id)}
-                        onChange={() => handleCheckboxChange(doc.id)}
-                      />
-                      <span className="doc-name">{doc.name}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      </Dialog>
-
       <hr className="divider" />
 
       <div className="docs-section">
@@ -699,38 +386,41 @@ export default function Home() {
         )}
       </div>
 
-      <Dialog
-        header="Move Document to Folder"
-        visible={showMoveModal}
-        style={{ width: '30vw' }}
-        onHide={handleCloseMoveModal}
-        footer={
-          <div>
-            <Button 
-              label="Cancel" 
-              icon="pi pi-times" 
-              className="p-button-text" 
-              onClick={handleCloseMoveModal} 
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="bg-slate-800 text-white p-6 rounded-lxl shadow-2xl border border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Move Document to Folder</DialogTitle>
+          </DialogHeader>
+          <div className="dialog-body mt-4">
+            <select
+              value={selectedFolder}
+              onChange={(e) => setSelectedFolder(e.target.value)}
+              className="w-full p-2 border border-gray-500 rounded-md bg-black text-white"
+            >
+              <option value="" disabled hidden>Select folder</option>
+              {folders.map(folder => (
+                <option key={folder} value={folder}>{folder}</option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter className="mt-4 flex justify-end">
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-6 py-3"
+              onClick={handleCloseMoveModal}
             />
-            <Button 
-              label="Move" 
-              icon="pi pi-check" 
-              onClick={handleMoveToFolder} 
+            <Button
+              label="Move"
+              icon="pi pi-check"
+              className="bg-blue-500 text-white hover:bg-blue-600 ml-4 rounded-xl px-6 py-3"
+              onClick={handleMoveToFolder}
               disabled={!selectedFolder}
             />
-          </div>
-        }
-      >
-        <div>
-          <Dropdown
-            value={selectedFolder}
-            options={folders.map(folder => ({ label: folder, value: folder }))}
-            onChange={(e) => setSelectedFolder(e.value)}
-            placeholder="Select a folder"
-            className="w-full"
-          />
-        </div>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
+
     </div>
   );
 }
