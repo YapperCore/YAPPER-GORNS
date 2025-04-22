@@ -8,10 +8,10 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.logo {
+.logo { /* LOGO AND SIDEBAR TEXT SHOULD BE THE SAME COLOR */
   font-size: 1.5rem;
-  font-weight: bold;
-  color: #4285f4;
+  font-weight: bold; 
+  color: #292524 !important; /* Color for logo */
 }
 
 .nav-links {
@@ -51,6 +51,7 @@
   font-size: 1.1rem;
   text-decoration: none;
   color: inherit;
+  color: #292524 !important;
 }
 
 .sidebar-link i {
@@ -62,8 +63,8 @@
   height: 100vh !important;
   max-height: 100vh !important;
   overflow: hidden !important;
+  color: #2e2b46 !important;
 }
-
 
 .sidebar-signout:hover {
   color: #b71c1c;
@@ -100,6 +101,7 @@
   flex: 1;
   height: 95%;
   overflow: hidden;
+  color: #e5e5e5 !important;
 }
 
 .sidebar-links {
@@ -110,11 +112,13 @@
   list-style: none;
   flex: 1;
   overflow-y: auto;
+  color: #2e2b46 !important;
 }
 
 .sidebar-signout {
   margin-top: auto;
   padding: 1rem 1.5rem;
+  color: #292524 !important;  /* Color for signout link in sidecar */
 }
 
 .logout-btn {

@@ -1,9 +1,14 @@
 /* src/styles/FileUpload.css */
 body {
   /*background-color: #a5b4fc;*/
-  background-color: #c7d2fe;
+  background-color: #a8a29e; /* color for background (appears as skinny header at the top of homepage */
 }
-
+.home {
+  padding: 1rem;
+  background-color: #a8a29e; /* color for the main background of the homepage */
+  color: #292524; /* color for text on the homepage */
+  min-height: 100vh;
+}
 .file-upload-container {
   margin-bottom: 20px;
 }
@@ -14,14 +19,14 @@ body {
   padding: 20px;
   text-align: center;
   cursor: pointer;
-  background-color: #f9f9f9;
+  background-color: #9ca3af; /* color for the dropzone background */
   transition: border-color 0.3s, background-color 0.3s;
   margin-bottom: 15px;
 }
 
 .dropzone:hover {
-  border-color: #4d7cff;
-  background-color: #f0f7ff;
+  border-color: #dbeafe;
+  background-color: #93c5fd;
 }
 
 .dropzone-content {
@@ -33,7 +38,7 @@ body {
 
 .dropzone-icon {
   font-size: 2.5rem;
-  color: #6c757d;
+  color: #292524;
   margin-bottom: 10px;
 }
 
@@ -111,7 +116,7 @@ body {
 
 .confirmation-content i {
   font-size: 2rem;
-  color: #ff9800;
+  color: #22c55e;
   margin-right: 1rem;
   flex-shrink: 0;
 }
@@ -176,4 +181,21 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.uploadsection {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #18181b; /* color for the upload section background */
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.doccard {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #d6d3d1; /* color for the doccard section background */
+  border: 1px solid;
+  
+  border-radius: 5px;
 }

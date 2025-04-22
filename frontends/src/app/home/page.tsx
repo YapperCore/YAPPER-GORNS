@@ -303,14 +303,14 @@ export default function Home() {
   }
 
   return (
-    <div className="home-container">
+    <div className="home">
       <Toast ref={toast} position="top-right" />
       
       <div className="home-header">
       <h2 className="text-2xl font-bold">Home</h2>
       </div>
 
-      <div className="upload-section">
+      <div className="upload section">
         {showPromptInput && (
           <div className="prompt-input">
             <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
@@ -345,7 +345,7 @@ export default function Home() {
         ) : (
           <div className="docs-grid">
             {docs.map(doc => (
-              <div key={doc.id} className="doc-card">
+              <div key={doc.id} className="doccard">
                 <h4 className="doc-title">{doc.name}</h4>
                 {doc.audioFilename && (
                   <p className="audio-info">
@@ -361,13 +361,6 @@ export default function Home() {
                     className="action-link transcription-link"
                   >
                     View Doc
-                  </Link>
-                  <Link
-                    href={`/docs/edit/${doc.id}`}
-                    target="_blank"
-                    className="action-link edit-link"
-                  >
-                    Edit Doc
                   </Link>
                   <Confirmable
                     onDelete={() => handleDelete(doc.id)}
