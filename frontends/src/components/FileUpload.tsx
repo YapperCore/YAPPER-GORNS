@@ -1,3 +1,4 @@
+// src/components/FileUpload.tsx
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -62,9 +63,9 @@ export default function FileUpload({ onSuccessfulUpload, transcriptionPrompt = '
       const formData = new FormData();
       formData.append('audio', file);
 
-      // Always ensure there's a prompt, default to "transcribe" if empty
-      const finalPrompt = transcriptionPrompt?.trim() || "transcribe";
-      formData.append('transcription_prompt', finalPrompt);
+      if (transcriptionPrompt) {
+        formData.append('transcription_prompt', transcriptionPrompt);
+      }
 
       const token = await currentUser.getIdToken();
       

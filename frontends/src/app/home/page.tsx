@@ -36,7 +36,7 @@ export default function Home() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
-  const [transcriptionPrompt, setTranscriptionPrompt] = useState("transcribe");
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [folderLoading, setFolderLoading] = useState(false);

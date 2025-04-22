@@ -117,6 +117,3 @@ def create_directories():
 
 # Create directories
 UPLOAD_FOLDER, TRASH_FOLDER = create_directories()
-from dotenv import load_dotenv
-load_dotenv()
-REPLICATE_API_KEY = os.environ.get("REPLICATE_API_TOKEN", "")
