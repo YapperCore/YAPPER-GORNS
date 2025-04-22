@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import '../static/AudioPlayer.css'; // Updated path to CSS
@@ -122,7 +123,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioUrl, volume]);
+  }, [audioSrc, volume]);
 
   const handlePlayPause = () => {
     if (!audioRef.current || !audioLoaded) return;
@@ -171,7 +172,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
 
   return (
     <div className="audio-player">
-      <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
+      <audio ref={audioRef} src={audioSrc || undefined} preload="metadata" />
       
       {error && <div className="error-message">{error}</div>}
       
