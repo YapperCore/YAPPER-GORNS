@@ -1,4 +1,9 @@
 /* src/styles/FileUpload.css */
+body {
+  /*background-color: #a5b4fc;*/
+  background-color: #c7d2fe;
+}
+
 .file-upload-container {
   margin-bottom: 20px;
 }
@@ -125,7 +130,7 @@
 
 .select-all-container {
   padding: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #44403c;
   margin-bottom: 0.5rem;
 }
 
