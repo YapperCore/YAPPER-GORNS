@@ -3,7 +3,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import './AudioPlayer.css';
+import '../static/AudioPlayer.css'; // Updated path to CSS
 
 interface AudioPlayerProps {
   filename: string;
@@ -16,35 +16,52 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioLoaded, setAudioLoaded] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(1);
+
+  console.log("AudioPlayer component mounted with filename:", filename);
 
   // Fetch audio URL
   useEffect(() => {
     let objectUrl: string | null = null;
 
     async function fetchAudioUrl() {
-      if (!filename || !currentUser) return;
+      if (!filename || !currentUser) {
+        console.log("Missing filename or user, cannot load audio");
+        return;
+      }
       
       try {
+        console.log("Fetching audio from server...");
         const token = await currentUser.getIdToken();
-        const res = await fetch(`/local-audio/${filename}`, {
+        
+        // Try both endpoints - first the direct audio path, then local-audio
+        let res = await fetch(`/api/audio/${filename}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         if (!res.ok) {
+          console.log("Trying alternate endpoint...");
+          res = await fetch(`/local-audio/${filename}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+        
+        if (!res.ok) {
           setError(`Failed to load audio (${res.status})`);
+          console.error("Audio fetch failed with status:", res.status);
           return;
         }
         
         // Handle different response types
         const contentType = res.headers.get('content-type');
+        console.log("Received content type:", contentType);
         
         if (contentType && contentType.includes('application/json')) {
           const data = await res.json();
           if (data.url) {
-            setAudioUrl(data.url);
+            setAudioSrc(data.url);
             setError(null);
           } else {
             setError("Invalid URL response");
@@ -52,8 +69,9 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
         } else {
           const blob = await res.blob();
           objectUrl = URL.createObjectURL(blob);
-          setAudioUrl(objectUrl);
+          setAudioSrc(objectUrl);
           setError(null);
+          console.log("Created object URL for audio blob");
         }
       } catch (err) {
         console.error("Error fetching audio:", err);
@@ -73,7 +91,10 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   // Set up audio element listeners
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audioSrc) return;
+    
+    // Set source
+    audio.src = audioSrc;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleLoadedData = () => {
@@ -97,7 +118,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioUrl]);
+  }, [audioSrc]);
 
   const handlePlayPause = () => {
     if (!audioRef.current || !audioLoaded) return;
@@ -145,53 +166,41 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   };
 
   return (
-    <div className="compact-audio-player">
-      <audio ref={audioRef} preload="metadata" />
+    <div className="audio-player">
+      {audioSrc && <audio ref={audioRef} preload="metadata" src={audioSrc} />}
       
-      {error && <div className="player-error">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
       
-      <div className="player-controls">
-        <button 
-          className="play-pause-btn"
-          onClick={handlePlayPause} 
-          disabled={!audioLoaded}
-          aria-label={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? '⏸️' : '▶️'}
-        </button>
-        
-        <div className="time-display">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </div>
-      </div>
+      <button 
+        onClick={handlePlayPause} 
+        disabled={!audioLoaded || !audioSrc}
+        className={!audioLoaded || !audioSrc ? "button-disabled" : ""}
+      >
+        {isPlaying ? "⏸" : "▶"}
+      </button>
       
-      <div className="progress-controls">
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={(currentTime / duration) * 100 || 0}
-          onChange={handleProgressChange}
-          disabled={!audioLoaded}
-          className="progress-slider"
-          aria-label="Audio progress"
-        />
-      </div>
+      <input 
+        type="range" 
+        min="0" 
+        max="100" 
+        value={(currentTime / (duration || 1)) * 100} 
+        onChange={handleProgressChange}
+        className={`progress-bar ${!audioLoaded || !audioSrc ? "slider-disabled" : ""}`}
+        disabled={!audioLoaded || !audioSrc}
+      />
       
-      <div className="volume-controls">
-        <span className="volume-icon">🔊</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={volume}
-          onChange={handleVolumeChange}
-          disabled={!audioLoaded}
-          className="volume-slider"
-          aria-label="Volume control"
-        />
-      </div>
+      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+      
+      <input 
+        type="range" 
+        min="0" 
+        max="1" 
+        step="0.01" 
+        value={volume}
+        onChange={handleVolumeChange}
+        className={`volume-bar ${!audioLoaded || !audioSrc ? "slider-disabled" : ""}`}
+        disabled={!audioLoaded || !audioSrc}
+      />
     </div>
   );
 }

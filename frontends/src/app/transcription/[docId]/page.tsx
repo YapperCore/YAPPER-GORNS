@@ -9,6 +9,7 @@ import { ProgressBar } from 'primereact/progressbar';
 import { InputTextarea } from 'primereact/inputtextarea';
 import Link from 'next/link';
 import io from 'socket.io-client';
+import AudioPlayer from '@/components/AudioPlayer';
 
 interface Doc {
   id: string;
@@ -29,7 +30,7 @@ export default function TranscriptionEditor() {
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [setSocketConnected] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [usingReplicate, setUsingReplicate] = useState<boolean>(false);
   const socketRef = useRef<any>(null);
@@ -265,6 +266,12 @@ export default function TranscriptionEditor() {
               style={{ width: '100%', marginTop: '1rem' }}
             />
           </div>
+          
+          {doc?.audioFilename && !doc?.audioTrashed && (
+            <div style={{ marginTop: '1rem' }}>
+              <AudioPlayer filename={doc.audioFilename} />
+            </div>
+          )}
           
           <div className="action-buttons" style={{ marginTop: '1rem' }}>
             <Button
