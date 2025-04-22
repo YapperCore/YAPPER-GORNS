@@ -210,8 +210,9 @@ export default function Documents() {
     });
   };
 
-  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
+  // Update the function to accept CheckboxChangeEvent from PrimeReact
+  const handleSelectAllChange = (e: { checked?: boolean }) => {
+    if (e.checked) {
       setSelectedDocs(folderDocs.map(doc => doc.id));
     } else {
       setSelectedDocs([]);
