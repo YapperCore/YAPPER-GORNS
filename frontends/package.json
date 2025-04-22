@@ -1,0 +1,52 @@
+{
+  "name": "frontends",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://localhost:5000",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@firebase/auth": "^1.9.1",
+    "@radix-ui/react-alert-dialog": "^1.1.10",
+    "@radix-ui/react-checkbox": "^1.2.2",
+    "@radix-ui/react-dialog": "^1.1.10",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "bootstrap": "^5.3.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "critters": "^0.0.20",
+    "firebase": "^11.6.0",
+    "lucide-react": "^0.503.0",
+    "next": "^14.1.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.4",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^18.2.0",
+    "react-quill": "^2.0.0",
+    "react-router-dom": "^6.22.0",
+    "socket.io-client": "^4.8.1",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "^14.1.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.3.3"
+  }
+}
