@@ -1,4 +1,3 @@
-// src/app/transcription/[docId]/page.tsx
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -11,7 +10,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { InputText } from 'primereact/inputtext';
 import { Divider } from 'primereact/divider';
 import { Dialog } from 'primereact/dialog';
-import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket-client';
+import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket';
 import { useAuth } from '@/context/AuthContext';
 import { restartTranscription } from '@/services/transcriptionService';
 import AudioPlayer from '@/components/AudioPlayer';
@@ -247,7 +246,7 @@ export default function TranscriptionEditor() {
       // Handle transcription errors
       const handleTranscriptionError = (data: any) => {
         if (data.doc_id === docId) {
-          setError(data.error || 'An error occurred during transcription');
+          setError(`Transcription error: ${data.error}`);
           setIsComplete(true); // Mark as complete to stop progress bar
           
           toast.current?.show({

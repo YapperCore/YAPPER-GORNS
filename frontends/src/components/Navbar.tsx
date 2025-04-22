@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -10,7 +11,7 @@ import '../styles/Navbar.css';
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
-  
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -19,21 +20,21 @@ const Navbar = () => {
       console.error("Failed to log out", error);
     }
   };
-  
+
   return (
     <nav className="Navbar">
       <h1 className="logo">Yapper</h1>
-      
+
       <ul className="nav-links">
         {currentUser ? (
           <>
             <li><Link href="/home">Home</Link></li>
-            <li><Link href="/documents">Documents</Link></li>
+            <li><Link href="/documents">Folders</Link></li>
             <li><Link href="/settings">Settings</Link></li>
             <li><Link href="/trash">Trash</Link></li>
             <li>
-              <Button 
-                onClick={handleLogout} 
+              <Button
+                onClick={handleLogout}
                 className="logout-btn p-button-danger p-button-sm"
                 label="Logout"
                 icon="pi pi-sign-out"

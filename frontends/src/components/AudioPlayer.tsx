@@ -146,7 +146,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
 
   return (
     <div className="compact-audio-player">
-      <audio ref={audioRef} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
       
       {error && <div className="player-error">{error}</div>}
       
