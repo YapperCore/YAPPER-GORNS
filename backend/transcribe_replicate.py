@@ -4,26 +4,52 @@ import os
 import logging
 import json
 import time
-import base64
 import requests
 import replicate
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 def get_replicate_api_key(user_id):
+    # First try to get user-specific API key
     secure_dir = os.path.join(os.getcwd(), 'secure_storage')
     key_path = os.path.join(secure_dir, f"{user_id}_replicate_key.json")
-    if not os.path.exists(key_path):
-        logger.error(f"Replicate API key file not found for user {user_id}")
-        return None
-    try:
-        with open(key_path, 'r') as f:
-            data = json.load(f)
-            return data.get('api_key')
-    except Exception as e:
-        logger.error(f"Error reading Replicate API key: {e}")
-        return None
+    
+    # Try to get user-specific key
+    if os.path.exists(key_path):
+        try:
+            with open(key_path, 'r') as f:
+                data = json.load(f)
+                if data.get('api_key'):
+                    logger.info(f"Using user-specific Replicate API key for user {user_id}")
+                    return data.get('api_key')
+        except Exception as e:
+            logger.error(f"Error reading user Replicate API key: {e}")
+    
+    # If no user-specific key, try environment variable
+    env_key = os.environ.get("REPLICATE_API_TOKEN")
+    if env_key:
+        logger.info("Using environment variable REPLICATE_API_TOKEN as default key")
+        return env_key
+    
+    # Try default key file
+    default_key_path = os.path.join(secure_dir, "default_replicate_key.json")
+    if os.path.exists(default_key_path):
+        try:
+            with open(default_key_path, 'r') as f:
+                data = json.load(f)
+                if data.get('api_key'):
+                    logger.info("Using default Replicate API key")
+                    return data.get('api_key')
+        except Exception as e:
+            logger.error(f"Error reading default Replicate API key: {e}")
+    
+    logger.error("No Replicate API key found - neither user-specific nor default")
+    return None
 
 def transcribe_audio_with_replicate(audio_path, user_id, prompt=None):
     try:
@@ -225,4 +251,113 @@ def alternative_transcribe_with_replicate(audio_path, user_id, prompt=None):
     
     except Exception as e:
         logger.error(f"Error during alternative Replicate transcription: {e}")
+        return f"Error: {str(e)}"
+
+def optimized_transcribe_with_replicate(audio_path, user_id, prompt=None, chunk_size=10*1024*1024):
+    """
+    Optimized version for very large files using streaming upload
+    and handling the 413 Request Entity Too Large error
+    """
+    try:
+        # Get API key
+        api_key = get_replicate_api_key(user_id)
+        if not api_key:
+            logger.error("No Replicate API key found")
+            return "Error: No Replicate API key found. Please check your settings."
+        
+        if not os.path.exists(audio_path):
+            logger.error(f"Audio file not found: {audio_path}")
+            return "Error: Audio file not found"
+        
+        # Set environment variable for replicate client
+        os.environ["REPLICATE_API_TOKEN"] = api_key
+        
+        # Get file size before opening
+        file_size = os.path.getsize(audio_path)
+        logger.info(f"Audio file size: {file_size / (1024 * 1024):.2f} MB")
+        
+        # If file is very large (>100MB), consider using a different approach
+        if file_size > 100 * 1024 * 1024:  # 100MB
+            logger.warning(f"File is very large ({file_size/(1024*1024):.2f} MB). Consider using chunked processing instead.")
+            
+        # Default prompt if none is provided
+        if not prompt or prompt.strip() == "":
+            prompt = "Please transcribe this audio accurately. You are a speech-to-text transcription model."
+        else:
+            # Ensure the prompt includes speech-to-text context
+            if "speech" not in prompt.lower() and "transcri" not in prompt.lower():
+                prompt = f"{prompt} You are a speech-to-text transcription model."
+        
+        logger.info(f"Beginning optimized transcription with Replicate API for file: {audio_path}")
+        
+        # Open the file for reading in binary mode, using a streaming approach
+        with open(audio_path, "rb") as file_obj:
+            try:
+                # Set up input for the model with required parameters
+                input_data = {
+                    "audio": file_obj,
+                    "prompt": prompt,
+                    "system_prompt": "You are a professional transcription model. Your task is to accurately transcribe the provided audio content.",
+                    "voice_type": "Chelsie",
+                    "generate_audio": False,
+                    "use_audio_in_video": False
+                }
+                
+                logger.info("Creating prediction with Replicate API (streaming upload)...")
+                prediction = replicate.predictions.create(
+                    version="0ca8160f7aaf85703a6aac282d6c79aa64d3541b239fa4c5c1688b10cb1faef1",
+                    input=input_data
+                )
+                
+                logger.info(f"Prediction created with ID: {prediction.id}")
+                
+                # Poll for completion with improved timeout handling
+                max_attempts = 240  # 20 minutes with 5-second intervals for very large files
+                attempts = 0
+                processing_start = time.time()
+                
+                logger.info("Waiting for Replicate API to process the audio file...")
+                while attempts < max_attempts:
+                    prediction.reload()
+                    status = prediction.status
+                    
+                    if attempts % 6 == 0:  # Log status every 30 seconds
+                        elapsed = time.time() - processing_start
+                        logger.info(f"Status: {status} - Time elapsed: {elapsed:.2f}s ({attempts}/{max_attempts})")
+                    
+                    if status == "succeeded":
+                        processing_time = time.time() - processing_start
+                        logger.info(f"Transcription completed in {processing_time:.2f} seconds")
+                        
+                        output = prediction.output
+                        if isinstance(output, dict) and 'text' in output:
+                            transcription = output['text']
+                            logger.info(f"Transcription completed successfully: {len(transcription)} chars")
+                            return transcription
+                        else:
+                            logger.error(f"Unexpected output format: {output}")
+                            return f"Error: Unexpected output format: {output}"
+                    
+                    elif status == "failed":
+                        error = prediction.error or "Unknown error"
+                        logger.error(f"Prediction failed: {error}")
+                        return f"Error: Transcription failed - {error}"
+                    
+                    elif status == "canceled":
+                        logger.error("Prediction was canceled")
+                        return "Error: Transcription was canceled"
+                    
+                    time.sleep(5)
+                    attempts += 1
+                
+                return "Error: Transcription timed out after 20 minutes"
+                
+            except Exception as e:
+                logger.error(f"Error during Replicate API run: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                return f"Error: {str(e)}"
+    
+    except Exception as e:
+        logger.error(f"Error during optimized Replicate transcription: {e}")
         return f"Error: {str(e)}"

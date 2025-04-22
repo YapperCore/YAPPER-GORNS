@@ -88,7 +88,7 @@ def create_app():
     app = Flask(__name__)
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "yapper_secret_key")
-    app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
+    app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
 
     # Initialize Firebase
     initialize_firebase()

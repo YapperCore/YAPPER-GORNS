@@ -7,9 +7,6 @@ import Link from 'next/link';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 
-interface Folder {
-  name: string;
-}
 
 export default function Documents() {
   const { currentUser } = useAuth();
