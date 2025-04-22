@@ -1,0 +1,52 @@
+Testing Plan for `transcribe.py`
+
+The goal is to unit test the `chunked_transcribe_audio` method defined in `backend/transcribe.py`, which is responsible for chunking audio files and running Whisper-based transcription on each chunk.
+
+Unit Tests Overview:
+
+1. Test: `test_chunked_transcribe_audio_single_chunk`
+- Purpose: To verify that a short audio file that fits in one chunk produces a single, correctly formatted transcription result.
+- Mocks Used:
+  - `whisper.load_audio` is mocked to return a generated 5-second random waveform.
+  - `whisper.load_model` is mocked to return a model whose `transcribe` method always returns `"transcription"`.
+- Checks:
+  - Exactly 1 chunk is returned.
+  - The chunk index is 1, total chunks is 1.
+  - The transcription is correct.
+
+2. Test: `test_chunked_transcribe_audio_multiple_chunks`
+- Purpose: To validate behavior when an audio file is longer than one chunk.
+- Mocks Used:
+  - `load_audio` returns ~33s of dummy waveform.
+  - `load_model` returns a mocked model that returns `"transcription"` on each chunk.
+- Checks:
+  - Confirms 4 chunks are returned.
+  - Each result has the correct `chunk_idx` (1-based).
+  - The total chunk count in each result is 4.
+  - All transcriptions match the mock return.
+
+3. Test: `test_cuda_available`
+- Purpose: (Optional) Confirms if CUDA is available (for environments that support it).
+- Behavior:
+  - Skipped on systems without a CUDA-enabled GPU.
+  - Useful to confirm environment compatibility, especially for GPU-accelerated inference.
+
+
+
+
+`chunked_transcribe_audio(file_path: str, chunk_size: int)`
+- Inputs:
+  - `file_path`: Path to an audio file.
+  - `chunk_size`: Size of each chunk in seconds.
+- Returns:
+  - A generator of tuples: `(chunk_index, total_chunks, transcription)`.
+
+Dependencies Mocked
+- `whisper.load_audio`: Ensures independence from actual file I/O or audio file format correctness.
+- `whisper.load_model`: Avoids the need to download or load Whisper models in memory.
+- `model.transcribe`: Lets us inject consistent and controlled output for validation.
+
+Test Suite Structure
+- File: `transcribetest.py`
+- Library: `unittest`
+- Location: Committed under `unittests/` or wherever your team stores test modules.

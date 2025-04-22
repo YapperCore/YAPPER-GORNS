@@ -1,0 +1,201 @@
+/* src/styles/FileUpload.css */
+body {
+  /*background-color: #a5b4fc;*/
+  background-color: #fff; /* color for background (appears as skinny header at the top of homepage */
+}
+.home {
+  padding: 1rem;
+  background-color: #ffffff; /* color for the main background of the homepage */
+  color: #292524; /* color for text on the homepage */
+  min-height: 100vh;
+}
+.file-upload-container {
+  margin-bottom: 20px;
+}
+
+.dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background-color: #9ca3af; /* color for the dropzone background */
+  transition: border-color 0.3s, background-color 0.3s;
+  margin-bottom: 15px;
+}
+
+.dropzone:hover {
+  border-color: #dbeafe;
+  background-color: #93c5fd;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropzone-icon {
+  font-size: 2.5rem;
+  color: #292524;
+  margin-bottom: 10px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.selected-file {
+  font-weight: bold;
+  color: #4d7cff;
+}
+
+.error-message {
+  color: #f44336;
+  margin: 10px 0;
+  padding: 8px;
+  background-color: #ffeeee;
+  border-radius: 4px;
+  border-left: 3px solid #f44336;
+}
+
+.upload-progress {
+  margin: 15px 0;
+}
+
+.upload-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Add these styles for folder cards and the delete button */
+.folder-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-content {
+  cursor: pointer;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.folder-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+.folder-delete-btn {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.folder-delete-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Updated styles for the confirmation dialog */
+.confirmation-content {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.confirmation-content i {
+  font-size: 2rem;
+  color: #22c55e;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.confirmation-content span {
+  line-height: 1.5;
+}
+
+.folder-docs-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.select-all-container {
+  padding: 0.5rem;
+  border-bottom: 1px solid #44403c;
+  margin-bottom: 0.5rem;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.doc-checkbox-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.doc-checkbox-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.doc-checkbox-item:last-child {
+  border-bottom: none;
+}
+
+.doc-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.doc-checkbox-label input {
+  margin-right: 10px;
+}
+
+.doc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.uploadsection {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #18181b; /* color for the upload section background */
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.doccard {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #d6d3d1; /* color for the doccard section background */
+  border: 1px solid;
+  
+  border-radius: 5px;
+}
