@@ -6,6 +6,7 @@ interface TranscriptionConfig {
   cpuThreads?: number;
   gpuDevice?: number;
   whisperModel?: string;
+  defaultPrompt?: string;
 }
 
 interface TranscriptionResult {

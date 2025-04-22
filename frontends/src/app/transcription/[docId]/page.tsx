@@ -11,7 +11,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { InputText } from 'primereact/inputtext';
 import { Divider } from 'primereact/divider';
 import { Dialog } from 'primereact/dialog';
-import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket';
+import { getSocket, joinDocRoom, leaveDocRoom, updateDocContent } from '@/lib/socket-client';
 import { useAuth } from '@/context/AuthContext';
 import { restartTranscription } from '@/services/transcriptionService';
 import AudioPlayer from '@/components/AudioPlayer';
