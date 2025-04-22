@@ -559,14 +559,13 @@ export default function Home() {
       <hr className="divider" />
 
       <div className="folder-section">
-        <Button
-          label="Create Folder"
-          icon="pi pi-folder-plus"
+        <button
           onClick={handleCreateFolder}
-          className="create-folder-btn"
+          className='new-york text-white p-2 rounded-md bg-slate-800 hover:bg-slate-600'
           disabled={!currentUser || creatingFolder}
-          loading={creatingFolder}
-        />
+        >
+          {creatingFolder ? "Creating..." : "Create Folder"}
+        </button>
       </div>
 
       <hr className="divider" />

@@ -4,8 +4,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from 'primereact/button';
+//import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
+import { Button } from "@/components/ui/button"
+
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+// import {
+//  Dialog,
+//  DialogContent,
+//  DialogDescription,
+//  DialogHeader,
+//  DialogTitle,
+//  DialogTrigger,
+//} from "@/components/ui/dialog"
 
 interface Folder {
   name: string;
@@ -62,9 +75,11 @@ export default function Documents() {
     fetchFolders();
   }, [currentUser, router]);
 
+
   const handleCreateFolder = async () => {
     if (!currentUser) return;
 
+    //const folderName = window.prompt("Enter the name of the folder:");
     const folderName = window.prompt("Enter the name of the folder:");
     if (!folderName) return;
 
@@ -128,12 +143,13 @@ export default function Documents() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Document Folders</h2>
-        <Button label="Create Folder" icon="pi pi-plus" onClick={handleCreateFolder} />
+        <Button className='new-york text-white p-6 rounded bg-slate-800 hover:bg-slate-600' onClick={handleCreateFolder} > Create Folder</Button>
       </div>
+      
 
       {loading ? (
         <p>Loading folders...</p>
-      ) : (
+      ) : ( 
         <>
           {folders.length === 0 ? (
             <p>No folders found. Create a folder to organize your documents.</p>

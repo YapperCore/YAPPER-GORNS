@@ -23,14 +23,21 @@ export default function FolderDocs() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dataFetched, setDataFetched] = useState<boolean>(false);
-  const [confirmDialogVisible, setConfirmDialogVisible] = useState<boolean>(false);
+  const [confirmDialogVisible, setConfirmDialogVisible] =
+    useState<boolean>(false);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
   const toast = useRef<Toast>(null);
   const router = useRouter();
 
   // Only fetch once when component mounts
   useEffect(() => {
-    if (typeof window === 'undefined' || !currentUser || !folderName || dataFetched) return;
+    if (
+      typeof window === "undefined" ||
+      !currentUser ||
+      !folderName ||
+      dataFetched
+    )
+      return;
 
     async function fetchDocs() {
       setLoading(true);
@@ -74,8 +81,8 @@ export default function FolderDocs() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!currentUser && typeof window !== 'undefined') {
-      router.push('/login');
+    if (!currentUser && typeof window !== "undefined") {
+      router.push("/login");
     }
   }, [currentUser, router]);
 
@@ -96,29 +103,29 @@ export default function FolderDocs() {
         console.error("Error moving document to home:", errData.error);
 
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: errData.error || 'Failed to move document',
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: errData.error || "Failed to move document",
+          life: 3000,
         });
       } else {
         setDocs((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
 
         toast.current?.show({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Document moved to home successfully',
-          life: 3000
+          severity: "success",
+          summary: "Success",
+          detail: "Document moved to home successfully",
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error moving document to home:", err);
 
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to move document',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to move document",
+        life: 3000,
       });
     }
   };
@@ -144,30 +151,30 @@ export default function FolderDocs() {
         setDocs((prevDocs) => prevDocs.filter((doc) => doc.id !== docToDelete));
 
         toast.current?.show({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Document deleted successfully',
-          life: 3000
+          severity: "success",
+          summary: "Success",
+          detail: "Document deleted successfully",
+          life: 3000,
         });
       } else {
         const errData = await res.json();
         console.error("Error deleting document:", errData.error);
 
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: errData.error || 'Failed to delete document',
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: errData.error || "Failed to delete document",
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error deleting document:", err);
 
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to delete document',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete document",
+        life: 3000,
       });
     } finally {
       setDocToDelete(null);
@@ -235,9 +242,13 @@ export default function FolderDocs() {
         ))}
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ marginTop: "1rem" }}>
         <Link href="/home">
-          <Button label="Back to Home" icon="pi pi-arrow-left" className="p-button-secondary" />
+          <Button
+            label="Back to Home"
+            icon="pi pi-arrow-left"
+            className="p-button-secondary"
+          />
         </Link>
       </div>
     </div>
