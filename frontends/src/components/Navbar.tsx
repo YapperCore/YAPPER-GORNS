@@ -127,6 +127,7 @@ const Navbar = () => {
               </div>
             )}
           </ul>
+          <hr className="sidebar-divider" />
           {currentUser && (
             <div className="sidebar-signout">
               <Button
@@ -134,7 +135,6 @@ const Navbar = () => {
                 className="logout-btn p-button-danger p-button-sm"
                 label="Logout"
                 icon="pi pi-sign-out"
-                style={{ width: "100%", justifyContent: "flex-start" }}
               />
             </div>
           )}

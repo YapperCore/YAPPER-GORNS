@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { Panel } from 'primereact/panel';
 import { ProgressBar } from 'primereact/progressbar';
 import { getUserSettings, transcribeAudio, submitTranscriptionPrompt } from '@/services/transcriptionService';
 
