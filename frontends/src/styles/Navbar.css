@@ -57,7 +57,7 @@
 }
 
 .sidebar-link:hover {
-  background: #a8a29e !important; /* Background color for sidebar link hover */
+  background: #F3793D !important; /* Background color for sidebar link hover */
   color: #292524 !important; /* Color for sidebar link hover */
   padding-left: 1.5rem; /* Adds padding to the left for better spacing */
   align-items: center;

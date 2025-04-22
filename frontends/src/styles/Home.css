@@ -1,11 +1,11 @@
 /* src/styles/FileUpload.css */
 body {
   /*background-color: #a5b4fc;*/
-  background-color: #a8a29e; /* color for background (appears as skinny header at the top of homepage */
+  background-color: #fff; /* color for background (appears as skinny header at the top of homepage */
 }
 .home {
   padding: 1rem;
-  background-color: #a8a29e; /* color for the main background of the homepage */
+  background-color: #fff; /* color for the main background of the homepage */
   color: #292524; /* color for text on the homepage */
   min-height: 100vh;
 }

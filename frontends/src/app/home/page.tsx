@@ -337,7 +337,7 @@ export default function Home() {
       <hr className="divider" />
 
       <div className="docs-section">
-        <h3>Docs in Session:</h3>
+        <h3 className="text-2xl font-bold">Documents:</h3>
         {loading ? (
           <p>Loading documents...</p>
         ) : docs.length === 0 ? (
@@ -346,7 +346,7 @@ export default function Home() {
           <div className="docs-grid">
             {docs.map(doc => (
               <div key={doc.id} className="doccard">
-                <h4 className="doc-title">{doc.name}</h4>
+                <h4 className="text-2xl font-bold">{doc.name}</h4>
                 {doc.audioFilename && (
                   <p className="audio-info">
                     Audio: {doc.audioFilename}

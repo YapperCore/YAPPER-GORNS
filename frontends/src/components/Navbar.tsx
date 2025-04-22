@@ -70,7 +70,7 @@ const Navbar = () => {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          background: "#a8a29e", // Color for background of sidebar
+          background: "linear-gradient(to bottom,rgb(241, 99, 27), #FFB74D)", // Gradient background
         }}
         maskStyle={{
           zIndex: 1000,
