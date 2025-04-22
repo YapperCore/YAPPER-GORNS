@@ -122,12 +122,14 @@ export default function LoginForm() {
                   required
                 />
               </div>
-              <Button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-black text-orange-500 hover:bg-black/90 h-10 px-4 py-2 w-full"
-                disabled={loading}
+              <Button asChild>
+                              <button
+                                type="submit"
+                                className="!inline-flex !items-center !justify-center !rounded-full !text-sm !font-medium !transition-colors !focus-visible:outline-none !focus-visible:ring-2 !focus-visible:ring-ring !focus-visible:ring-offset-2 !disabled:opacity-50 !disabled:pointer-events-none !ring-offset-background !bg-black !text-orange-500 !hover:bg-black/90 !h-10 !px-4 !py-2 !w-full"
+                                disabled={loading}
               >
                 {loading ? "Logging in..." : "Login"}
+              </button>
               </Button>
               <div className="relative text-center text-sm">
                 <span className="relative z-10 bg-background px-2 text-muted-foreground rounded-full">
