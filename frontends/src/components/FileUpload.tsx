@@ -166,45 +166,45 @@ export default function FileUpload({ onSuccessfulUpload, transcriptionPrompt = '
       <Toast ref={toast} position="top-right" />
       
       <div 
-        className="dropzone"
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onClick={() => fileInputRef.current?.click()}
+      className="dropzone"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onClick={() => fileInputRef.current?.click()}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/*"
-          onChange={handleFileChange}
-          className="hidden-input"
-        />
-        
-        <div className="dropzone-content">
-          <i className="pi pi-cloud-upload dropzone-icon"></i>
-          {fileName ? (
-            <p className="selected-file">Selected: {fileName}</p>
-          ) : (
-            <p>Drag & drop an audio file here, or click to select</p>
-          )}
-        </div>
+      <input
+      ref={fileInputRef}
+      type="file"
+      accept="audio/*"
+      onChange={handleFileChange}
+      className="hidden-input"
+      />
+      
+      <div className="dropzone-content">
+      <i className="pi pi-cloud-upload dropzone-icon"></i>
+      {fileName ? (
+      <p className="selected-file"><strong>Selected:</strong> {fileName}</p>
+      ) : (
+      <p><strong>Drag & drop an audio file here, or click to select</strong></p>
+      )}
+      </div>
       </div>
       
       {error && <div className="error-message">{error}</div>}
       
       {uploading && (
-        <div className="upload-progress">
-          <ProgressBar value={uploadProgress} showValue={true} />
-          <p>Uploading... {uploadProgress}%</p>
-        </div>
+      <div className="upload-progress">
+      <ProgressBar value={uploadProgress} showValue={true} />
+      <p>Uploading... {uploadProgress}%</p>
+      </div>
       )}
       
       <Button
-        label="Upload Audio"
-        icon="pi pi-upload"
-        className="upload-button"
-        onClick={handleUpload}
-        disabled={!file || uploading || !currentUser}
-        loading={uploading}
+      children={<span style={{ marginLeft: '8px', fontWeight: 'bold' }}>Upload Audio</span>}
+      icon="pi pi-upload"
+      className="upload-button"
+      onClick={handleUpload}
+      disabled={!file || uploading || !currentUser}
+      loading={uploading}
       />
     </div>
   );

@@ -1,4 +1,14 @@
 /* src/styles/FileUpload.css */
+body {
+  /*background-color: #a5b4fc;*/
+  background-color: #fff; /* color for background (appears as skinny header at the top of homepage */
+}
+.home {
+  padding: 1rem;
+  background-color: #fff; /* color for the main background of the homepage */
+  color: #292524; /* color for text on the homepage */
+  min-height: 100vh;
+}
 .file-upload-container {
   margin-bottom: 20px;
 }
@@ -9,14 +19,14 @@
   padding: 20px;
   text-align: center;
   cursor: pointer;
-  background-color: #f9f9f9;
+  background-color: #9ca3af; /* color for the dropzone background */
   transition: border-color 0.3s, background-color 0.3s;
   margin-bottom: 15px;
 }
 
 .dropzone:hover {
-  border-color: #4d7cff;
-  background-color: #f0f7ff;
+  border-color: #dbeafe;
+  background-color: #93c5fd;
 }
 
 .dropzone-content {
@@ -28,7 +38,7 @@
 
 .dropzone-icon {
   font-size: 2.5rem;
-  color: #6c757d;
+  color: #292524;
   margin-bottom: 10px;
 }
 
@@ -57,4 +67,135 @@
 .upload-button {
   width: 100%;
   margin-top: 10px;
+}
+
+/* Add these styles for folder cards and the delete button */
+.folder-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-content {
+  cursor: pointer;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.folder-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+.folder-delete-btn {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.folder-delete-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Updated styles for the confirmation dialog */
+.confirmation-content {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.confirmation-content i {
+  font-size: 2rem;
+  color: #22c55e;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.confirmation-content span {
+  line-height: 1.5;
+}
+
+.folder-docs-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.select-all-container {
+  padding: 0.5rem;
+  border-bottom: 1px solid #44403c;
+  margin-bottom: 0.5rem;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.doc-checkbox-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.doc-checkbox-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.doc-checkbox-item:last-child {
+  border-bottom: none;
+}
+
+.doc-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.doc-checkbox-label input {
+  margin-right: 10px;
+}
+
+.doc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.uploadsection {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #18181b; /* color for the upload section background */
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.doccard {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #d6d3d1; /* color for the doccard section background */
+  border: 1px solid;
+  
+  border-radius: 5px;
 }

@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import './AudioPlayer.css';
+import '../static/AudioPlayer.css'; // Updated path to CSS
 
 interface AudioPlayerProps {
   filename: string;
@@ -15,7 +15,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioLoaded, setAudioLoaded] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0.8);
   const progressRef = useRef<HTMLInputElement>(null);
@@ -24,25 +24,40 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     let objectUrl: string | null = null;
 
     async function fetchAudioUrl() {
-      if (!filename || !currentUser) return;
+      if (!filename || !currentUser) {
+        console.log("Missing filename or user, cannot load audio");
+        return;
+      }
       
       try {
+        console.log("Fetching audio from server...");
         const token = await currentUser.getIdToken();
-        const res = await fetch(`/local-audio/${filename}`, {
+        
+        // Try both endpoints - first the direct audio path, then local-audio
+        let res = await fetch(`/api/audio/${filename}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         if (!res.ok) {
+          console.log("Trying alternate endpoint...");
+          res = await fetch(`/local-audio/${filename}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+        
+        if (!res.ok) {
           setError(`Failed to load audio (${res.status})`);
+          console.error("Audio fetch failed with status:", res.status);
           return;
         }
         
         const contentType = res.headers.get('content-type');
+        console.log("Received content type:", contentType);
         
         if (contentType && contentType.includes('application/json')) {
           const data = await res.json();
           if (data.url) {
-            setAudioUrl(data.url);
+            setAudioSrc(data.url);
             setError(null);
           } else {
             setError("Invalid URL response");
@@ -50,8 +65,9 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
         } else {
           const blob = await res.blob();
           objectUrl = URL.createObjectURL(blob);
-          setAudioUrl(objectUrl);
+          setAudioSrc(objectUrl);
           setError(null);
+          console.log("Created object URL for audio blob");
         }
       } catch (err) {
         console.error("Error fetching audio:", err);
@@ -70,7 +86,10 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audioSrc) return;
+    
+    // Set source
+    audio.src = audioSrc;
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
@@ -154,7 +173,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     <div className="audio-player">
       <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
       
-      {error && <div className="player-error">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
       
       <div className="player-controls">
         <button 

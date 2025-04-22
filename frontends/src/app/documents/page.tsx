@@ -59,6 +59,7 @@ export default function Documents() {
     fetchFolders();
   }, [currentUser, router]);
 
+
   const handleCreateFolder = async () => {
     if (!currentUser) return;
 
@@ -123,10 +124,52 @@ export default function Documents() {
     <div className="container">
       <Toast ref={toast} position="top-right" />
 
+      <div className="flex justify-between items-center mb-6 mt-4">
+        <h2 className="text-2xl font-bold">Folders</h2>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              label="Create Folder"
+              icon="pi pi-folder-plus"
+              className="create-folder-btn ml-auto"
+              disabled={!currentUser || creatingFolder}
+            />
+          </DialogTrigger>
+          <DialogContent className="bg-black text-white p-6 rounded-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">Create a New Folder</DialogTitle>
+              <DialogDescription className="text-sm">
+                Enter the name of the folder you want to create.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="dialog-body mt-4">
+              <input
+                type="text"
+                placeholder="Folder Name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                className="w-full p-2 border border-gray-500 rounded bg-gray-800 text-white"
+              />
+            </div>
+            <DialogFooter className="mt-4 flex justify-end">
+              <Button
+                label="Create"
+                icon="pi pi-check"
+                type="button"
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim() || creatingFolder}
+                loading={creatingFolder}
+                className="bg-blue-500 text-white hover:bg-blue-600"
+              />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Document Folders</h2>
         <Button label="Create Folder" icon="pi pi-plus" onClick={handleCreateFolder} />
       </div>
+      
 
       {loading ? (
         <p>Loading folders...</p>

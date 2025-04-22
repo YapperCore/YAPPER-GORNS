@@ -42,12 +42,12 @@
 .upload-progress {
   margin: 1rem 0;
 }
-
+/*
 .upload-button {
   display: block;
   width: 100%;
   padding: 0.75rem 1rem;
-}
+}*/
 
 .error-message {
   color: #dc3545;

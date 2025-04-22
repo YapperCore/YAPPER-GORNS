@@ -48,6 +48,8 @@ const TranscriptionEditor: React.FC = () => {
         setAudioFilename(doc.audioFilename || "");
         setAudioTrashed(!!doc.audioTrashed);
 
+        console.log("Audio filename loaded:", doc.audioFilename);
+
         if (doc.content && doc.content.trim().length > 0) {
           if (
             doc.content.includes("Transcription complete") ||
@@ -233,14 +235,13 @@ const TranscriptionEditor: React.FC = () => {
         style={{ height: "600px", background: "#fff" }}
         ref={editorRef}
       />
+      
       {audioFilename && !audioTrashed && (
-        <div style={{ marginTop: "1rem" }}>
-          <AudioPlayer
-            filename={audioFilename}
-            audioUrl={`/api/audio/${audioFilename}`}
-          />
+        <div style={{ marginTop: '1rem' }}>
+          <AudioPlayer filename={audioFilename} />
         </div>
       )}
+      
       <div style={{ marginTop: "1rem" }}>
         <Link to="/home">Back to Home</Link>
       </div>

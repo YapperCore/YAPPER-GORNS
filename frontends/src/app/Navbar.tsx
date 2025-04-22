@@ -31,28 +31,28 @@ const Navbar = () => {
         
         {currentUser && (
           <div className="flex space-x-2">
-            <Button variant="ghost" asChild>
+            <Button asChild>
               <Link href="/home">
                 <Home className="mr-2 h-4 w-4" />
                 Home
               </Link>
             </Button>
             
-            <Button variant="ghost" asChild>
+            <Button asChild>
               <Link href="/documents">
                 <FileText className="mr-2 h-4 w-4" />
                 Documents
               </Link>
             </Button>
             
-            <Button variant="ghost" asChild>
+            <Button asChild>
               <Link href="/settings">
                 <Cog className="mr-2 h-4 w-4" />
                 Settings
               </Link>
             </Button>
             
-            <Button variant="ghost" asChild>
+            <Button asChild>
               <Link href="/trash">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Trash
@@ -64,16 +64,16 @@ const Navbar = () => {
       
       <div>
         {currentUser ? (
-          <Button variant="outline" onClick={handleLogout}>
+          <Button onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         ) : (
           <div className="flex space-x-2">
-            <Button variant="outline" asChild>
+            <Button asChild>
               <Link href="/login">Login</Link>
             </Button>
-            <Button variant="default" asChild>
+            <Button asChild>
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>

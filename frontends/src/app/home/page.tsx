@@ -508,7 +508,7 @@ export default function Home() {
   }
 
   return (
-    <div className="home-container">
+    <div className="home">
       <Toast ref={toast} position="top-right" />
       <ConfirmDialog />
       
@@ -532,7 +532,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="upload-section">
+      <div className="upload section">
         {showPromptInput && (
           <div className="prompt-input">
             <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
@@ -612,7 +612,7 @@ export default function Home() {
       <hr className="divider" />
 
       <div className="docs-section">
-        <h3>Docs in Session:</h3>
+        <h3 className="text-2xl font-bold">Documents:</h3>
         {loading ? (
           <div className="loading-container">
             <ProgressBar mode="indeterminate" style={{ height: '6px' }} />
@@ -623,8 +623,8 @@ export default function Home() {
         ) : (
           <div className="docs-grid">
             {docs.map(doc => (
-              <div key={doc.id} className="doc-card">
-                <h4 className="doc-title">{doc.name}</h4>
+              <div key={doc.id} className="doccard">
+                <h4 className="text-2xl font-bold">{doc.name}</h4>
                 {doc.audioFilename && (
                   <p className="audio-info">
                     Audio: {doc.audioFilename}
@@ -639,13 +639,6 @@ export default function Home() {
                     className="action-link transcription-link"
                   >
                     View Doc
-                  </Link>
-                  <Link
-                    href={`/docs/edit/${doc.id}`}
-                    target="_blank"
-                    className="action-link edit-link"
-                  >
-                    Edit Doc
                   </Link>
                   <Confirmable
                     onDelete={() => handleDelete(doc.id)}

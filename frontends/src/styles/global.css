@@ -35,21 +35,26 @@ main {
   border-radius: 5px;
 }
 
+
 .file-input {
   margin-right: 10px;
 }
 
 .upload-button {
-  padding: 8px 16px;
-  background-color: #4285f4;
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  /*padding: 8px 16px;*/
+  background-color: #242529; /* color for the upload button background */
   color: white;
-  border: none;
+ /* border: none;*/
   border-radius: 4px;
   cursor: pointer;
 }
 
 .upload-button:hover {
-  background-color: #3367d6;
+  background-color: #6c521f !important; /* darker shade for hover effect */
+  transition: background-color 0.3s ease;
 }
 
 .message {
@@ -59,7 +64,7 @@ main {
 
 .divider {
   border: none;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #292524; /* color for the divider line */
   margin: 1rem 0;
 }
 
@@ -109,25 +114,41 @@ main {
 }
 
 .transcription-link {
-  background-color: #4285f4;
+  background-color: #292524;
   color: white !important;
 }
+.transcription-link:hover {
+  background-color: #0891b2 !important; /* darker shade for hover effect */
+  transition: background-color 0.3s ease;
+}
 
+/* no lponger needed
 .edit-link {
   background-color: #0f9d58;
   color: white !important;
 }
+  */
 
 .delete-link {
-  background-color: #db4437;
+  background-color: #292524;
   color: white !important;
 }
+
+.delete-link:hover {
+  background-color: #c62828 !important; /* darker shade for hover effect */
+  transition: background-color 0.3s ease;
+}
+
 
 .move-link {
-  background-color: #ff9800;
+  background-color: #292524;
   color: white !important;
 }
 
+.move-link:hover {
+  background-color: #65a30d !important; /* darker shade for hover effect */
+  transition: background-color 0.3s ease;
+}
 .orange-button {
   background-color: #ff9800;
   color: white !important;
