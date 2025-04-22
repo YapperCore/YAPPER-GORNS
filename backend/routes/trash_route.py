@@ -103,9 +103,6 @@ def restore_file(filename):
                     # Mark file as not trashed
                     doc["audioTrashed"] = False
                     
-                    # Ensure the file goes to home by removing any folder association
-                    doc["folderName"] = None
-                    
                     # Also ensure the document is not marked as deleted
                     if doc.get("deleted", False):
                         doc["deleted"] = False

@@ -1,4 +1,3 @@
-// src/components/AudioPlayer.tsx
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -18,11 +17,9 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(0.8);
+  const progressRef = useRef<HTMLInputElement>(null);
 
-  console.log("AudioPlayer component mounted with filename:", filename);
-
-  // Fetch audio URL
   useEffect(() => {
     let objectUrl: string | null = null;
 
@@ -54,7 +51,6 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
           return;
         }
         
-        // Handle different response types
         const contentType = res.headers.get('content-type');
         console.log("Received content type:", contentType);
         
@@ -88,7 +84,6 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     };
   }, [filename, currentUser]);
 
-  // Set up audio element listeners
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !audioSrc) return;
@@ -96,12 +91,21 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
     // Set source
     audio.src = audioSrc;
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      if (progressRef.current) {
+        progressRef.current.value = ((audio.currentTime / audio.duration) * 100).toString();
+      }
+    };
+    
     const handleLoadedData = () => {
       setDuration(audio.duration);
       setAudioLoaded(true);
+      audio.volume = volume;
     };
+    
     const handleEnded = () => setIsPlaying(false);
+    
     const handleError = () => {
       setError("Error playing audio file");
       setAudioLoaded(false);
@@ -118,7 +122,7 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioSrc]);
+  }, [audioUrl, volume]);
 
   const handlePlayPause = () => {
     if (!audioRef.current || !audioLoaded) return;
@@ -167,40 +171,59 @@ export default function AudioPlayer({ filename }: AudioPlayerProps) {
 
   return (
     <div className="audio-player">
-      {audioSrc && <audio ref={audioRef} preload="metadata" src={audioSrc} />}
+      <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
       
       {error && <div className="error-message">{error}</div>}
       
-      <button 
-        onClick={handlePlayPause} 
-        disabled={!audioLoaded || !audioSrc}
-        className={!audioLoaded || !audioSrc ? "button-disabled" : ""}
-      >
-        {isPlaying ? "⏸" : "▶"}
-      </button>
+      <div className="player-controls">
+        <button 
+          className="play-pause-btn"
+          onClick={handlePlayPause} 
+          disabled={!audioLoaded}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? 
+            <i className="pi pi-pause"></i> : 
+            <i className="pi pi-play"></i>}
+        </button>
+        
+        <div className="time-display">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
+      </div>
       
-      <input 
-        type="range" 
-        min="0" 
-        max="100" 
-        value={(currentTime / (duration || 1)) * 100} 
-        onChange={handleProgressChange}
-        className={`progress-bar ${!audioLoaded || !audioSrc ? "slider-disabled" : ""}`}
-        disabled={!audioLoaded || !audioSrc}
-      />
+      <div className="progress-controls">
+        <input
+          ref={progressRef}
+          type="range"
+          min="0"
+          max="100"
+          value={(currentTime / duration) * 100 || 0}
+          onChange={handleProgressChange}
+          disabled={!audioLoaded}
+          className="progress-slider"
+          aria-label="Audio progress"
+        />
+      </div>
       
-      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-      
-      <input 
-        type="range" 
-        min="0" 
-        max="1" 
-        step="0.01" 
-        value={volume}
-        onChange={handleVolumeChange}
-        className={`volume-bar ${!audioLoaded || !audioSrc ? "slider-disabled" : ""}`}
-        disabled={!audioLoaded || !audioSrc}
-      />
+      <div className="volume-controls">
+        <span className="volume-icon">
+          {volume === 0 ? <i className="pi pi-volume-off"></i> :
+           volume < 0.5 ? <i className="pi pi-volume-down"></i> :
+           <i className="pi pi-volume-up"></i>}
+        </span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          onChange={handleVolumeChange}
+          disabled={!audioLoaded}
+          className="volume-slider"
+          aria-label="Volume control"
+        />
+      </div>
     </div>
   );
 }

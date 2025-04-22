@@ -1,5 +1,4 @@
 // src/lib/socket.ts
-'use client';
 
 import { io, Socket } from 'socket.io-client';
 
@@ -11,7 +10,8 @@ export function getSocket(): Socket {
   }
   
   if (!socket) {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || window.location.origin;
+    // Set the correct socket.io endpoint - connect to backend server port 5000
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     
     socket = io(backendUrl, {
       path: '/socket.io',
@@ -33,6 +33,16 @@ export function getSocket(): Socket {
     socket.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
     });
+    
+    // Handle transcription status updates
+    socket.on('transcription_status', (data) => {
+      console.log('Transcription status update:', data);
+    });
+    
+    // Add enhanced error handling for transcription errors
+    socket.on('transcription_error', (data) => {
+      console.error('Transcription error:', data.error);
+    });
   }
   
   return socket;
@@ -41,6 +51,7 @@ export function getSocket(): Socket {
 export function joinDocRoom(docId: string): void {
   try {
     const s = getSocket();
+    console.log(`Joining document room: ${docId}`);
     s.emit('join_doc', { doc_id: docId });
   } catch (error) {
     console.error('Error joining doc room:', error);
@@ -50,6 +61,7 @@ export function joinDocRoom(docId: string): void {
 export function leaveDocRoom(docId: string): void {
   try {
     const s = getSocket();
+    console.log(`Leaving document room: ${docId}`);
     s.emit('leave_doc', { doc_id: docId });
   } catch (error) {
     console.error('Error leaving doc room:', error);

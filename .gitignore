@@ -6,20 +6,21 @@ backend/accesskey.json
 # Node artifact files
 node_modules/
 dist/
-backend/uploads/
+*.json
 # Compiled Java class files
 *.class
-frontend/build/
-frontend/build
+backend/trash
+backend/uploads
 # Compiled Python bytecode
 *.py[cod]
-
+node_modules/
 # Log files
 *.log
-backend/routes/unit-tests/
+frontend/build/
 # Package files
 *.jar
-
+unit-tests/
+unit-testing/
 # Maven
 target/
 dist/
@@ -81,31 +82,7 @@ notes.txt
 OUTPUT_TEST/
 
 INPUT_AUDIO_TEST/
-Accesskey.json
-
+backend/doc_store.json
 frontend/src/__tests__
-frontend/src/components/Accesskey.json
-backend/Accesskey.json
-
-/backend/doc_store.json
-
-
-# more ignores (new frontend implementation)
-
-#backend files
-.venv/
-.pytest_cache/
-.vscode/
-backend/__pycache__/
-backend/routes/__pycache__/
-backend/routes/unit-tests/__pycache__/
-backend/routes/unit-tests-delete/__pycache__
-backend/*.wav
-backend/services/__pycache__/
-backend\routes\unittests\dummy_path.wav
-# add your own dummy_path.wav when unittesting
-# removed req.txt, if that was needed refer to previous commits
-doc_store.json
-# added doc_store.json to .gitignore, if that was needed refer to previous commits
-# was added because doc_store.json commits local save data not present in other branches/machines
-backend/routes/unittests/
+/frontend/build
+backend/.env

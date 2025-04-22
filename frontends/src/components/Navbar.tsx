@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -51,6 +52,7 @@ const Navbar = () => {
       console.error("Failed to log out", error);
     }
   };
+
 
   return (
     <div>
