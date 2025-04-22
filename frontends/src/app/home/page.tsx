@@ -3,9 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Toast } from 'primereact/toast';
-import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
-import { Checkbox } from 'primereact/checkbox'; // Import Checkbox component
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -15,10 +13,8 @@ import '@/styles/Home.css';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
 
@@ -41,14 +37,6 @@ export default function Home() {
   const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Track delete dialog open state
-  const [folderToDelete, setFolderToDelete] = useState('');
-  const [folderDocs, setFolderDocs] = useState<Document[]>([]);
-  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-  const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false); // Track dialog open state
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false); // Track move dialog open state
   const toast = useRef<Toast>(null);
   const { currentUser } = useAuth();
@@ -175,191 +163,6 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error fetching settings:", err);
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    if (!currentUser || !newFolderName.trim()) return;
-
-    try {
-      setCreatingFolder(true);
-
-      const token = await currentUser.getIdToken();
-      const res = await fetch('/api/folders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ folderName: newFolderName }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Folder Created',
-          detail: data.message || 'Folder created successfully',
-          life: 3000,
-        });
-
-        // Refresh folders list
-        await fetchFolders();
-
-        // Close the dialog box
-        setIsDialogOpen(false);
-      } else {
-        let errorMessage = 'Failed to create folder';
-        try {
-          const errData = await res.json();
-          errorMessage = errData.error || errorMessage;
-        } catch (e) {
-          // If response is not valid JSON
-        }
-
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: errorMessage,
-          life: 3000,
-        });
-      }
-    } catch (err) {
-      console.error('Error creating folder:', err);
-
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to create folder. Please try again.',
-        life: 3000,
-      });
-    } finally {
-      setCreatingFolder(false);
-      setNewFolderName("");
-    }
-  };
-
-  const handleFolderClick = (folderName: string) => {
-    router.push(`/folders/${folderName}`);
-  };
-
-  const handleDeleteButtonClick = async (folderName: string) => {
-    setFolderToDelete(folderName);
-    setIsDeleteDialogOpen(true);
-    await fetchDocsInFolder(folderName);
-  };
-
-  const fetchDocsInFolder = async (folderName: string) => {
-    if (!currentUser) return;
-    
-    setLoadingFolderDocs(true);
-    try {
-      const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/folders/${folderName}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setFolderDocs(Array.isArray(data) ? data : []);
-        setSelectedDocs(Array.isArray(data) ? data.map(doc => doc.id) : []);
-      } else {
-        console.error("Error fetching docs in folder:", res.status, res.statusText);
-        setFolderDocs([]);
-        setSelectedDocs([]);
-      }
-    } catch (err) {
-      console.error("Error fetching docs in folder:", err);
-      setFolderDocs([]);
-      setSelectedDocs([]);
-    } finally {
-      setLoadingFolderDocs(false);
-    }
-  };
-
-  const handleCheckboxChange = (docId: string) => {
-    setSelectedDocs(prev => {
-      if (prev.includes(docId)) {
-        return prev.filter(id => id !== docId);
-      } else {
-        return [...prev, docId];
-      }
-    });
-  };
-
-  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedDocs(folderDocs.map(doc => doc.id));
-    } else {
-      setSelectedDocs([]);
-    }
-  };
-
-  const handleDeleteAll = async () => {
-    await handleDeleteFolder(true);
-  };
-
-  const handleDeleteSelected = async () => {
-    await handleDeleteFolder(false);
-  };
-
-  const handleDeleteFolder = async (deleteAll: boolean = true) => {
-    if (!currentUser || !folderToDelete) return;
-    setLoading(true);
-    
-    try {
-      const token = await currentUser.getIdToken();
-      const docsToDelete = deleteAll ? [] : selectedDocs;
-      
-      const res = await fetch(`/api/folders/${folderToDelete}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          deleteAll,
-          docsToDelete
-        })
-      });
-
-      const data = await res.json();
-      
-      if (res.ok) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Folder Deleted',
-          detail: data.message || `Folder deleted. ${data.movedToTrash?.length || 0} files moved to trash.`,
-          life: 3000
-        });
-        
-        // Refresh folders list and documents
-        await fetchFolders();
-        await fetchDocs(); // Important to refresh docs as their status changed
-      } else {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: data.error || 'Failed to delete folder',
-          life: 3000
-        });
-      }
-    } catch (err) {
-      console.error("Error deleting folder:", err);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'An unexpected error occurred while deleting the folder',
-        life: 3000
-      });
-    } finally {
-      setLoading(false);
-      setIsDeleteDialogOpen(false);
-      setFolderDocs([]);
-      setSelectedDocs([]);
     }
   };
 
@@ -504,7 +307,7 @@ export default function Home() {
       <Toast ref={toast} position="top-right" />
       
       <div className="home-header">
-        <h2>Home - Upload Audio =&gt; Create Doc</h2>
+      <h2 className="text-2xl font-bold">Home</h2>
       </div>
 
       <div className="upload-section">
@@ -530,144 +333,7 @@ export default function Home() {
 
       <hr className="divider" />
       
-      <div className="folder-section">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger>
-            <Button
-              label="Create Folder"
-              icon="pi pi-folder-plus"
-              className="create-folder-btn"
-              disabled={!currentUser || creatingFolder}
-            />
-          </DialogTrigger>
-          <DialogContent className="bg-black text-white p-6 rounded-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold">Create a New Folder</DialogTitle>
-              <DialogDescription className="text-sm">
-                Enter the name of the folder you want to create.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="dialog-body mt-4">
-              <input
-                type="text"
-                placeholder="Folder Name"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                className="w-full p-2 border border-gray-500 rounded bg-gray-800 text-white"
-              />
-            </div>
-            <DialogFooter className="mt-4 flex justify-end">
-              <Button
-                label="Create"
-                icon="pi pi-check"
-                type="button"
-                onClick={handleCreateFolder}
-                disabled={!newFolderName.trim() || creatingFolder}
-                loading={creatingFolder}
-                className="bg-blue-500 text-white hover:bg-blue-600"
-              />
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
       
-      <hr className="divider" />
-      
-      <div className="folders-section">
-        <h3>Folders:</h3>
-        {loading ? (
-          <p>Loading folders...</p>
-        ) : folders.length === 0 ? (
-          <p>No folders created yet. Create your first folder to organize your documents.</p>
-        ) : (
-          <div className="docs-grid">
-            {folders.map((folder) => (
-              <div key={folder} className="doc-card folder-card">
-                <div 
-                  className="folder-content"
-                  onClick={() => handleFolderClick(folder)}
-                >
-                  <h4 className="doc-title">
-                    <i className="pi pi-folder"></i> {folder}
-                  </h4>
-                </div>
-                <div className="folder-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent folder opening
-                      handleDeleteButtonClick(folder);
-                    }}
-                    className="folder-delete-btn"
-                    title="Delete folder"
-                  >
-                    <i className="pi pi-trash"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-slate-800 text-white p-6 rounded-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Delete Folder: {folderToDelete}</DialogTitle>
-          </DialogHeader>
-          <div className="folder-docs-list mt-4 bg-slate-900">
-            {loadingFolderDocs ? (
-              <p>Loading documents...</p>
-            ) : folderDocs.length === 0 ? (
-              <p>This folder is empty.</p>
-            ) : (
-              <>
-                <div className="select-all-container mb-2">
-                  <Checkbox
-                    inputId="selectAll"
-                    checked={selectedDocs.length === folderDocs.length && folderDocs.length > 0}
-                    onChange={(e) => handleSelectAllChange(e)}
-                  />
-                  <label htmlFor="selectAll" className="ml-2">Select All Documents</label>
-                </div>
-                <ul className="doc-checkbox-list">
-                  {folderDocs.map((doc) => (
-                    <li key={doc.id} className="doc-checkbox-item flex items-center mb-2">
-                      <Checkbox
-                        inputId={`doc-${doc.id}`}
-                        checked={selectedDocs.includes(doc.id)}
-                        onChange={() => handleCheckboxChange(doc.id)}
-                      />
-                      <label htmlFor={`doc-${doc.id}`} className="ml-2">{doc.name}</label>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-          <DialogFooter className="mt-4 flex justify-end">
-            <Button
-              label="Cancel"
-              icon="pi pi-times"
-              className="bg-gray-500 text-white hover:bg-gray-600 px-6 py-3"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            />
-            <Button
-              label="Delete Selected"
-              icon="pi pi-trash"
-              className="bg-yellow-500 text-white hover:bg-yellow-600 ml-2"
-              onClick={handleDeleteSelected}
-              disabled={selectedDocs.length === 0}
-            />
-            <Button
-              label="Delete All"
-              icon="pi pi-trash"
-              className="bg-red-500 text-white hover:bg-red-600 ml-2"
-              onClick={handleDeleteAll}
-            />
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <hr className="divider" />
 
       <div className="docs-section">

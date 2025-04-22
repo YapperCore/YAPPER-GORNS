@@ -28,7 +28,7 @@ const Navbar = () => {
         {currentUser ? (
           <>
             <li><Link href="/home">Home</Link></li>
-            <li><Link href="/documents">Documents</Link></li>
+            <li><Link href="/documents">Folders</Link></li>
             <li><Link href="/settings">Settings</Link></li>
             <li><Link href="/trash">Trash</Link></li>
             <li>

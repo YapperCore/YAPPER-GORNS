@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { Panel } from 'primereact/panel';
 import { ProgressBar } from 'primereact/progressbar';
 import { getUserSettings, transcribeAudio, submitTranscriptionPrompt } from '@/services/transcriptionService';
 
@@ -152,7 +151,7 @@ export default function Home() {
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
       
-      <h2>Home - Upload Audio =&gt; Create Doc</h2>
+      <h2>Home - Upload Audio => Create Doc</h2>
       
       <div className="upload-section">
         {showPromptInput && (
