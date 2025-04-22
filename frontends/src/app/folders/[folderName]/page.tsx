@@ -242,13 +242,9 @@ export default function FolderDocs() {
         ))}
       </div>
 
-      <div style={{ marginTop: "1rem" }}>
-        <Link href="/home">
-          <Button
-            label="Back to Home"
-            icon="pi pi-arrow-left"
-            className="p-button-secondary"
-          />
+      <div style={{ marginTop: '1rem' }}>
+        <Link href="/folder">
+          <Button label="Back to folder" icon="pi pi-arrow-left" className="p-button-secondary" />
         </Link>
       </div>
     </div>

@@ -151,7 +151,7 @@ export default function Home() {
     <div className="home-container">
       <Toast ref={toast} position="top-right" />
       
-      <h2>Home - Upload Audio =&gt; Create Doc</h2>
+      <h2>Home - Upload Audio => Create Doc</h2>
       
       <div className="upload-section">
         {showPromptInput && (

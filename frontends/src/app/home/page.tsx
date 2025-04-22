@@ -12,6 +12,22 @@ import { useAuth } from "@/context/AuthContext";
 import Confirmable from "@/components/Confirmable";
 import FileUpload from "@/components/FileUpload";
 import "@/styles/Home.css";
+import React, { useState, useEffect, useRef } from 'react';
+import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import Confirmable from '@/components/Confirmable';
+import FileUpload from '@/components/FileUpload';
+import '@/styles/Home.css';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 interface Document {
   id: string;
@@ -23,27 +39,16 @@ interface Document {
   folderName?: string;
 }
 
-interface FolderOption {
-  label: string;
-  value: string;
-}
-
 export default function Home() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [docs, setDocs] = useState<Document[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
-  const [showMoveModal, setShowMoveModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
   const [transcriptionPrompt, setTranscriptionPrompt] = useState("");
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
-  const [folderToDelete, setFolderToDelete] = useState("");
-  const [folderDocs, setFolderDocs] = useState<Document[]>([]);
-  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-  const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false); // Track move dialog open state
   const toast = useRef<Toast>(null);
   const { currentUser } = useAuth();
   const router = useRouter();
@@ -413,14 +418,15 @@ export default function Home() {
 
   const handleOpenMoveModal = (docId: string) => {
     setDocToMove(docId);
-    setShowMoveModal(true);
+    setIsMoveDialogOpen(true);
   };
 
   const handleCloseMoveModal = () => {
-    setShowMoveModal(false);
+    setIsMoveDialogOpen(false);
     setSelectedFolder("");
     setDocToMove(null);
   };
+
 
   const handleMoveToFolder = async () => {
     if (!selectedFolder || !docToMove || !currentUser) {
@@ -456,7 +462,7 @@ export default function Home() {
         });
 
         // Close the modal and reset selection
-        setShowMoveModal(false);
+        setIsMoveDialogOpen(false);
         setSelectedFolder("");
         setDocToMove(null);
 
@@ -468,7 +474,6 @@ export default function Home() {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
-          // If response is not valid JSON
         }
 
         toast.current?.show({
@@ -490,7 +495,7 @@ export default function Home() {
     }
   };
 
-  const handleSuccessfulUpload = (docId: string) => {
+  const handleSuccessfulUpload = () => {
     // Refresh documents after a successful upload
     fetchDocs();
     setUploadMessage("Upload succeeded!");
@@ -529,7 +534,7 @@ export default function Home() {
       <Toast ref={toast} position="top-right" />
 
       <div className="home-header">
-        <h2>Home - Upload Audio =&gt; Create Doc</h2>
+      <h2 className="text-2xl font-bold">Home</h2>
       </div>
 
       <div className="upload-section">
@@ -667,6 +672,8 @@ export default function Home() {
         </div>
       </Dialog>
 
+      
+      
       <hr className="divider" />
 
       <div className="docs-section">
@@ -727,10 +734,38 @@ export default function Home() {
               icon="pi pi-times"
               className="p-button-text"
               onClick={handleCloseMoveModal}
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="bg-slate-800 text-white p-6 rounded-lxl shadow-2xl border border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Move Document to Folder</DialogTitle>
+          </DialogHeader>
+          <div className="dialog-body mt-4">
+            <select
+              value={selectedFolder}
+              onChange={(e) => setSelectedFolder(e.target.value)}
+              className="w-full p-2 border border-gray-500 rounded-md bg-black text-white"
+            >
+              <option value="" disabled hidden>Select folder</option>
+              {folders.map(folder => (
+                <option key={folder} value={folder}>{folder}</option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter className="mt-4 flex justify-end">
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-6 py-3"
+              onClick={handleCloseMoveModal}
             />
             <Button
               label="Move"
               icon="pi pi-check"
+              onClick={handleMoveToFolder}
+            <Button
+              label="Move"
+              icon="pi pi-check"
+              className="bg-blue-500 text-white hover:bg-blue-600 ml-4 rounded-xl px-6 py-3"
               onClick={handleMoveToFolder}
               disabled={!selectedFolder}
             />
@@ -749,7 +784,10 @@ export default function Home() {
             className="w-full"
           />
         </div>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
+
     </div>
   );
 }
