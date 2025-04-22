@@ -193,7 +193,8 @@ export default function Settings() {
       setApiError('');
       
       // If using Replicate with empty key, use default
-      if (transcriptionConfig.mode === 'replicate' && !transcriptionConfig.replicateApiKey.trim()) {
+      if (transcriptionConfig.mode === 'replicate' && 
+          (!transcriptionConfig.replicateApiKey || !transcriptionConfig.replicateApiKey.trim())) {
         toast.current?.show({
           severity: 'info',
           summary: 'Using Default API Key',
