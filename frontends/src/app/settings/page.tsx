@@ -14,7 +14,6 @@ import { Divider } from 'primereact/divider';
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
 import { TabView, TabPanel } from 'primereact/tabview';
-import { ToggleButton } from 'primereact/togglebutton';
 import { getSocket } from '@/lib/socket-client';
 import '@/styles/Settings.css';
 
@@ -184,6 +183,7 @@ export default function Settings() {
       
       return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, retryCount, networkError, systemInfo.cpuThreads]);
   
   const handleSaveSettings = async () => {
@@ -241,6 +241,7 @@ export default function Settings() {
         try {
           const errData = await res.json();
           errorMsg = errData.error || errorMsg;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
         
         toast.current?.show({
@@ -712,13 +713,13 @@ export default function Settings() {
               <h4>Transcription Methods</h4>
               <ul>
                 <li>
-                  <strong>Local CPU</strong>: Transcribes audio using your computer's processor. Good for most users but may be slower for longer files.
+                  <strong>Local CPU</strong>: Transcribes audio using your computer&apos;s processor. Good for most users but may be slower for longer files.
                 </li>
                 <li>
                   <strong>Local GPU</strong>: Uses your graphics card to accelerate transcription. Much faster than CPU but requires a compatible NVIDIA GPU.
                 </li>
                 <li>
-                  <strong>Replicate API</strong>: Cloud-based transcription using OpenAI's Whisper models. No local GPU required, works on any device but requires an internet connection and API key.
+                  <strong>Replicate API</strong>: Cloud-based transcription using OpenAI&apos;s Whisper models. No local GPU required, works on any device but requires an internet connection and API key.
                 </li>
               </ul>
               
@@ -742,7 +743,7 @@ export default function Settings() {
                 <li>You can use the system default API key by leaving the field empty</li>
                 <li>Or create a free account at <a href="https://replicate.com/signup" target="_blank" rel="noreferrer">replicate.com</a></li>
                 <li>Get your API key from <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer">your account page</a></li>
-                <li>Enter the key in the settings and click "Test API Key"</li>
+                <li>Enter the key in the settings and click &quot;Test API Key&quot;</li>
                 <li>Save your configuration</li>
               </ol>
               
@@ -755,24 +756,24 @@ export default function Settings() {
                 When using Replicate API, you can provide optional prompts to guide the transcription. Good prompts include:
               </p>
               <ul>
-                <li>Domain knowledge: "This is a medical lecture about cardiology with technical terms"</li>
-                <li>Accent information: "The speaker has a Scottish accent"</li>
-                <li>Content structure: "This is a podcast interview with two speakers"</li>
+                <li>Domain knowledge:&quot;This is a medical lecture about cardiology with technical terms&quot;</li>
+                <li>Accent information: &quot;The speaker has a Scottish accent&quot;</li>
+                <li>Content structure: &quot;This is a podcast interview with two speakers&quot;</li>
               </ul>
             </Card>
             
             <Card title="Troubleshooting" className="documentation-card">
               <h4>Connection Issues</h4>
               <ul>
-                <li>If Socket.IO shows as disconnected, real-time updates won't work. Try refreshing the page.</li>
+                <li>If Socket.IO shows as disconnected, real-time updates won&apos;t work. Try refreshing the page.</li>
                 <li>For persistent connection issues, ensure both frontend and backend are running.</li>
               </ul>
               
               <h4>Replicate API Problems</h4>
               <ul>
-                <li>If your API key fails verification, check that you've copied it correctly.</li>
-                <li>API keys start with "r8_" and should not include any spaces.</li>
-                <li>If transcription fails, check your account's API token status and credits.</li>
+                <li>If your API key fails verification, check that you&apos;ve copied it correctly.</li>
+                <li>API keys start with &quot;r8_&quot; and should not include any spaces.</li>
+                <li>If transcription fails, check your account&apos;s API token status and credits.</li>
                 <li>If the system default key fails, try using your own API key instead.</li>
               </ul>
               
