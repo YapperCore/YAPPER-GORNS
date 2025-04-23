@@ -238,7 +238,7 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 
 <br />
 
-### Sprint 2
+### Sprint 3
 #### Contributions
 
 **Ali**: "Refactored the code as well added a perm delete button and a full folder feature allowing the user to send documents to any folder" 
