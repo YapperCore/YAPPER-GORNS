@@ -265,6 +265,28 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
     - [Scrum-73](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-73), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-73-ui-for-creating-and-managing-fo)
 
+**Michael**: Helped Refactored Frontend, Implemented new UI with shadcn, got dependency to non-error
+ 
+  - `Jira Task: Michael - Get Backend Working`
+    - [Scrum-69](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-69), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/329b31ca14116f0347721fc41cb2b51fa11a1419/?at=bugfix%2FSCRUM-69-get-backend-working)
+
+  - `Jira Task: Michael - Review new UI Ideas`
+    - [Scrum-84](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-84), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-84-research-task---review-new-ui-i/)
+
+  - `Jira Task: Michael - Implement Chosen New UI`
+    - [Scrum-85](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-85), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/feature/SCRUM-85-implement-chosen-new-ui)
+
+  - `Jira Task: Michael - Unit Test Backend Transcribe (Planning)`
+    - [Scrum-89](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-89), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/SCRUM-89-unit-test-backend-transcribe)
+
+  - `Jira Task: Michael - Unit Test Backend Transcribe (Results)`
+    - [Scrum-91](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-91), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/SCRUM-91-unit-test-backend-transcribe-results)
+    
 <br />
 
 #### Reports
