@@ -287,6 +287,36 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
     - [Scrum-91](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-91), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/SCRUM-91-unit-test-backend-transcribe-results)
     
+
+**Josh** : Created the Login and Signup using firebase auth and beautified it using shadcn and regular css
+
+- `Jira Task: Josh - Implement new login and signup UI
+    - [Scrum-68](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-68), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-68-login-and-signup-ui)
+
+  - `Jira Task: Josh - Implement session persistence`
+    - [Scrum-56](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-56), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/790abbe83c9b55ee77e1d7204f637e899c39453b/?at=SCRUM-56-implement-session-persistence)
+
+  - `Jira Task: Josh - Implement login 
+    - [Scrum-57](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-57), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-57-implement-log-in-logout-functio)
+
+  - `Jira Task: Josh - Implement signup 
+    - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-55), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-55-implement-user-login)
+
+  - `Jira Task: Josh - Research
+    - [Scrum-53](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-53), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-53-research-deployment)
+ 
+  - `Jira Task: Josh - Unit Test planning
+    - [Scrum-86](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-86), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-86-unit-test-login-and-sign-up/)
+
+  - `Jira Task: Josh - Unit test results
+    - [Scrum-90](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-90), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-90-unit-test-running/)
 <br />
 
 #### Reports
@@ -298,6 +328,9 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 - Take time to understand how the code works.
 - refactor the whole project as some files are 100+ lines. 
 
+**Josh** 
+- Work through my version control problems
+- Spend more time working on button bugs
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
