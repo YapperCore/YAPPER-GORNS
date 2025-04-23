@@ -330,7 +330,6 @@ export default function Home() {
         
         {uploadMessage && <p className="message">{uploadMessage}</p>}
       </div>
-
       <hr className="divider" />
 
       <div className="docs-section">
