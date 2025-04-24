@@ -327,6 +327,7 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 **Ali**:  
 - Take time to understand how the code works.
 - refactor the whole project as some files are 100+ lines. 
+- have a way to share and formate the text blocks that comes out.
 
 **Josh** 
 - Work through my version control problems
