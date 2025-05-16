@@ -86,3 +86,4 @@ backend/doc_store.json
 frontend/src/__tests__
 /frontend/build
 backend/.env
+.venv

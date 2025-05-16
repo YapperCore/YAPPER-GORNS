@@ -144,7 +144,7 @@ const TranscriptionEditor: React.FC = () => {
           severity: "error",
           summary: "Transcription Error",
           detail: data.error,
-          life: 5000,
+          life: 5001,
         });
       }
     };
@@ -235,13 +235,13 @@ const TranscriptionEditor: React.FC = () => {
         style={{ height: "600px", background: "#fff" }}
         ref={editorRef}
       />
-      
+
       {audioFilename && !audioTrashed && (
-        <div style={{ marginTop: '1rem' }}>
+        <div style={{ marginTop: "1rem" }}>
           <AudioPlayer filename={audioFilename} />
         </div>
       )}
-      
+
       <div style={{ marginTop: "1rem" }}>
         <Link to="/home">Back to Home</Link>
       </div>

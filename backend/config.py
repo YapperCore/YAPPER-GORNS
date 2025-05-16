@@ -49,7 +49,7 @@ DOC_STORE_FILE = normalize_path(os.path.join(BASE_DIR, "doc_store.json"))
 
 # Web config
 HOST = "0.0.0.0"
-PORT = int(os.environ.get("PORT", 5000))
+PORT = int(os.environ.get("PORT", 5001))
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 # Whisper model config
