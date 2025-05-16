@@ -222,7 +222,7 @@ def register_error_handlers(app):
 
 # --- Application Entry Point ---
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
 
     logger.info(f"Starting Yapper backend on {PLATFORM_NAME}")
