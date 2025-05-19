@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
 import { useState } from "react";
@@ -52,7 +52,6 @@ const Navbar = () => {
     }
   };
 
-
   return (
     <div>
       <Button
@@ -71,13 +70,16 @@ const Navbar = () => {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          background: "linear-gradient(to bottom,rgba(172, 83, 39, 0.91), #FFB74D)", // Gradient background
+          background:
+            "linear-gradient(to bottom,rgba(172, 83, 39, 0.91), #FFB74D)", // Gradient background
         }}
         maskStyle={{
           zIndex: 1000,
         }}
       >
-        <h1 className="logo" style={{ paddingLeft: "1.5rem" }}>Yapper</h1>
+        <h1 className="logo" style={{ paddingLeft: "1.5rem" }}>
+          Yapper
+        </h1>
         <div
           className="sidebar-links-inner"
           style={{
@@ -141,7 +143,7 @@ const Navbar = () => {
             </div>
           )}
         </div>
-      </Sidebar>  
+      </Sidebar>
     </div>
   );
 };

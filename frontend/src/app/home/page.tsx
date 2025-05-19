@@ -1,22 +1,22 @@
 // src/app/home/page.tsx
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Toast } from 'primereact/toast';
-import { Button } from 'primereact/button';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
-import Confirmable from '@/components/Confirmable';
-import FileUpload from '@/components/FileUpload';
-import '@/styles/Home.css';
+import React, { useState, useEffect, useRef } from "react";
+import { Toast } from "primereact/toast";
+import { Button } from "primereact/button";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "../../context/AuthContext";
+import Confirmable from "../../components/Confirmable";
+import FileUpload from "../../components/FileUpload";
+import "../../styles/Home.css";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "../../components/ui/dialog";
 
 interface Document {
   id: string;
@@ -34,7 +34,7 @@ export default function Home() {
   const [folders, setFolders] = useState<string[]>([]);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [docToMove, setDocToMove] = useState<string | null>(null);
-  const [transcriptionPrompt, setTranscriptionPrompt] = useState('');
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState("");
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false); // Track move dialog open state
@@ -44,63 +44,59 @@ export default function Home() {
 
   // Fetch data only once when component mounts
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (!currentUser) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
-    
+
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch data in parallel
-        await Promise.all([
-          fetchDocs(),
-          fetchFolders(),
-          fetchSettings()
-        ]);
+        await Promise.all([fetchDocs(), fetchFolders(), fetchSettings()]);
       } catch (err) {
         console.error("Error fetching data:", err);
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data. Please refresh and try again.',
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to load data. Please refresh and try again.",
+          life: 3000,
         });
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [currentUser, router]);
 
   const fetchDocs = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/docs', {
+      const res = await fetch("/api/docs", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         // Filter out documents that are in trash
-        const activeDocs = Array.isArray(data) 
-          ? data.filter(doc => !doc.audioTrashed && !doc.deleted)
+        const activeDocs = Array.isArray(data)
+          ? data.filter((doc) => !doc.audioTrashed && !doc.deleted)
           : [];
         setDocs(activeDocs);
       } else {
         console.error("Error fetching docs:", res.status, res.statusText);
         setDocs([]);
-        
+
         if (res.status === 401) {
           // Unauthorized, redirect to login
-          router.push('/login');
+          router.push("/login");
         }
       }
     } catch (err) {
@@ -111,18 +107,18 @@ export default function Home() {
 
   const fetchFolders = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/folders', {
+      const res = await fetch("/api/folders", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
-        
+
         // Handle both format types
         if (data && data.dotFiles) {
           setFolders(Array.isArray(data.dotFiles) ? data.dotFiles : []);
@@ -144,20 +140,21 @@ export default function Home() {
 
   const fetchSettings = async () => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/user-settings', {
+      const res = await fetch("/api/user-settings", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (res.ok) {
         const settings = await res.json();
         if (settings.transcriptionConfig) {
           // Check if using Replicate API
-          const usingReplicate = settings.transcriptionConfig.mode === 'replicate';
+          const usingReplicate =
+            settings.transcriptionConfig.mode === "replicate";
           setShowPromptInput(usingReplicate);
         }
       }
@@ -168,50 +165,50 @@ export default function Home() {
 
   const handleDelete = async (id: string) => {
     if (!currentUser) return;
-    
+
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/api/docs/${id}`, {
-        method: 'DELETE',
-        headers: { 
-          Authorization: `Bearer ${token}` 
-        }
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         // Update local state to remove the deleted document
-        setDocs(prev => prev.filter(d => d.id !== id));
-        
+        setDocs((prev) => prev.filter((d) => d.id !== id));
+
         toast.current?.show({
-          severity: 'success',
-          summary: 'Document Deleted',
-          detail: 'Document moved to trash successfully',
-          life: 3000
+          severity: "success",
+          summary: "Document Deleted",
+          detail: "Document moved to trash successfully",
+          life: 3000,
         });
       } else {
-        let errorMessage = 'Failed to delete document';
+        let errorMessage = "Failed to delete document";
         try {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {
           // If response is not valid JSON
         }
-        
+
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
-          life: 3000
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error deleting doc:", err);
-      
+
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to delete document. Please try again.',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete document. Please try again.",
+        life: 3000,
       });
     }
   };
@@ -227,37 +224,39 @@ export default function Home() {
     setDocToMove(null);
   };
 
-
   const handleMoveToFolder = async () => {
     if (!selectedFolder || !docToMove || !currentUser) {
-      toast.current?.show({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Please select a folder.', 
-        life: 3000 
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Please select a folder.",
+        life: 3000,
       });
       return;
     }
 
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch(`/api/folders/${selectedFolder}/add/${docToMove}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetch(
+        `/api/folders/${selectedFolder}/add/${docToMove}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (res.ok) {
         const data = await res.json();
-        
+
         toast.current?.show({
-          severity: 'success',
-          summary: 'Document Moved',
-          detail: data.message || 'Document moved successfully',
-          life: 3000
+          severity: "success",
+          summary: "Document Moved",
+          detail: data.message || "Document moved successfully",
+          life: 3000,
         });
-        
+
         // Close the modal and reset selection
         setIsMoveDialogOpen(false);
         setSelectedFolder("");
@@ -266,28 +265,27 @@ export default function Home() {
         // Refresh documents list after moving
         await fetchDocs();
       } else {
-        let errorMessage = 'Failed to move document';
+        let errorMessage = "Failed to move document";
         try {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
-        } catch (e) {
-        }
-        
+        } catch (e) {}
+
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
-          life: 3000
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error moving document:", err);
-      
+
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to move document. Please try again.',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to move document. Please try again.",
+        life: 3000,
       });
     }
   };
@@ -305,15 +303,18 @@ export default function Home() {
   return (
     <div className="home">
       <Toast ref={toast} position="top-right" />
-      
+
       <div className="home-header">
-      <h2 className="text-2xl font-bold">Home</h2>
+        <h2 className="text-2xl font-bold">Home</h2>
       </div>
 
       <div className="upload-section">
         {showPromptInput && (
           <div className="prompt-input">
-            <p>Using Replicate API: Enter a prompt to guide transcription (optional)</p>
+            <p>
+              Using Replicate API: Enter a prompt to guide transcription
+              (optional)
+            </p>
             <textarea
               placeholder="e.g., Please transcribe this audio accurately, paying attention to technical terms."
               value={transcriptionPrompt}
@@ -322,12 +323,12 @@ export default function Home() {
             />
           </div>
         )}
-        
-        <FileUpload 
+
+        <FileUpload
           onSuccessfulUpload={handleSuccessfulUpload}
           transcriptionPrompt={transcriptionPrompt}
         />
-        
+
         {uploadMessage && <p className="message">{uploadMessage}</p>}
       </div>
 
@@ -338,16 +339,19 @@ export default function Home() {
         {loading ? (
           <p>Loading documents...</p>
         ) : docs.length === 0 ? (
-          <p>No documents available. Upload an audio file to create your first document.</p>
+          <p>
+            No documents available. Upload an audio file to create your first
+            document.
+          </p>
         ) : (
           <div className="docs-grid">
-            {docs.map(doc => (
+            {docs.map((doc) => (
               <div key={doc.id} className="doc-card">
                 <h4 className="text-2xl font-bold">{doc.name}</h4>
                 {doc.audioFilename && (
                   <p className="audio-info">
                     Audio: {doc.audioFilename}
-                    {doc.audioTrashed && ' [TRASHED]'}
+                    {doc.audioTrashed && " [TRASHED]"}
                   </p>
                 )}
 
@@ -379,7 +383,9 @@ export default function Home() {
       <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
         <DialogContent className="bg-slate-800 text-white p-6 rounded-lxl shadow-2xl border border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Move Document to Folder</DialogTitle>
+            <DialogTitle className="text-lg font-bold">
+              Move Document to Folder
+            </DialogTitle>
           </DialogHeader>
           <div className="dialog-body mt-4">
             <select
@@ -387,9 +393,13 @@ export default function Home() {
               onChange={(e) => setSelectedFolder(e.target.value)}
               className="w-full p-2 border border-gray-500 rounded-md bg-black text-white"
             >
-              <option value="" disabled hidden>Select folder</option>
-              {folders.map(folder => (
-                <option key={folder} value={folder}>{folder}</option>
+              <option value="" disabled hidden>
+                Select folder
+              </option>
+              {folders.map((folder) => (
+                <option key={folder} value={folder}>
+                  {folder}
+                </option>
               ))}
             </select>
           </div>
@@ -410,7 +420,6 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
