@@ -1,16 +1,15 @@
 // src/app/signup/page.tsx
-'use client';
+"use client";
 
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { cn } from "../lib/utils";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { useToast } from "../hooks/use-toast";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
@@ -81,7 +80,8 @@ export default function SignupForm() {
             errorMessage = "Invalid email format";
             break;
           case "auth/weak-password":
-            errorMessage = "Password is too weak. Please use a stronger password.";
+            errorMessage =
+              "Password is too weak. Please use a stronger password.";
             break;
           default:
             errorMessage = `Failed to sign up: ${err.message}`;
@@ -110,7 +110,7 @@ export default function SignupForm() {
                   Sign up to join Yapper
                 </p>
               </div>
-  
+
               {/* Email */}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -124,7 +124,7 @@ export default function SignupForm() {
                   required
                 />
               </div>
-  
+
               {/* Password */}
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
@@ -138,7 +138,7 @@ export default function SignupForm() {
                   required
                 />
               </div>
-  
+
               {/* Confirm Password */}
               <div className="grid gap-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -152,7 +152,7 @@ export default function SignupForm() {
                   required
                 />
               </div>
-  
+
               {/* Submit Button */}
               <Button asChild>
                 <button
@@ -163,21 +163,18 @@ export default function SignupForm() {
                   {loading ? "Signing up..." : "Sign Up"}
                 </button>
               </Button>
-  
+
               {/* Or divider */}
               <div className="relative text-center text-sm">
                 <span className="relative z-10 bg-background px-2 text-muted-foreground rounded-full">
                   Or continue with
                 </span>
               </div>
-  
+
               {/* Google Sign In Button */}
               <div className="grid grid-cols-3">
                 <div className="col-span-3 flex justify-center">
-                  <Button
-                    variant="outline"
-                    className="rounded-full flex items-center justify-center"
-                  >
+                  <Button className="rounded-full flex items-center justify-center">
                     <img
                       src="/static/google.png"
                       alt="Google Logo"
@@ -186,17 +183,20 @@ export default function SignupForm() {
                   </Button>
                 </div>
               </div>
-  
+
               {/* Login Link */}
               <div className="text-center text-sm mt-4">
                 Already have an account?{" "}
-                <a href="/login" className="underline underline-offset-4 text-black">
+                <a
+                  href="/login"
+                  className="underline underline-offset-4 text-black"
+                >
                   Login
                 </a>
               </div>
             </div>
           </form>
-  
+
           {/* Side image */}
           <div className="relative hidden bg-muted md:block rounded-lg">
             <img
@@ -207,7 +207,7 @@ export default function SignupForm() {
           </div>
         </CardContent>
       </Card>
-  
+
       {/* Terms & Policy */}
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}

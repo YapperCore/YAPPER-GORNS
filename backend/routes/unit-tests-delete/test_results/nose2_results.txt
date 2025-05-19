@@ -1,5 +1,0 @@
-=== NOSE2 TEST RESULTS ===
-
-Soft Delete: PASS
-Status Code: 200
-Details: Document marked deleted: True

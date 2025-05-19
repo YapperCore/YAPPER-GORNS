@@ -17,7 +17,7 @@ import {
 } from "@/lib/socket-client";
 import { useAuth } from "@/context/AuthContext";
 import { restartTranscription } from "@/services/transcriptionService";
-import AudioPlayer from "@/components/AudioPlayer";
+import AudioPlayer from "../../components/AudioPlayer";
 import "@/styles/Transcription.css";
 
 interface Doc {

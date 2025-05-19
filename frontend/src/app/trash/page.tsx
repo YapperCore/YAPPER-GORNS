@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { Toast } from 'primereact/toast';
-import { Button } from 'primereact/button';
-import { ConfirmDialog } from 'primereact/confirmdialog';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { Toast } from "primereact/toast";
+import { Button } from "primereact/button";
+import { ConfirmDialog } from "primereact/confirmdialog";
+import { useRouter } from "next/navigation";
 
 export default function Trash() {
   const { currentUser } = useAuth();
@@ -19,8 +19,8 @@ export default function Trash() {
 
   useEffect(() => {
     // Redirect to login if not authenticated
-    if (!currentUser && typeof window !== 'undefined') {
-      router.push('/login');
+    if (!currentUser && typeof window !== "undefined") {
+      router.push("/login");
       return;
     }
 
@@ -29,35 +29,35 @@ export default function Trash() {
 
   const fetchTrashFiles = async () => {
     if (!currentUser) return;
-    
+
     setLoading(true);
     try {
       const token = await currentUser.getIdToken();
-      const res = await fetch('/trash-files', {
+      const res = await fetch("/trash-files", {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setTrashFiles(data.files || []);
       } else {
         console.error("Error fetching trash files:", res.statusText);
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load trash files',
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to load trash files",
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error fetching trash files:", err);
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load trash files',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load trash files",
+        life: 3000,
       });
     } finally {
       setLoading(false);
@@ -66,40 +66,42 @@ export default function Trash() {
 
   const handleRestore = async (filename: string) => {
     if (!currentUser || actionInProgress) return;
-    
+
     setActionInProgress(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/restore_file/${filename}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
-        setTrashFiles(prev => prev.filter(f => f !== filename));
+        setTrashFiles((prev) => prev.filter((f) => f !== filename));
         toast.current?.show({
-          severity: 'success',
-          summary: 'Restored',
-          detail: 'File restored successfully',
-          life: 3000
+          severity: "success",
+          summary: "Restored",
+          detail: "File restored successfully",
+          life: 3000,
         });
       } else {
         const data = await res.json();
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to restore file: ${data.error || data.message || 'Unknown error'}`,
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: `Failed to restore file: ${
+            data.error || data.message || "Unknown error"
+          }`,
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error restoring file:", err);
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to restore file',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to restore file",
+        life: 3000,
       });
     } finally {
       setActionInProgress(false);
@@ -114,27 +116,27 @@ export default function Trash() {
 
   const handlePermDelete = async () => {
     if (!fileToDelete || !currentUser || actionInProgress) return;
-    
+
     setActionInProgress(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/perm_delete_files/${fileToDelete}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
-        setTrashFiles(prev => prev.filter(f => f !== fileToDelete));
+        setTrashFiles((prev) => prev.filter((f) => f !== fileToDelete));
         toast.current?.show({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'File permanently deleted',
-          life: 3000
+          severity: "success",
+          summary: "Deleted",
+          detail: "File permanently deleted",
+          life: 3000,
         });
       } else {
-        let errorMessage = 'Failed to delete file';
+        let errorMessage = "Failed to delete file";
         try {
           const data = await res.json();
           errorMessage = data.error || data.message || errorMessage;
@@ -143,19 +145,19 @@ export default function Trash() {
           errorMessage = `Failed to delete file: ${res.statusText}`;
         }
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
-          life: 3000
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error permanently deleting file:", err);
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to delete file',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to delete file",
+        life: 3000,
       });
     } finally {
       setFileToDelete(null);
@@ -181,19 +183,19 @@ export default function Trash() {
         reject={() => setConfirmVisible(false)}
         acceptClassName="p-button-danger"
       />
-      
+
       <h2>Trash Bucket</h2>
-      
+
       <div className="trash-controls">
-        <Button 
-          icon="pi pi-refresh" 
-          label="Refresh" 
-          className="p-button-secondary" 
+        <Button
+          icon="pi pi-refresh"
+          label="Refresh"
+          className="p-button-secondary"
           onClick={fetchTrashFiles}
           disabled={actionInProgress}
         />
       </div>
-      
+
       {loading ? (
         <p>Loading trash files...</p>
       ) : trashFiles.length === 0 ? (
@@ -202,20 +204,20 @@ export default function Trash() {
         <div className="docs-grid">
           {trashFiles.map((file, i) => (
             <div key={i} className="doc-card">
-              <h4 className="doc-title">Trashed file</h4> 
+              <h4 className="doc-title">Trashed file</h4>
               <p className="audio-info">{file}</p>
               <div className="doc-actions">
-                <Button 
-                  icon="pi pi-undo" 
-                  label="Restore" 
-                  className="p-button-success" 
+                <Button
+                  icon="pi pi-undo"
+                  label="Restore"
+                  className="p-button-success"
                   onClick={() => handleRestore(file)}
                   disabled={actionInProgress}
                 />
-                <Button 
-                  icon="pi pi-trash" 
-                  label="Perm Delete" 
-                  className="p-button-danger" 
+                <Button
+                  icon="pi pi-trash"
+                  label="Perm Delete"
+                  className="p-button-danger"
                   onClick={() => confirmDelete(file)}
                   disabled={actionInProgress}
                 />

@@ -1,4 +1,0 @@
-=== UNITTEST SOFT DELETE TESTS ===
-1. Success Test:
-  Status: PASS
-  Document Deleted: True

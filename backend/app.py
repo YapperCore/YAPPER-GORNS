@@ -86,15 +86,17 @@ def ensure_directories():
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    
+
     # Update CORS to accept requests from your Vercel frontend
-    CORS(app, 
-         supports_credentials=True, 
-         origins=[
-             "http://localhost:3000",  # Local development
-             "https://yapper-frontend.vercel.app",  # Update this to your actual Vercel domain
-         ])
-    
+    CORS(
+        app,
+        supports_credentials=True,
+        origins=[
+            "http://localhost:3000",  # Local development
+            "https://yapper-frontend.vercel.app",  # Update this to your actual Vercel domain
+        ],
+    )
+
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "yapper_secret_key")
     app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
 
@@ -115,12 +117,12 @@ def create_app():
 
     # Attach SocketIO to Flask app with appropriate CORS for production
     socketio.init_app(
-        app, 
+        app,
         cors_allowed_origins=[
             "http://localhost:3000",
-            "https://yapper-frontend.vercel.app"  # Update this to your actual Vercel domain
+            "https://yapper-frontend.vercel.app",  # Update this to your actual Vercel domain
         ],
-        async_mode="eventlet"
+        async_mode="eventlet",
     )
 
     # Register error handlers
@@ -141,7 +143,7 @@ def register_basic_routes(app):
                 "status": "running",
                 "platform": PLATFORM_NAME,
                 "version": "1.0.0",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
         )
 
@@ -153,19 +155,21 @@ def register_basic_routes(app):
                     "status": "ok",
                     "timestamp": datetime.now().isoformat(),
                     "platform": PLATFORM_NAME,
-                    "socketio": "active"
+                    "socketio": "active",
                 }
             ),
             200,
         )
-        
-    @app.route('/socket-test')
+
+    @app.route("/socket-test")
     def socket_test():
-        return jsonify({
-            "socket_status": "active",
-            "server_time": datetime.now().isoformat(),
-            "engine": socketio.async_mode
-        })
+        return jsonify(
+            {
+                "socket_status": "active",
+                "server_time": datetime.now().isoformat(),
+                "engine": socketio.async_mode,
+            }
+        )
 
     @app.route("/auth/check", methods=["GET"])
     @verify_firebase_token
@@ -177,21 +181,21 @@ def register_basic_routes(app):
                 "is_admin": is_admin(request.uid),
             }
         )
-        
+
     @app.route("/api/env-check", methods=["GET"])
     def env_check():
         """Check for required environment variables"""
         env_status = {
             "REPLICATE_API_TOKEN": bool(os.environ.get("REPLICATE_API_TOKEN")),
-            "FIREBASE_CONFIG": bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY")) 
+            "FIREBASE_CONFIG": bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY")),
         }
-        
+
         if request.args.get("debug") == "true" and is_admin(request.uid):
             # Only show masked tokens for admin users with debug flag
             if os.environ.get("REPLICATE_API_TOKEN"):
                 token = os.environ.get("REPLICATE_API_TOKEN")
                 env_status["REPLICATE_API_TOKEN_MASKED"] = f"{token[:5]}...{token[-5:]}"
-                
+
         return jsonify(env_status)
 
 
@@ -232,7 +236,9 @@ if __name__ == "__main__":
 
     if debug_mode:
         # Use Flask's development server with debug mode
-        socketio.run(app, debug=debug_mode, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
+        socketio.run(
+            app, debug=debug_mode, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True
+        )
     else:
         # Use socketio's production-ready server
         print(f"Yapper backend running on http://0.0.0.0:{port} (Press CTRL+C to quit)")

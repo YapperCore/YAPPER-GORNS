@@ -9,8 +9,8 @@ import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import Confirmable from "@/components/Confirmable";
-import FileUpload from "@/components/FileUpload";
+import Confirmable from "../../components/Confirmable";
+import FileUpload from "../../components/FileUpload";
 import "@/styles/Home.css";
 
 interface Document {

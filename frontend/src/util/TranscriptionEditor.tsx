@@ -6,7 +6,7 @@ import { useParams, Link } from "react-router-dom";
 import io, { Socket } from "socket.io-client";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import AudioPlayer from "@/components/AudioPlayer"; //! changed this to @ instead of ..
+import AudioPlayer from "../../components/AudioPlayer"; //! changed this to @ instead of ..
 import { useAuth } from "@/context/AuthContext"; //! changed this to @ instead of ..
 import { Toast } from "primereact/toast";
 import { ProgressBar } from "primereact/progressbar";

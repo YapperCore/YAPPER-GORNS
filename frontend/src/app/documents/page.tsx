@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { Button } from 'primereact/button';
-import { Toast } from 'primereact/toast';
-import { Checkbox } from 'primereact/checkbox';
+import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
+import { Checkbox } from "primereact/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog"
-
+} from "../../components/ui/dialog";
 
 interface Document {
   id: string;
@@ -37,15 +36,15 @@ export default function Documents() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [folderToDelete, setFolderToDelete] = useState('');
+  const [folderToDelete, setFolderToDelete] = useState("");
   const [folderDocs, setFolderDocs] = useState<Document[]>([]);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [loadingFolderDocs, setLoadingFolderDocs] = useState(false);
 
   useEffect(() => {
     // Redirect to login if not authenticated
-    if (!currentUser && typeof window !== 'undefined') {
-      router.push('/login');
+    if (!currentUser && typeof window !== "undefined") {
+      router.push("/login");
       return;
     }
 
@@ -55,10 +54,10 @@ export default function Documents() {
       try {
         setLoading(true);
         const token = await currentUser.getIdToken();
-        const res = await fetch('/api/folders', {
+        const res = await fetch("/api/folders", {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (res.ok) {
@@ -73,17 +72,17 @@ export default function Documents() {
           }
         } else {
           toast.current?.show({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to load folders'
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to load folders",
           });
         }
       } catch (err) {
         console.error("Error fetching folders:", err);
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load folders'
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to load folders",
         });
       } finally {
         setLoading(false);
@@ -100,11 +99,11 @@ export default function Documents() {
       setCreatingFolder(true);
 
       const token = await currentUser.getIdToken();
-      const res = await fetch('/api/folders', {
-        method: 'POST',
+      const res = await fetch("/api/folders", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ folderName: newFolderName }),
       });
@@ -113,16 +112,16 @@ export default function Documents() {
         const data = await res.json();
 
         toast.current?.show({
-          severity: 'success',
-          summary: 'Folder Created',
-          detail: data.message || 'Folder created successfully',
+          severity: "success",
+          summary: "Folder Created",
+          detail: data.message || "Folder created successfully",
           life: 3000,
         });
 
-        const foldersRes = await fetch('/api/folders', {
+        const foldersRes = await fetch("/api/folders", {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (foldersRes.ok) {
@@ -136,26 +135,26 @@ export default function Documents() {
 
         setIsDialogOpen(false);
       } else {
-        let errorMessage = 'Failed to create folder';
+        let errorMessage = "Failed to create folder";
         try {
           const errData = await res.json();
           errorMessage = errData.error || errorMessage;
         } catch (e) {}
 
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: errorMessage,
           life: 3000,
         });
       }
     } catch (err) {
-      console.error('Error creating folder:', err);
+      console.error("Error creating folder:", err);
 
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to create folder. Please try again.',
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to create folder. Please try again.",
         life: 3000,
       });
     } finally {
@@ -172,22 +171,26 @@ export default function Documents() {
 
   const fetchDocsInFolder = async (folderName: string) => {
     if (!currentUser) return;
-    
+
     setLoadingFolderDocs(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch(`/api/folders/${folderName}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setFolderDocs(Array.isArray(data) ? data : []);
-        setSelectedDocs(Array.isArray(data) ? data.map(doc => doc.id) : []);
+        setSelectedDocs(Array.isArray(data) ? data.map((doc) => doc.id) : []);
       } else {
-        console.error("Error fetching docs in folder:", res.status, res.statusText);
+        console.error(
+          "Error fetching docs in folder:",
+          res.status,
+          res.statusText
+        );
         setFolderDocs([]);
         setSelectedDocs([]);
       }
@@ -201,18 +204,18 @@ export default function Documents() {
   };
 
   const handleCheckboxChange = (docId: string) => {
-    setSelectedDocs(prev => {
+    setSelectedDocs((prev) => {
       if (prev.includes(docId)) {
-        return prev.filter(id => id !== docId);
+        return prev.filter((id) => id !== docId);
       } else {
         return [...prev, docId];
       }
     });
   };
 
-  const handleSelectAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAllChange = (e: any) => {
     if (e.target.checked) {
-      setSelectedDocs(folderDocs.map(doc => doc.id));
+      setSelectedDocs(folderDocs.map((doc) => doc.id));
     } else {
       setSelectedDocs([]);
     }
@@ -229,37 +232,41 @@ export default function Documents() {
   const handleDeleteFolder = async (deleteAll: boolean = true) => {
     if (!currentUser || !folderToDelete) return;
     setLoading(true);
-    
+
     try {
       const token = await currentUser.getIdToken();
       const docsToDelete = deleteAll ? [] : selectedDocs;
-      
+
       const res = await fetch(`/api/folders/${folderToDelete}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           deleteAll,
-          docsToDelete
-        })
+          docsToDelete,
+        }),
       });
 
       const data = await res.json();
-      
+
       if (res.ok) {
         toast.current?.show({
-          severity: 'success',
-          summary: 'Folder Deleted',
-          detail: data.message || `Folder deleted. ${data.movedToTrash?.length || 0} files moved to trash.`,
-          life: 3000
+          severity: "success",
+          summary: "Folder Deleted",
+          detail:
+            data.message ||
+            `Folder deleted. ${
+              data.movedToTrash?.length || 0
+            } files moved to trash.`,
+          life: 3000,
         });
-        
-        const foldersRes = await fetch('/api/folders', {
+
+        const foldersRes = await fetch("/api/folders", {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (foldersRes.ok) {
@@ -272,19 +279,19 @@ export default function Documents() {
         }
       } else {
         toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: data.error || 'Failed to delete folder',
-          life: 3000
+          severity: "error",
+          summary: "Error",
+          detail: data.error || "Failed to delete folder",
+          life: 3000,
         });
       }
     } catch (err) {
       console.error("Error deleting folder:", err);
       toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'An unexpected error occurred while deleting the folder',
-        life: 3000
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred while deleting the folder",
+        life: 3000,
       });
     } finally {
       setLoading(false);
@@ -304,7 +311,7 @@ export default function Documents() {
 
       <div className="flex justify-between items-center mb-6 mt-4">
         <h2 className="text-2xl font-bold">Document Folders</h2>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -316,7 +323,9 @@ export default function Documents() {
           </DialogTrigger>
           <DialogContent className="bg-black text-white p-6 rounded-md">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold">Create a New Folder</DialogTitle>
+              <DialogTitle className="text-lg font-bold">
+                Create a New Folder
+              </DialogTitle>
               <DialogDescription className="text-sm">
                 Enter the name of the folder you want to create.
               </DialogDescription>
@@ -350,12 +359,17 @@ export default function Documents() {
       ) : (
         <>
           {folders.length === 0 ? (
-            <p className="text-center py-4">No folders found. Create a folder to organize your documents.</p>
+            <p className="text-center py-4">
+              No folders found. Create a folder to organize your documents.
+            </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
               {folders.map((folder) => (
-                <div key={folder} className="doc-card folder-card w-full max-w-xs">
-                  <div 
+                <div
+                  key={folder}
+                  className="doc-card folder-card w-full max-w-xs"
+                >
+                  <div
                     className="folder-content"
                     onClick={() => router.push(`/folders/${folder}`)}
                   >
@@ -385,7 +399,9 @@ export default function Documents() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="bg-slate-800 text-white p-6 rounded-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Delete Folder: {folderToDelete}</DialogTitle>
+            <DialogTitle className="text-lg font-bold">
+              Delete Folder: {folderToDelete}
+            </DialogTitle>
           </DialogHeader>
           <div className="folder-docs-list mt-4 bg-slate-900">
             {loadingFolderDocs ? (
@@ -397,20 +413,30 @@ export default function Documents() {
                 <div className="select-all-container mb-2">
                   <Checkbox
                     inputId="selectAll"
-                    checked={selectedDocs.length === folderDocs.length && folderDocs.length > 0}
+                    checked={
+                      selectedDocs.length === folderDocs.length &&
+                      folderDocs.length > 0
+                    }
                     onChange={(e) => handleSelectAllChange(e)}
                   />
-                  <label htmlFor="selectAll" className="ml-2">Select All Documents</label>
+                  <label htmlFor="selectAll" className="ml-2">
+                    Select All Documents
+                  </label>
                 </div>
                 <ul className="doc-checkbox-list">
                   {folderDocs.map((doc) => (
-                    <li key={doc.id} className="doc-checkbox-item flex items-center mb-2">
+                    <li
+                      key={doc.id}
+                      className="doc-checkbox-item flex items-center mb-2"
+                    >
                       <Checkbox
                         inputId={`doc-${doc.id}`}
                         checked={selectedDocs.includes(doc.id)}
                         onChange={() => handleCheckboxChange(doc.id)}
                       />
-                      <label htmlFor={`doc-${doc.id}`} className="ml-2">{doc.name}</label>
+                      <label htmlFor={`doc-${doc.id}`} className="ml-2">
+                        {doc.name}
+                      </label>
                     </li>
                   ))}
                 </ul>
