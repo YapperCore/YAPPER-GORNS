@@ -8,16 +8,26 @@ import { Toast } from "primereact/toast";
 import { ProgressBar } from "primereact/progressbar";
 import { Button } from "primereact/button";
 import Link from "next/link";
+<<<<<<< HEAD
 import Editor from "../components/Editor";
 import AudioPlayer from "../components/AudioPlayer";
 import { useAuth } from "../context/AuthContext";
+=======
+import Editor from "@/components/Editor";
+import AudioPlayer from "@/components/AudioPlayer";
+import { useAuth } from "@/context/AuthContext";
+>>>>>>> a871d53 (removed accesskey.json and renamed frontends to frontend)
 // In TranscriptionEditor component
 import {
   getSocket,
   joinDocRoom,
   leaveDocRoom,
   updateDocContent,
+<<<<<<< HEAD
 } from "../lib/socket-client";
+=======
+} from "@/lib/socket-client";
+>>>>>>> a871d53 (removed accesskey.json and renamed frontends to frontend)
 interface ChunkData {
   chunk_index: number;
   total_chunks: number;
