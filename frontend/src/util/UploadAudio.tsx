@@ -23,7 +23,7 @@ const UploadAudio: React.FC = () => {
     formData.append("audio", selectedFile);
 
     try {
-      const response = await fetch("http://localhost:5000/upload-audio", {
+      const response = await fetch("http://localhost:5001/upload-audio", {
         method: "POST",
         body: formData,
       });
