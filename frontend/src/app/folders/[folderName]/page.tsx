@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Toast } from "primereact/toast";
@@ -242,9 +242,13 @@ export default function FolderDocs() {
         ))}
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ marginTop: "1rem" }}>
         <Link href="/home">
-          <Button label="Back to Home" icon="pi pi-arrow-left" className="p-button-secondary" />
+          <Button
+            label="Back to Home"
+            icon="pi pi-arrow-left"
+            className="p-button-secondary"
+          />
         </Link>
       </div>
     </div>

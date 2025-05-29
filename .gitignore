@@ -67,8 +67,6 @@ frontend/node_modules
 .env.development.local
 .env.test.local
 .env.production.local
-Accesskey.json
-backend/Accesskey.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -86,3 +84,8 @@ backend/doc_store.json
 frontend/src/__tests__
 /frontend/build
 backend/.env
+.venv
+backend/accesskey.json
+*.log
+backend/Accesskey.json
+__pycache__/
