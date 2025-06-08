@@ -209,8 +209,6 @@ Recognizing the challenges posed by language barriers in our increasingly interc
     - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
       [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
 
-  
-
 <br />
 
 #### Reports
@@ -237,6 +235,46 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 #### Challenges Of Sprint 2
 - This sprint was particularly challenging, as many of us were unable to run the code, making it nearly impossible to debug and test our work.  
   - **Severe dependency errors**: These issues affected the majority of our team, preventing us from running the code at all. This not only stalled development but also made collaboration and troubleshooting incredibly difficult.
+
+<br />
+
+### Sprint 2
+#### Contributions
+
+**Ali**: "Refactored the code as well added a perm delete button and a full folder feature allowing the user to send documents to any folder" 
+
+  - `Jira Task: Ali - Refactor backend files` 
+    - [Scrum-75](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-75), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-75-refactor-backend-files) 
+  - `Jira Task: Ali - Do Perm Delete` 
+    - [Scrum-70](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-70), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-70-create-perm-delete-button) 
+  - `Jira Task: Ali - Unit Test Delete` 
+    - [Scrum-71](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-71), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-71-unit-test-delete) 
+  - `Jira Task: Ali - Unit Test Results` 
+    - [Scrum-87](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-87), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-87-unit-test-results)
+  - `Jira Task: Ali - Implement Folder/Group Storage` 
+    - [Scrum-72](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-72), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-72-implement-folder-group-storage)
+  - `Jira Task: Ali - Implement Delete Folder` 
+    - [Scrum-74](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-74), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-74-implement-delete-folder)
+  - `Jira Task: Ali - UI for Creating and Managing Folders` 
+    - [Scrum-73](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-73), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-73-ui-for-creating-and-managing-fo)
+
+<br />
+
+#### Reports
+
+![Burnup Chart](images/Burnup-Sprint-3.JPG.png)
+
+#### Next Steps
+**Ali**:  
+- Take time to understand how the code works.
+- refactor the whole project as some files are 100+ lines. 
 
 <br />
 ## Screenshots
