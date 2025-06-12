@@ -2,11 +2,10 @@
 # You should customize this list as applicable to your project.
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
-backend/accesskey.json
+accesskey.json
 # Node artifact files
 node_modules/
 dist/
-*.json
 # Compiled Java class files
 *.class
 backend/trash
@@ -89,3 +88,6 @@ backend/accesskey.json
 *.log
 backend/Accesskey.json
 __pycache__/
+
+.vscode
+.pytest_cache
