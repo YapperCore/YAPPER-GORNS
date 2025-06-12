@@ -8,16 +8,36 @@ import { Toast } from "primereact/toast";
 import { ProgressBar } from "primereact/progressbar";
 import { Button } from "primereact/button";
 import Link from "next/link";
+<<<<<<< HEAD
 import Editor from "../components/Editor";
 import AudioPlayer from "../components/AudioPlayer";
 import { useAuth } from "../context/AuthContext";
+=======
+<<<<<<< HEAD
+import Editor from "../components/Editor";
+import AudioPlayer from "../components/AudioPlayer";
+import { useAuth } from "../context/AuthContext";
+=======
+import Editor from "@/components/Editor";
+import AudioPlayer from "@/components/AudioPlayer";
+import { useAuth } from "@/context/AuthContext";
+>>>>>>> a871d53 (removed accesskey.json and renamed frontends to frontend)
+>>>>>>> SCRUM-4-spike-on-ACM-vs-nginx
 // In TranscriptionEditor component
 import {
   getSocket,
   joinDocRoom,
   leaveDocRoom,
   updateDocContent,
+<<<<<<< HEAD
 } from "../lib/socket-client";
+=======
+<<<<<<< HEAD
+} from "../lib/socket-client";
+=======
+} from "@/lib/socket-client";
+>>>>>>> a871d53 (removed accesskey.json and renamed frontends to frontend)
+>>>>>>> SCRUM-4-spike-on-ACM-vs-nginx
 interface ChunkData {
   chunk_index: number;
   total_chunks: number;

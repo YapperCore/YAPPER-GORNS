@@ -213,9 +213,16 @@ export default function Documents() {
     });
   };
 
+<<<<<<< HEAD
   const handleSelectAllChange = (e: any) => {
     if (e.target.checked) {
       setSelectedDocs(folderDocs.map((doc) => doc.id));
+=======
+  // Update the function to accept CheckboxChangeEvent from PrimeReact
+  const handleSelectAllChange = (e: { checked?: boolean }) => {
+    if (e.checked) {
+      setSelectedDocs(folderDocs.map(doc => doc.id));
+>>>>>>> SCRUM-4-spike-on-ACM-vs-nginx
     } else {
       setSelectedDocs([]);
     }

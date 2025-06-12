@@ -209,8 +209,6 @@ Recognizing the challenges posed by language barriers in our increasingly interc
     - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-55),  
       [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-55-implement-user-login/)  
 
-  
-
 <br />
 
 #### Reports
@@ -237,6 +235,142 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 #### Challenges Of Sprint 2
 - This sprint was particularly challenging, as many of us were unable to run the code, making it nearly impossible to debug and test our work.  
   - **Severe dependency errors**: These issues affected the majority of our team, preventing us from running the code at all. This not only stalled development but also made collaboration and troubleshooting incredibly difficult.
+
+<br />
+
+### Sprint 3
+#### Contributions
+
+**Ali**: "Refactored the code as well added a perm delete button and a full folder feature allowing the user to send documents to any folder" 
+
+  - `Jira Task: Ali - Refactor backend files` 
+    - [Scrum-75](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-75), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-75-refactor-backend-files) 
+  - `Jira Task: Ali - Do Perm Delete` 
+    - [Scrum-70](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-70), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-70-create-perm-delete-button) 
+  - `Jira Task: Ali - Unit Test Delete` 
+    - [Scrum-71](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-71), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-71-unit-test-delete) 
+  - `Jira Task: Ali - Unit Test Results` 
+    - [Scrum-87](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-87), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-87-unit-test-results)
+  - `Jira Task: Ali - Implement Folder/Group Storage` 
+    - [Scrum-72](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-72), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/feature/SCRUM-72-implement-folder-group-storage)
+  - `Jira Task: Ali - Implement Delete Folder` 
+    - [Scrum-74](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-74), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-74-implement-delete-folder)
+  - `Jira Task: Ali - UI for Creating and Managing Folders` 
+    - [Scrum-73](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-73), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-73-ui-for-creating-and-managing-fo)
+
+**Michael**: Helped Refactored Frontend, Implemented new UI with shadcn, got dependency to non-error
+ 
+  - `Jira Task: Michael - Get Backend Working`
+    - [Scrum-69](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-69), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/329b31ca14116f0347721fc41cb2b51fa11a1419/?at=bugfix%2FSCRUM-69-get-backend-working)
+
+  - `Jira Task: Michael - Review new UI Ideas`
+    - [Scrum-84](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-84), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-84-research-task---review-new-ui-i/)
+
+  - `Jira Task: Michael - Implement Chosen New UI`
+    - [Scrum-85](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-85), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/feature/SCRUM-85-implement-chosen-new-ui)
+
+  - `Jira Task: Michael - Unit Test Backend Transcribe (Planning)`
+    - [Scrum-89](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-89), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/SCRUM-89-unit-test-backend-transcribe)
+
+  - `Jira Task: Michael - Unit Test Backend Transcribe (Results)`
+    - [Scrum-91](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-91), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/branch/SCRUM-91-unit-test-backend-transcribe-results)
+    
+
+**Josh** : Created the Login and Signup using firebase auth and beautified it using shadcn and regular css
+
+- `Jira Task: Josh - Implement new login and signup UI
+    - [Scrum-68](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-68), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-68-login-and-signup-ui)
+
+  - `Jira Task: Josh - Implement session persistence`
+    - [Scrum-56](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-56), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/790abbe83c9b55ee77e1d7204f637e899c39453b/?at=SCRUM-56-implement-session-persistence)
+
+  - `Jira Task: Josh - Implement login 
+    - [Scrum-57](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-57), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-57-implement-log-in-logout-functio)
+
+  - `Jira Task: Josh - Implement signup 
+    - [Scrum-55](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-55), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-55-implement-user-login)
+
+  - `Jira Task: Josh - Research
+    - [Scrum-53](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-53), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/%7Bc8e89328-5511-486d-af12-f338b21ce8d9%7D/branch/SCRUM-53-research-deployment)
+ 
+  - `Jira Task: Josh - Unit Test planning
+    - [Scrum-86](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-86), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-86-unit-test-login-and-sign-up/)
+
+  - `Jira Task: Josh - Unit test results
+    - [Scrum-90](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-90), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-90-unit-test-running/)
+    
+**Abheek**: "Implemented translation features, enhanced the UI with modern components, and fixed critical bugs in the transcription system"
+
+  - `Jira Task: Abheek - Host Audio Reasoning Model on Server` 
+    - [Scrum-81](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-81), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-81-host-audioreasoning-model-on-se/)
+    
+  - `Jira Task: Abheek - Implement Robust POST Requests` 
+    - [Scrum-82](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-82), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-82-implement-robust-post-requests-/)
+    
+  - `Jira Task: Abheek - Research Backend Functionality` 
+    - [Scrum-83](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-83), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/bugfix/SCRUM-83-research-task---get-backend-wor/)
+    
+  - `Jira Task: Abheek - Integrate New Reasoning Model` 
+    - [Scrum-64](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-64), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-64-integrate-new-reasoning-model/)
+    
+  - `Jira Task: Abheek - Integrate New Reasoning Model Components` 
+    - [Scrum-65](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-65), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-65-integrate-new-reasoning-model/)
+    
+  - `Jira Task: Abheek - Create Functional Edit and Delete Features` 
+    - [Scrum-79](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-79), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-79-create-functional-edit-and-dele/)
+    
+  - `Jira Task: Abheek - Sync New Buttons Functionalities` 
+    - [Scrum-80](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-80), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-80-sync-new-buttons-functionalitie/)
+    
+  - `Jira Task: Abheek - Implement Real-Time Streaming` 
+    - [Scrum-59](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-59), 
+    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-59-real-time-streaming/)
+<br />
+
+#### Reports
+
+![Burnup Chart](images/Burnup-Sprint-3.JPG.png)
+
+#### Next Steps
+**Ali**:  
+- Take time to understand how the code works.
+- refactor the whole project as some files are 100+ lines. 
+- have a way to share and formate the text blocks that comes out.
+
+**Josh** 
+- Work through my version control problems
+- Spend more time working on button bugs
+
+**Abheek**
+- Standardizing my commits so that they are logged as one user
+- Adding more comments to my code
+- Implementing more advanced audio-processing capabilities.
 
 <br />
 ## Screenshots

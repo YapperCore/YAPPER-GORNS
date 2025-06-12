@@ -1,0 +1,158 @@
+🧾 Decision Documentation: Using ACM + API Gateway (Short-Term Architecture)
+
+✅ Summary
+We are choosing to use AWS ACM + API Gateway as the HTTPS frontend for our application in the short term. This architecture minimizes infrastructure overhead, ensures scalability and security, and allows rapid development and deployment.
+
+🎯 Why This Architecture is Ideal for the Short Term
+
++-----------------------------+---------------------------------------------------+
+| Criteria                    | Justification                                     |
++-----------------------------+---------------------------------------------------+
+| Speed to Deploy             | ACM + API Gateway allows SSL-secured APIs in      |
+|                             | minutes                                           |
++-----------------------------+---------------------------------------------------+
+| Low Maintenance             | No need to manage web servers or certificates     |
+|                             | manually                                          |
++-----------------------------+---------------------------------------------------+
+| High Availability           | Fully managed, auto-scaled services across AZs    |
++-----------------------------+---------------------------------------------------+
+| Cost Efficient              | Pay-as-you-go with no idle server costs           |
+| (for low–medium traffic)    |                                                   |
++-----------------------------+---------------------------------------------------+
+| Security                    | Built-in DDoS protection (AWS Shield), IAM        |
+|                             | integration                                       |
++-----------------------------+---------------------------------------------------+
+| Custom Domain Support       | Easily attach your domain with SSL via ACM        |
++-----------------------------+---------------------------------------------------+
+| Future-Proof                | Can later replace API Gateway with NGINX/ALB      |
+|                             | with minimal change                               |
++-----------------------------+---------------------------------------------------+
+
+🧱 Technologies Involved
+
++-----------------------------+---------------------------------------------------+
+| Component                   | Purpose                                           |
++-----------------------------+---------------------------------------------------+
+| Route 53                    | DNS management for custom domain                  |
+|                             | (e.g., api.example.com)                           |
++-----------------------------+---------------------------------------------------+
+| AWS ACM (Certificate        | SSL/TLS certificate management                    |
+| Manager)                    | (free, auto-renewed)                              |
++-----------------------------+---------------------------------------------------+
+| API Gateway (REST or HTTP)  | Public HTTP endpoint, routing, CORS, throttling,  |
+|                             | etc.                                              |
++-----------------------------+---------------------------------------------------+
+| AWS Lambda                  | Backend function execution (can be replaced by    |
+|                             | EC2 later)                                        |
++-----------------------------+---------------------------------------------------+
+| CloudWatch                  | Logging, monitoring, and alerting                 |
++-----------------------------+---------------------------------------------------+
+| IAM Roles                   | Secure and granular permissions for API and       |
+|                             | Lambda                                            |
++-----------------------------+---------------------------------------------------+
+| (Optional) WAF              | Web Application Firewall for extra security       |
+|                             | policies                                          |
++-----------------------------+---------------------------------------------------+
+| (Optional) Cognito          | User authentication (OAuth2/JWT)                  |
++-----------------------------+---------------------------------------------------+
+| (Optional) CloudFront       | Global CDN and caching layer for low latency      |
++-----------------------------+---------------------------------------------------+
+| (Optional) S3               | Static hosting or object storage for assets/data  |
++-----------------------------+---------------------------------------------------+
+
+🧰 Architectural Overview
+
+[ Client (Browser/Mobile/Postman) ]
+│
+▼
+┌─────────────────────────────────────┐
+│       Route 53 (DNS Management)     │
+└─────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────┐
+│ ACM (SSL Certificate for HTTPS)     │
+└─────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────┐
+│     API Gateway (Public REST API)   │
+│ - Custom domain                     │
+│ - HTTPS, CORS, Auth, Throttling     │
+└─────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────┐
+│       AWS Lambda Functions          │
+└─────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────┐
+│  DynamoDB / Firestore / S3 / RDS    │
+└─────────────────────────────────────┘
+
+🔐 Security Features
+- HTTPS Encryption via ACM (auto-renewing certificates)
+- Rate limiting and throttling via API Gateway
+- IAM-based access control for service-to-service calls
+- Optional JWT auth via Cognito
+- AWS WAF can be added to API Gateway for rule-based protection
+- DDoS Protection through AWS Shield (included)
+
+🔁 Reverse Proxy & Load Balancing (Serverless Style)
+- Reverse Proxy Equivalent: API Gateway acts as a fully managed reverse proxy
+- Load Balancing: Automatically managed
+- No need for NGINX or ALB in the short term
+
+📈 Scaling & Traffic Handling
+
++-----------------------------+---------------------------------------------------+
+| Feature                     | How It's Handled                                  |
++-----------------------------+---------------------------------------------------+
+| Auto-scaling                | Handled natively by API Gateway and Lambda        |
++-----------------------------+---------------------------------------------------+
+| Cold starts                 | Rare if using provisioned concurrency or low      |
+|                             | traffic                                           |
++-----------------------------+---------------------------------------------------+
+| Caching                     | Enable API Gateway caching or use CloudFront in   |
+|                             | front                                             |
++-----------------------------+---------------------------------------------------+
+| Load balancing              | Built-in with AWS managed services                |
++-----------------------------+---------------------------------------------------+
+
+📦 Deployment Pipeline (Optional DevOps Flow)
+1. Source Code: GitHub / Bitbucket
+2. CI/CD: GitHub Actions / Bitbucket Pipelines
+3. IaC Tools: Terraform / Serverless Framework / AWS SAM
+4. Deployment Targets:
+   - API Gateway routes
+   - Lambda function code
+   - IAM roles
+   - ACM domain attachment
+   - Route 53 records
+
+🧭 Migration-Ready (Future-Proofing)
+
++-----------------------------+---------------------------------------------------+
+| Need                        | Migration Path                                    |
++-----------------------------+---------------------------------------------------+
+| Custom reverse proxy        | Swap API Gateway for NGINX on EC2 or ALB          |
++-----------------------------+---------------------------------------------------+
+| Stateful long-running       | Replace Lambda with ECS/Fargate or EC2            |
+| services                    |                                                   |
++-----------------------------+---------------------------------------------------+
+| More complex auth           | Replace Cognito with Auth0 or Keycloak            |
++-----------------------------+---------------------------------------------------+
+| Custom SSL on NGINX         | Issue cert with ACM or Let's Encrypt + NGINX      |
+|                             | config                                            |
++-----------------------------+---------------------------------------------------+
+| External traffic control    | Use CloudFront + WAF + Route 53 zone routing      |
++-----------------------------+---------------------------------------------------+
+
+✅ Conclusion
+Choosing ACM + API Gateway is the best short-term architecture because it:
+- Removes complexity around SSL and load balancing
+- Requires no server management
+- Provides built-in scaling and security
+- Keeps DevOps focused on CI/CD and automation, not infrastructure
+- Allows for graceful migration to more customizable setups later
