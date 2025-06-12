@@ -317,40 +317,6 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
   - `Jira Task: Josh - Unit test results
     - [Scrum-90](https://cs3398-gorns-spring.atlassian.net/jira/software/projects/SCRUM/boards/1?selectedIssue=SCRUM-90), 
     [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-90-unit-test-running/)
-    
-**Abheek**: "Implemented translation features, enhanced the UI with modern components, and fixed critical bugs in the transcription system"
-
-  - `Jira Task: Abheek - Host Audio Reasoning Model on Server` 
-    - [Scrum-81](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-81), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-81-host-audioreasoning-model-on-se/)
-    
-  - `Jira Task: Abheek - Implement Robust POST Requests` 
-    - [Scrum-82](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-82), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-82-implement-robust-post-requests-/)
-    
-  - `Jira Task: Abheek - Research Backend Functionality` 
-    - [Scrum-83](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-83), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/bugfix/SCRUM-83-research-task---get-backend-wor/)
-    
-  - `Jira Task: Abheek - Integrate New Reasoning Model` 
-    - [Scrum-64](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-64), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-64-integrate-new-reasoning-model/)
-    
-  - `Jira Task: Abheek - Integrate New Reasoning Model Components` 
-    - [Scrum-65](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-65), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-65-integrate-new-reasoning-model/)
-    
-  - `Jira Task: Abheek - Create Functional Edit and Delete Features` 
-    - [Scrum-79](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-79), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-79-create-functional-edit-and-dele/)
-    
-  - `Jira Task: Abheek - Sync New Buttons Functionalities` 
-    - [Scrum-80](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-80), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-80-sync-new-buttons-functionalitie/)
-    
-  - `Jira Task: Abheek - Implement Real-Time Streaming` 
-    - [Scrum-59](https://cs3398-gorns-spring.atlassian.net/browse/SCRUM-59), 
-    [Bitbucket](https://bitbucket.org/cs3398-gorns-s25/yapper/src/SCRUM-59-real-time-streaming/)
 <br />
 
 #### Reports
@@ -366,12 +332,6 @@ One of them requires 3.9 with eventlet 0.33.0 and another requires 3.10 with eve
 **Josh** 
 - Work through my version control problems
 - Spend more time working on button bugs
-
-**Abheek**
-- Standardizing my commits so that they are logged as one user
-- Adding more comments to my code
-- Implementing more advanced audio-processing capabilities.
-
 <br />
 ## Screenshots
 ![Logo](images/Yapperlogoimg.png)
